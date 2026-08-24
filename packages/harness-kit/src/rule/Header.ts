@@ -6,7 +6,7 @@ import type { Schema } from 'effect';
 import { Effect } from 'effect';
 
 import { Decision } from '../Decision.ts';
-import type * as Rule from '../Rule.ts';
+import type * as Rule from '../rule/Rule.ts';
 
 type DecisionValue = Schema.Schema.Type<typeof Decision.Value>;
 

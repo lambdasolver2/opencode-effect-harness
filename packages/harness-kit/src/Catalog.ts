@@ -5,7 +5,7 @@ import YAML from 'yaml';
 
 import { SKIPPED_FILES } from './Constants.ts';
 import { Pattern } from './Pattern.ts';
-import { RuleDefinition } from './RuleDefinition.ts';
+import { RuleDefinition } from './rule/RuleDefinition.ts';
 
 // ---------------------------------------------------------------------------
 // Frontmatter parsing

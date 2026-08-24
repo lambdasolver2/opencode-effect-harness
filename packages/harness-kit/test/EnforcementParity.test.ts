@@ -20,7 +20,7 @@ import {
 } from '../src/Matcher.ts';
 import { loadPatterns } from '../src/Catalog.ts';
 import { Projection } from '../src/Projection.ts';
-import { Gate as GateRule } from '../src/rules/Gate.ts';
+import { Gate as GateRule } from '../src/rule/Gate.ts';
 
 const platform = Layer.mergeAll(NodeFileSystem.layer, NodePath.layer);
 const projectionOf = <A>(

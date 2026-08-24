@@ -1,14 +1,14 @@
 import { FileSystem, Layer, Path } from 'effect';
 
 import { Catalog, CatalogError } from './Catalog.ts';
-import type * as Hook from './Hook.ts';
+import type * as Hook from './hook/Hook.ts';
 import { Controller } from './Controller.ts';
 import { Engine } from './Engine.ts';
-import { HookSet } from './HookSet.ts';
+import { HookSet } from './hook/HookSet.ts';
 import { Matcher } from './Matcher.ts';
 import { Projection } from './Projection.ts';
-import type * as Rule from './Rule.ts';
-import { RuleSet } from './RuleSet.ts';
+import type * as Rule from './rule/Rule.ts';
+import { RuleSet } from './rule/RuleSet.ts';
 
 type Platform = FileSystem.FileSystem | Path.Path;
 

@@ -4,9 +4,9 @@
  * (an `enabled` effect) so a disabled harness produces empty decisions while
  * hooks keep running.
  */
-import type { Branch } from './Branch.ts';
-import type { Decision } from './Decision.ts';
-import type { Intent } from './Intent.ts';
+import type { Branch } from '../Branch.ts';
+import type { Decision } from '../Decision.ts';
+import type { Intent } from '../Intent.ts';
 import type { Schema } from 'effect';
 import { Effect } from 'effect';
 

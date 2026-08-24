@@ -16,7 +16,7 @@ import { EFFECT_CODE_RE } from '../Constants.ts';
 import { Decision } from '../Decision.ts';
 import { Intent } from '../Intent.ts';
 import { Input } from '../Input.ts';
-import type * as Rule from '../Rule.ts';
+import type * as Rule from '../rule/Rule.ts';
 
 type DecisionValue = Schema.Schema.Type<typeof Decision.Value>;
 type IntentValue = Schema.Schema.Type<typeof Intent.Value>;

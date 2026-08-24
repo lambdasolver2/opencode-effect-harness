@@ -2,8 +2,8 @@ import type { Schema } from 'effect';
 import { Context, Effect, Layer } from 'effect';
 
 import { Decision } from './Decision.ts';
-import * as Hook from './Hook.ts';
-import { HookSet } from './HookSet.ts';
+import * as Hook from './hook/Hook.ts';
+import { HookSet } from './hook/HookSet.ts';
 import type { Intent } from './Intent.ts';
 import { Engine } from './Engine.ts';
 

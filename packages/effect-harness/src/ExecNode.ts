@@ -33,7 +33,7 @@ const spawnOnce = (
 						cwd,
 						env,
 						stdio: ['ignore', 'pipe', 'pipe']
-					});
+					}) as import('node:child_process').ChildProcess;
 
 					const cap = Math.max(1, spec.maxOutputBytes || MAX_DEFAULT_BYTES);
 					let out = '';
@@ -63,8 +63,19 @@ const spawnOnce = (
 						clearTimeout(timer);
 						resolve({ code, signal, stdout: out, stderr: err });
 					};
-					child.on('error', reject);
-					child.on('close', finish);
+					;(
+						child as unknown as {
+							on(event: string, cb: (...args: never[]) => void): void
+						}
+					).on('error', reject);
+					;(
+						child as unknown as {
+							on(
+								event: string,
+								cb: (code: number | null, signal: NodeJS.Signals | null) => void
+							): void
+						}
+					).on('close', finish);
 				}),
 			catch: () => new ExecError({ reason: 'spawn failed', command: spec.executable })
 		}),

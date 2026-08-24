@@ -27,9 +27,9 @@ const platform = Layer.mergeAll(NodeFileSystem.layer, NodePath.layer);
 import { Decision } from 'opencode-harness-kit/Decision.ts';
 import { Intent } from 'opencode-harness-kit/Intent.ts';
 import { Projection } from 'opencode-harness-kit/Projection.ts';
-import { Gate as GateRule } from 'opencode-harness-kit/rules/Gate.ts';
-import { Header as HeaderRule } from 'opencode-harness-kit/rules/Header.ts';
-import { Feedback as FeedbackRule } from 'opencode-harness-kit/rules/Feedback.ts';
+import { Gate as GateRule } from 'opencode-harness-kit/rule/Gate.ts';
+import { Header as HeaderRule } from 'opencode-harness-kit/rule/Header.ts';
+import { Feedback as FeedbackRule } from 'opencode-harness-kit/rule/Feedback.ts';
 
 import type { VerificationModule } from 'opencode-verify-kit/Module.ts';
 import { Registry } from 'opencode-verify-kit/Module.ts';

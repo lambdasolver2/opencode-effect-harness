@@ -1,8 +1,8 @@
 import { Context, Effect, Layer } from 'effect';
 
 import { Decision } from './Decision.ts';
-import type * as Rule from './Rule.ts';
-import { RuleSet } from './RuleSet.ts';
+import type * as Rule from './rule/Rule.ts';
+import { RuleSet } from './rule/RuleSet.ts';
 
 type DecisionValue = Schema.Schema.Type<typeof Decision.Value>;
 import type { Schema } from 'effect';

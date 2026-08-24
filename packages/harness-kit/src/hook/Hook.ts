@@ -2,9 +2,9 @@
  * Hook — a host-neutral lifecycle observer. Hooks run BEFORE rules and may
  * never block; they return decisions (usually entries/telemetry).
  */
-import type { Branch } from './Branch.ts';
-import type { Decision } from './Decision.ts';
-import type { Intent } from './Intent.ts';
+import type { Branch } from '../Branch.ts';
+import type { Decision } from '../Decision.ts';
+import type { Intent } from '../Intent.ts';
 import type { Schema } from 'effect';
 import { Effect } from 'effect';
 
