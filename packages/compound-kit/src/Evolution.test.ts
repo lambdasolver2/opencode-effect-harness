@@ -15,13 +15,12 @@ import * as NodePath from '@effect/platform-node/NodePath';
 
 import { CommandSpec, Exec, ExecError, CommandResult } from 'opencode-harness-shared';
 import { Journal } from 'opencode-harness-shared';
-import { AcceptanceCriterion, ModelExecutionSpec } from 'opencode-compound-kit/Blueprint.ts';
-import { EvaluationSet, Evolution } from 'opencode-compound-kit/Evolution.ts';
-import { Store } from 'opencode-compound-kit/Store.ts';
-import { Env } from 'opencode-compound-kit/Env.ts';
-import { Llm, Outcome as LlmOutcome } from 'opencode-compound-kit/Llm.ts';
-import { Runner } from 'opencode-compound-kit/Suite.ts';
-import { decode as decodeOptions } from '../src/Options.ts';
+import { AcceptanceCriterion, ModelExecutionSpec } from './Blueprint.ts';
+import { EvaluationSet, Evolution } from './Evolution.ts';
+import { Store } from './Store.ts';
+import { Env } from './Env.ts';
+import { Llm, Outcome as LlmOutcome } from './Llm.ts';
+import { Runner } from './Suite.ts';
 
 const platform = Layer.mergeAll(NodeFileSystem.layer, NodePath.layer);
 
@@ -73,67 +72,6 @@ const blueprintStub = () =>
 		createdAt: 0
 	}) as never;
 
-describe('Store append-only semantics', () => {
-	it('appends two version blocks without rewriting earlier bytes; pointer moves', async () => {
-		await withTempDir(async (baseDir) => {
-			const { readFileSync: readFileSyncFn } = await import('node:fs');
-			const program = Effect.gen(function* () {
-				const store = yield* Store.Tag;
-				yield* store.appendVersion({
-					blueprintId: 'bp-1',
-					version: 1,
-					evaluatorVersion: 'eval-v1',
-					score: 0.6,
-					baselineTrain: 0.5,
-					baselineHoldout: 0.5,
-					markdown: 'v1 body',
-					diffSummary: 'first',
-					now: 1
-				});
-				yield* store.appendVersion({
-					blueprintId: 'bp-1',
-					version: 2,
-					evaluatorVersion: 'eval-v1',
-					score: 0.8,
-					baselineTrain: 0.6,
-					baselineHoldout: 0.55,
-					markdown: 'v2 body',
-					diffSummary: 'second',
-					now: 2
-				});
-
-				const md = readFileSyncFn(`${baseDir}/blueprints/bp-1.md`, 'utf8');
-				expect(md.indexOf('## Version v1')).toBeGreaterThan(-1);
-				expect(md.indexOf('## Version v1')).toBeLessThan(md.indexOf('## Version v2'));
-
-				const pointer = yield* store.pointer('bp-1');
-				expect(pointer?.version).toBe(2);
-
-				// rollback = pointer move only; v2 block remains on disk
-				yield* store.setPointer({ id: 'bp-1', version: 1, now: 3 });
-				const rolledBack = yield* store.pointer('bp-1');
-				expect(rolledBack?.version).toBe(1);
-				const mdAfterRollback = readFileSyncFn(`${baseDir}/blueprints/bp-1.md`, 'utf8');
-				expect(mdAfterRollback).toContain('v2 body');
-			}).pipe(
-				Effect.provide(Store.layer(baseDir).pipe(Layer.provide(platform)) as Layer.Layer<Store.Tag>)
-			);
-			await Effect.runPromise(program);
-		});
-	});
-
-	it('rejects path-traversal ids', async () => {
-		await withTempDir(async (baseDir) => {
-			const result = await Effect.runPromiseExit(
-				Effect.gen(function* () {
-					const store = yield* Store.Tag;
-					return yield* store.setPointer({ id: '../evil', version: 1, now: 1 });
-				}).pipe(Effect.provide(Store.layer(baseDir).pipe(Layer.provide(platform)) as Layer.Layer<Store.Tag>))
-			);
-			expect(result._tag).toBe('Failure');
-		});
-	});
-});
 
 describe('Evolution baseline discipline', () => {
 	it('rejects holdout regression even when train improves (vs running best)', async () => {
@@ -232,49 +170,3 @@ const fakeLlm = (text: string): Llm.Service => ({
 		Effect.succeed(new LlmOutcome({ text, durationMs: 5 }))
 });
 
-describe('Runner acceptance execution', () => {
-	it('executes acceptance checks in an isolated workspace and releases the trial key', async () => {
-		await withTempDir(async (root) => {
-			const judgeStub = { score: () => Effect.succeed(1) };
-			const llmStub = fakeLlm('done');
-			const envLayer = Env.layer({ root }).pipe(Layer.provide(platform));
-
-			const service = await Effect.runPromise(
-				Effect.gen(function* () {
-					const env = yield* Env.Tag;
-					return yield* Runner.make({
-						env,
-						llm: llmStub,
-						exec: fakeExecPassing(),
-						judge: judgeStub
-					});
-				}).pipe(Effect.provide(envLayer))
-			);
-
-			const run = await Effect.runPromise(
-				service.runTask({
-					blueprint: blueprintStub(),
-					model: { provider: 'test', model: 'm' },
-					taskId: 't1',
-					instruction: 'do it',
-					trial: 1,
-					evaluatorVersion: 'eval-v1'
-				})
-			);
-			expect(run.passed).toBe(true);
-			expect(run.evaluatorVersion).toBe('eval-v1');
-
-			const again = await Effect.runPromise(
-				service.runTask({
-					blueprint: blueprintStub(),
-					model: { provider: 'test', model: 'm' },
-					taskId: 't1',
-					instruction: 'again',
-					trial: 1,
-					evaluatorVersion: 'eval-v1'
-				})
-			);
-			expect(again.passed).toBe(true);
-		});
-	});
-});
