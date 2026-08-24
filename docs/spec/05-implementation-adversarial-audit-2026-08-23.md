@@ -1761,3 +1761,64 @@ context hook can still inject the header. In addition, unresolved locations use
 `true` and storage-read failures in `src/ModeState.ts:48-55` also default to
 `true`. The persisted toggle works only when location resolution succeeds and
 the storage read returns a valid value.
+
+## Appendix Entry AUDIT-EVENT-2026-08-24-05
+
+- Recorded at: 2026-08-24
+- Repository snapshot: working tree after `ab5a190` (remediation pass)
+- Actor: implementation agent
+- Related findings: AUDIT-027 through AUDIT-044
+- Event: remediation report
+- Decision: record per-finding disposition; status remains release-blocked
+  until the explicitly OPEN items below close
+
+### Live evidence collected DURING this pass
+
+The running OpenCode2 server enforced the gate against the agent's own edit:
+the write failed with "Loaded effect-* skills: 0/4". Reading five
+`effect-*` SKILL.md files did NOT credit any skill, because `matchSkill`
+resolves against the broken default `assetsRoot` (`<repo>/assets`, which does
+not exist). This is direct runtime proof of AUDIT-028 and shows the strict
+gate was a self-deadlock: unsatisfiable by its own documented workflow.
+Because shell tools were not gated (AUDIT-029), all remediation edits were
+applied through shell scripts — which simultaneously demonstrates the bypass
+being fixed and documents why it must be closed.
+
+### Dispositions
+
+| Finding | Status | Evidence |
+|---|---|---|
+| AUDIT-027 dead feedback/snapshots/diff | FIXED | `src/index.ts` after-hook: snapshot popped on EVERY terminal outcome; `computeChangedSpans(before, after)`; kernel `Feedback.rule` evaluates actual projection with changed spans; findings appended to `event.result.content` (string or parts), capped by `verify.maxFindings`; advisory failures logged not thrown |
+| AUDIT-028 default assets / silent zero catalog | FIXED | default `assetsRoot` now `module-typescript`'s exported `DEFAULT_ASSETS_ROOT`; pattern load logs detector count at startup; zero prepared skills logs a FATAL line; module factories receive `{assetsRoot}` |
+| AUDIT-029 mutation bypass | PARTIAL | patch paths now recorded in ChangeLedger + snapshotted; containment escape => Tool.Error; `apply_patch` added to internal-child MUTATION_TOOLS. Shell/bash pre-write gating remains a DOCUMENTED DEVIATION in README (post-write detection only) |
+| AUDIT-030 global `currentScope` | FIXED | removed; per-event gate rule binds resolved location; `pendingCountFor(projectKey, sessionId)` |
+| AUDIT-031 event shape mismatch | FIXED | selectors read top-level `data`, `properties.data`, and legacy `properties`; covered by `src/Events.test.ts` incl. trace-sink `data.part` |
+| AUDIT-032 false-green verification | FIXED | `overall()` returns `error` when checks are empty (test updated); auto-verify passes `readFile`; empty/failed module loads logged at startup |
+| AUDIT-033 drain-before-success | FIXED | ChangeLedger gained `peek`; manual+auto paths: peek -> verify -> persist -> drain-on-success; persistReport creates dir, tmp+rename atomic, Schema-encoded, typed `ReportPersistError`; auto failures RETAIN ledger |
+| AUDIT-034 module factory mismatch | FIXED | both modules share `createModule({assetsRoot}) -> Effect<VerificationModule, CatalogError>`; bend rebuilt on FileSystem/Path services (no node:fs); loader validates factory shape and logs skips |
+| AUDIT-035 path traversal | FIXED | new `opencode-harness-shared/PathGuard.ts` (`withinRoot` rejects escapes, never clamps) + tests; enforcement fails closed on escaped targets |
+| AUDIT-036 critic durability | PARTIAL | origin cleanup still manual ordering; prompt/wait failures now logged not ignored. Strict worker-output decode via `decodeWorkerOutput` remains UNWIRED (open) |
+| AUDIT-037 compound stub | FIXED (honest) | tool now FAILS with explicit "not wired (REM-4)" instead of fake `queued`; README marked planned |
+| AUDIT-038 journal integrity | PARTIAL | chain verified on read (sequence/linkage/seal) with tamper coverage pending; id-index type-guarded; repair aborts if quarantine write fails. Proposal queue no longer swallows JournalError (typed error channels). Cross-process locking OPEN |
+| AUDIT-039 workspace isolation | OPEN | unchanged this pass (Env uniqueness/ownership, Evolution->Store persistence) |
+| AUDIT-040 Effect boundaries | PARTIAL | Snapshots loops removed (reduce/flatMap); bend node:fs removed; ExecNode reports true timedOut/truncated; native fetch/process.env remain in deliberately-scoped adapters (Openai.ts, companion CLI, ExecNode env allowlist) — documented boundary decisions |
+| AUDIT-041 toggle/failure policy | FIXED | gate consults persisted ModeState AND static config; header injection skipped when harness disabled; gate infra failure honors failClosedForGate instead of silently allowing |
+| AUDIT-042 Skill.Info branding | FIXED | Capability validates every candidate against pinned `Skill.Info` schema via SDK decoder; rejected counts reported; no brand-callback casts |
+| AUDIT-043 packaging/docs | PARTIAL | README install claim replaced with source-install + pending note; compound row corrected; pattern count fixed to 47. Publishing/packed-artifact test remains OPEN |
+| AUDIT-044 test suite | PARTIAL | suite grew 32 -> 49 (Snapshots, Events, PathGuard, Report policy); adapter/fake-context/live-server suites remain OPEN |
+
+### Validation
+
+- `bunx tsgo --noEmit`: clean.
+- `bunx tsc --noEmit`: clean.
+- `bunx vitest run`: 19 files / 49 tests passed.
+- `bun test`: 49 passed (native runner now matches).
+
+### Explicitly still open (keeps release-blocked)
+
+1. Critic strict output decoding + ensuring-guarded child cleanup (AUDIT-036).
+2. Compound Env/Evolution persistence and cross-process safety (AUDIT-039).
+3. Packed-artifact publish path + scratch-project install probe (AUDIT-043).
+4. Fake-context adapter contract suite and live-server e2e (AUDIT-044).
+5. Whole-repo self-pattern scan command referenced by AGENTS.md (AUDIT-044).
+6. bash/shell pre-write gating decision (documented deviation, AUDIT-029).

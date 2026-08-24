@@ -1,81 +1,104 @@
 /**
  * Snapshots — pre-write file captures with diff-based changed-span computation.
  *
- * In execute.before, the plugin reads the target file's current content and
- * stores it as a snapshot keyed by tool-call ID. In execute.after, the final
- * content is read from disk and compared against the snapshot using
- * `diffLines` to compute exact added-text spans.
+ * execute.before stores the target file's current content keyed by tool-call
+ * ID. execute.after reads the final content and derives exact added-text spans
+ * with `diffLines`, feeding them into the kernel feedback rule as the ACTUAL
+ * projection (no speculative reconstruction, no full-file re-scan).
  *
- * This replaces the fragile approach of reconstructing prospective content
- * from edit replacement text — the enforcer's approach is simpler and more
- * robust because it works on real before/after data.
+ * All helpers are pure; every collection transform uses combinators (no
+ * imperative loops) per the repository's own catalog rules.
  */
-import { diffLines } from 'diff'
+import { diffLines } from 'diff';
+
+import { partitionWithinRoot } from 'opencode-harness-shared/PathGuard.ts';
 
 export interface FileSnapshot {
-	readonly absolutePath: string
-	readonly filePath: string
-	readonly beforeContent?: string | undefined
+	readonly absolutePath: string;
+	readonly filePath: string;
+	readonly beforeContent?: string | undefined;
 }
 
 export interface ChangedSpan {
-	readonly start: number
-	readonly end: number
+	readonly start: number;
+	readonly end: number;
 }
 
-/** Compute half-open spans occupied by text added between before and after. */
-export function computeChangedSpans(
+/** Half-open spans occupied by text ADDED between before and after. */
+export const computeChangedSpans = (
 	before: string | undefined,
 	after: string
-): ReadonlyArray<ChangedSpan> {
-	if (before === undefined) return [{ start: 0, end: after.length }]
-	const spans: Array<ChangedSpan> = []
-	let cursor = 0
-	for (const change of diffLines(before, after)) {
-		if (change.added === true) {
-			spans.push({ start: cursor, end: cursor + change.value.length })
-			cursor += change.value.length
-			continue
-		}
-		if (change.removed !== true) cursor += change.value.length
-	}
-	return spans
-}
+): ReadonlyArray<ChangedSpan> => {
+	if (before === undefined) return [{ start: 0, end: after.length }];
+	let cursor = 0;
+	return diffLines(before, after).reduce<ReadonlyArray<ChangedSpan>>(
+		(spans, change) => {
+			if (change.added === true) {
+				const next = [
+					...spans,
+					{ start: cursor, end: cursor + change.value.length }
+				];
+				cursor += change.value.length;
+				return next;
+			}
+			if (change.removed !== true) cursor += change.value.length;
+			return spans;
+		},
+		[]
+	);
+};
 
-/** Extract affected file paths from patch text (apply_patch / patch tools). */
-export function extractPatchPaths(patchText: string): ReadonlyArray<string> {
-	const paths: Array<string> = []
-	for (const line of patchText.split('\n')) {
-		const add = /^\*\*\* (?:Add|Update) File: (.+)$/.exec(line)
-		if (add?.[1] !== undefined) paths.push(add[1])
-		const move = /^\*\*\* Move to: (.+)$/.exec(line)
-		if (move?.[1] !== undefined) paths.push(move[1])
-	}
-	return [...new Set(paths)]
-}
+const PATCH_FILE_LINE = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/;
+const PATCH_MOVE_LINE = /^\*\*\* Move to: (.+)$/;
 
-/** Extract file paths a mutating tool will affect. */
-export function extractAffectedPaths(toolName: string, input: unknown): ReadonlyArray<string> {
-	const props = input !== null && typeof input === 'object' ? input : {}
-	const get = (key: string) => Reflect.get(props, key)
+/** Affected paths declared inside apply_patch / patch text. */
+export const extractPatchPaths = (patchText: string): ReadonlyArray<string> => [
+	...new Set(
+		patchText.split('\n').flatMap((line) => {
+			const file =
+				PATCH_FILE_LINE.exec(line)?.[1] ?? PATCH_MOVE_LINE.exec(line)?.[1];
+			return file === undefined ? [] : [file.trim()];
+		})
+	)
+];
+
+/** Extract the file paths a mutating tool will affect. */
+export const extractAffectedPaths = (
+	toolName: string,
+	input: unknown
+): ReadonlyArray<string> => {
+	const props = input !== null && typeof input === 'object' ? input : {};
+	const get = (key: string) => Reflect.get(props, key);
 
 	if (toolName === 'write' || toolName === 'edit' || toolName === 'multiedit') {
-		const p = get('path') ?? get('filePath') ?? get('file')
-		return typeof p === 'string' ? [p] : []
+		const single = get('path') ?? get('filePath') ?? get('file');
+		return typeof single === 'string' ? [single] : [];
 	}
 	if (toolName === 'apply_patch' || toolName === 'patch') {
-		const text = get('patchText') ?? get('patch')
-		return typeof text === 'string' ? extractPatchPaths(text) : []
+		const text = get('patchText') ?? get('patch');
+		return typeof text === 'string' ? extractPatchPaths(text) : [];
 	}
-	return []
-}
+	return [];
+};
 
-/** Read a file's content without throwing; returns undefined on failure. */
-export async function readFileOrUndefined(path: string): Promise<string | undefined> {
-	try {
-		const { readFile } = await import('node:fs/promises')
-		return await readFile(path, 'utf8')
-	} catch {
-		return undefined
-	}
-}
+/**
+ * Containment-checked resolution: host paths become absolute paths inside
+ * `root`; anything escaping the project root is returned separately so callers
+ * can enforce fail-closed policy instead of reading arbitrary files.
+ */
+export const resolveAffected = (
+	root: string,
+	paths: ReadonlyArray<string>
+): {
+	readonly snapshots: ReadonlyArray<FileSnapshot>;
+	readonly escaped: ReadonlyArray<string>;
+} => {
+	const { contained, escaped } = partitionWithinRoot(root, paths);
+	return {
+		snapshots: contained.map((absolutePath, index) => ({
+			absolutePath,
+			filePath: paths[index] ?? absolutePath
+		})),
+		escaped
+	};
+};

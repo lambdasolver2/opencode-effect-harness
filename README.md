@@ -17,11 +17,14 @@ src/                   plugin composition root + OpenCode adapter
 src/companion/         headless CLI for session collection
 ```
 
-## Install
+## Install (source)
 
-```sh
-opencode2 plugin add opencode-effect-harness
-# or local path in opencode.jsonc:
+Packaging/publishing is still pending (audit AUDIT-043): the repo is a private
+workspace and cannot yet be installed as a published artifact. Install from a
+local clone:
+
+```jsonc
+// opencode.jsonc
 { "plugins": ["./src/index.ts"] }
 ```
 
@@ -31,7 +34,7 @@ opencode2 plugin add opencode-effect-harness
 |---|---|
 | `effect_harness_verify` | Deterministic checks + pattern findings + skill evidence |
 | `effect_harness_critic` | Independent read-only reasoning audit |
-| `effect_harness_compound` | Blueprint benchmark execution |
+| `effect_harness_compound` | Planned — returns an explicit not-wired error (REM-4) |
 | `harness_skill_stats` | Show loaded effect-* skills for this session |
 | `harness_toggle` | Toggle harness mode per-project |
 
@@ -39,9 +42,13 @@ opencode2 plugin add opencode-effect-harness
 
 | Hook | Behaviour |
 |---|---|
-| `execute.before` | Skill gate blocks unprepared Effect writes; read tracking |
-| `execute.after` | Credits skill reads; records change ledger for auto-verify |
+| `execute.before` | Skill gate blocks unprepared Effect writes; read tracking; pre-write snapshots with project-root containment |
+| `execute.after` | Credits skill reads; diff-based changed spans -> kernel pattern feedback appended INLINE to the tool result; change ledger for auto-verify |
 | `session.hook('context')` | Injects policy header; restricts internal worker tools |
+
+Known limitations: `bash`/`shell` mutations are not gated pre-write (detection
+is post-write only), and `write`/`edit` are fully gated while `patch`-style
+tools rely on post-write feedback plus ledger recording.
 
 ## Development
 

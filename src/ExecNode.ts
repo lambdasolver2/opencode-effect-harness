@@ -18,6 +18,8 @@ interface SpawnOutcome {
 	readonly signal: NodeJS.Signals | null;
 	readonly stdout: string;
 	readonly stderr: string;
+	readonly timedOut: boolean;
+	readonly truncated: boolean;
 }
 
 const spawnOnce = (
@@ -41,6 +43,7 @@ const spawnOnce = (
 					let outBytes = 0;
 					let errBytes = 0;
 					let truncated = false;
+					let didTimeOut = false;
 
 					const dec = new TextDecoder();
 					child.stdout!.on('data', (chunk: Buffer) => {
@@ -55,13 +58,14 @@ const spawnOnce = (
 					});
 
 					const timer = setTimeout(() => {
+						didTimeOut = true;
 						truncated = true;
 						child.kill('SIGKILL');
 					}, Math.max(1, spec.timeoutMs));
 
 					const finish = (code: number | null, signal: NodeJS.Signals | null) => {
 						clearTimeout(timer);
-						resolve({ code, signal, stdout: out, stderr: err });
+						resolve({ code, signal, stdout: out, stderr: err, timedOut: didTimeOut, truncated });
 					};
 					;(
 						child as unknown as {
@@ -123,10 +127,8 @@ export namespace ExecNode {
 					...(outcome.code !== null ? { exitCode: outcome.code } : {}),
 					stdout: outcome.stdout,
 					stderr: outcome.stderr,
-					timedOut: false,
-					truncated:
-						outcome.stdout.length >= spec.maxOutputBytes ||
-						outcome.stderr.length >= spec.maxOutputBytes
+					timedOut: outcome.timedOut,
+					truncated: outcome.truncated
 				});
 			})
 	});

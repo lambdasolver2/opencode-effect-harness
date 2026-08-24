@@ -88,6 +88,8 @@ export interface OverallInput {
 }
 
 export const overall = (input: OverallInput): 'passed' | 'failed' | 'error' => {
+	// An EMPTY run verified nothing and must never be reported green.
+	if (input.checks.length === 0) return 'error';
 	if (input.checks.some((c) => c.verdict === 'error')) return 'error';
 	if (input.checks.some((c) => c.verdict === 'failed')) return 'failed';
 	if (input.skillEvidence.status === 'insufficient') return 'failed';

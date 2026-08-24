@@ -16,6 +16,7 @@ const MUTATION_TOOLS: ReadonlyArray<string> = [
 	'write',
 	'edit',
 	'multiedit',
+	'apply_patch',
 	'patch',
 	'bash',
 	'shell',

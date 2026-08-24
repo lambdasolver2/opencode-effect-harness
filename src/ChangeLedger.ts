@@ -16,6 +16,11 @@ export interface ChangeLedgerInterface {
 		readonly projectKey: string;
 		readonly sessionID: string;
 	}): Effect.Effect<ReadonlyArray<string>>;
+	/** Read WITHOUT clearing so failed verification retains the change set. */
+	peek(input: {
+		readonly projectKey: string;
+		readonly sessionID: string;
+	}): Effect.Effect<ReadonlyArray<string>>;
 	size(input: { readonly projectKey: string }): Effect.Effect<number>;
 }
 
@@ -50,6 +55,11 @@ export namespace ChangeLedger {
 					});
 					return [...(current ?? [])].sort();
 				}),
+			peek: ({ projectKey, sessionID }) =>
+				Effect.map(
+					Ref.get(state),
+					(map) => [...(map.get(composite(projectKey, sessionID)) ?? [])].sort()
+				),
 			size: ({ projectKey }) =>
 				Effect.map(Ref.get(state), (map) =>
 					[...map.entries()]

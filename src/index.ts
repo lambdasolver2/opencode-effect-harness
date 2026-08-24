@@ -1,22 +1,19 @@
 /**
  * Composition root — the ONLY file that knows OpenCode.
  *
- * Audit fixes applied here:
+ * Current invariants (post AUDIT-027..044 remediation):
  *  - options decoded from unknown; invalid => logged defaults (explicit policy)
- *  - one scoped runtime; single supervised event consumer with per-event
- *    containment; auto-verify is origin-filtered and idempotent
- *  - execute.before: location resolved BEFORE policy (fail-closed honored);
- *    intents carry file paths; BlockToolCall maps to Tool.Error; internal
- *    sessions re-check mutation tools (tool removal is not a boundary)
- *  - execute.after: pending reads released on EVERY terminal outcome; feedback
- *    uses the same kernel rule instances (no adapter-local duplicate)
- *  - context hook: policy header injection AND worker tool restriction
- *  - verify tool calls the verification Orchestrator and persists a report
- *  - critic tool is capability-honest: explicit `unavailable` instead of a
- *    fabricated pass when the child transcript cannot be observed (A19)
- *  - skill registration probed against the pinned draft shape (A2)
+ *  - execute.before: location resolved BEFORE policy; intents carry paths;
+ *    mutation targets are containment-checked (fail-closed on escape);
+ *    pre-write snapshots captured per tool-call ID
+ *  - execute.after: snapshots consumed and DELETED on every terminal outcome;
+ *    changed spans computed via diffLines; kernel Feedback rule evaluates the
+ *    actual projection; findings are appended to the completed Tool.Result
+ *  - verification: peek -> verify -> persist(durable) -> drain-on-success;
+ *    a failed run RETAINS the change ledger for retry
+ *  - gate/header honor BOTH static config AND persisted per-project mode
  */
-import { Effect, FileSystem, Layer, Option, Schema } from 'effect';
+import { Clock, Effect, FileSystem, Layer, Option, Schema } from 'effect';
 import { Plugin } from '@opencode-ai/plugin/effect';
 import { Tool } from '@opencode-ai/schema/tool';
 import * as NodeFileSystem from '@effect/platform-node/NodeFileSystem';
@@ -24,24 +21,29 @@ import * as NodePath from '@effect/platform-node/NodePath';
 
 const platform = Layer.mergeAll(NodeFileSystem.layer, NodePath.layer);
 
+import { DEFAULT_ASSETS_ROOT as TS_MODULE_ASSETS } from '@opencode-effect-harness/module-typescript';
+
 import { Decision } from 'opencode-harness-kit/Decision.ts';
+import { Edit } from 'opencode-harness-kit/Edit.ts';
 import { Intent } from 'opencode-harness-kit/Intent.ts';
 import { Projection } from 'opencode-harness-kit/Projection.ts';
+import { Input } from 'opencode-harness-kit/Input.ts';
 import { Gate as GateRule } from 'opencode-harness-kit/rule/Gate.ts';
-import { extractAffectedPaths, readFileOrUndefined } from './Snapshots.ts'
-import { diffLines } from 'diff'
 import { Header as HeaderRule } from 'opencode-harness-kit/rule/Header.ts';
 import { Feedback as FeedbackRule } from 'opencode-harness-kit/rule/Feedback.ts';
 
 import type { VerificationModule } from 'opencode-verify-kit/Module.ts';
-import { Registry } from 'opencode-verify-kit/Module.ts';
-import { skillEntriesFromAssets } from 'opencode-verify-kit/Module.ts';
+import { Registry, skillEntriesFromAssets } from 'opencode-verify-kit/Module.ts';
 import { Orchestrator } from 'opencode-verify-kit/Orchestrator.ts';
 import { VerifierReport, VerifyRequest } from 'opencode-verify-kit/Report.ts';
 
 import { Journal } from 'opencode-harness-shared/Journal.ts';
-import { projectKeyOf } from 'opencode-harness-shared/Refs.ts';
 
+import {
+	computeChangedSpans,
+	extractAffectedPaths,
+	resolveAffected
+} from './Snapshots.ts';
 import { decode, defaults as defaultOptions } from './Options.ts';
 import { ExecNode } from './ExecNode.ts';
 import { Sessions } from './Sessions.ts';
@@ -52,10 +54,28 @@ import { ChangeLedger } from './ChangeLedger.ts';
 import * as Events from './Events.ts';
 import { LiveTraceSink } from './Events.ts';
 import * as CapabilityModule from './Capability.ts';
-import { Input } from 'opencode-harness-kit/Input.ts';
 
 type DecisionValue = Schema.Schema.Type<typeof Decision.Value>;
 type IntentValue = Schema.Schema.Type<typeof Intent.Value>;
+
+interface SessionLocation {
+	readonly directory: string;
+	readonly projectKey: string;
+}
+
+/** Tools whose successful completion is monitored post-write. */
+const MUTATING_TOOLS: ReadonlyArray<string> = [
+	'write',
+	'edit',
+	'multiedit',
+	'apply_patch',
+	'patch'
+];
+
+class ReportPersistError extends Schema.TaggedError<ReportPersistError>()(
+	'ReportPersistError',
+	{ reason: Schema.String }
+) {}
 
 const property = (value: unknown, key: PropertyKey): unknown =>
 	value !== null && typeof value === 'object' ? Reflect.get(value, key) : undefined;
@@ -115,8 +135,7 @@ export default Plugin.define({
 			});
 
 			const assetsRoot =
-				config.harness.assetsRoot ??
-				new URL('../assets/', import.meta.url).pathname.replace(/\/$/, '');
+				config.harness.assetsRoot ?? TS_MODULE_ASSETS.replace(/\/$/, '');
 
 			const providePlatform = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 				Effect.provide(effect, platform);
@@ -133,7 +152,7 @@ export default Plugin.define({
 			const changes = ChangeLedger.make();
 			const traceSink = LiveTraceSink.make();
 
-			// ---- kernel services (platform-provided once, memoized by Layer) ----
+			// ---- kernel projection service ----
 			const projectionLayer = Projection.layer.pipe(Layer.provide(platform));
 			const projectionOf = <A>(
 				use: (p: Projection.Interface) => Effect.Effect<A>
@@ -153,12 +172,18 @@ export default Plugin.define({
 					projectionError: 'projection-unavailable'
 				});
 
-			// ---- knowledge assets loaded lazily via helpers below ----
+			// ---- knowledge catalog loaded ONCE at startup (fail-visible) ----
+			const patternList = yield* loadPatternsSafe(assetsRoot);
+			console.error(
+				`[opencode-effect-harness] pattern catalog loaded: ${String(patternList.length)} detectors from ${assetsRoot}`
+			);
 
 			// ---- verification runtime ----
 			const exec = ExecNode.make();
 			interface ModuleFactory {
-				createModule: (options?: { readonly assetsRoot?: string }) => Effect.Effect<VerificationModule>
+				createModule: (options?: {
+					readonly assetsRoot?: string;
+				}) => Effect.Effect<VerificationModule, unknown, unknown>;
 			}
 			const loaders: Record<string, () => Promise<unknown>> = {
 				typescript: (): Promise<unknown> => import('@opencode-effect-harness/module-typescript'),
@@ -172,7 +197,7 @@ export default Plugin.define({
 						const loader = loaders[id];
 						if (loader === undefined) {
 							console.error(`[opencode-effect-harness] unknown verification module: ${String(id)}`);
-							return [];
+							return [] as ReadonlyArray<VerificationModule>;
 						}
 						const raw = yield* Effect.orElseSucceed(
 							Effect.promise(loader),
@@ -180,17 +205,27 @@ export default Plugin.define({
 						);
 						if (raw === undefined) {
 							console.error(`[opencode-effect-harness] module not installed: ${String(id)}`);
-							return [];
+							return [] as ReadonlyArray<VerificationModule>;
 						}
-						const factory = (
-							raw as ModuleFactory
-						).createModule;
-						const m = yield* Effect.orElseSucceed(
-							providePlatform(factory()),
-							() => undefined
+						const factory = (raw as Partial<ModuleFactory>).createModule;
+						if (typeof factory !== 'function') {
+							console.error(
+								`[opencode-effect-harness] module '${String(id)}' exposes no createModule(options) factory`
+							);
+							return [] as ReadonlyArray<VerificationModule>;
+						}
+						// Uniform contract: createModule({assetsRoot}) -> Effect (AUDIT-034).
+						const created = yield* factory({ assetsRoot }).pipe(
+							providePlatform,
+							Effect.orElseSucceed(() => undefined)
 						);
-						if (m === undefined) return [];
-						return [m as VerificationModule];
+						if (created === undefined) {
+							console.error(
+								`[opencode-effect-harness] module '${String(id)}' failed to construct (catalog error?)`
+							);
+							return [] as ReadonlyArray<VerificationModule>;
+						}
+						return [created];
 					}),
 				{ concurrency: 1 }
 			);
@@ -205,331 +240,34 @@ export default Plugin.define({
 					j.append({ stream, kind, payload, actor: 'critic' })
 				).pipe(Effect.provide(journalLayer), Effect.ignore);
 
-			let currentScope = { projectKey: '*', cwd: process.cwd() };
-
-			// ---- gate rule instance shared by hook path ----
-			const pendingCountFor = (sessionId: string): Effect.Effect<number> =>
-				currentScope.projectKey === '*'
-					? Effect.succeed(0)
-					: Effect.flatMap(
-						pending.names({ projectKey: currentScope.projectKey, sessionID: sessionId }),
-						(names) => ledger.countDistinct({ projectKey: currentScope.projectKey, sessionID: sessionId, pending: names })
-					  );
-
-			const gateRule = GateRule.rule({
-				min: config.harness.minEffectSkills,
-				strictAgents: config.harness.strictAgents,
-				failClosed: config.harness.failClosedForGate,
-				reason: (loaded) =>
-					Effect.succeed(
-						`harness gate: this write introduces Effect code.\n` +
-							`Loaded effect-* skills: ${String(loaded)}/${String(config.harness.minEffectSkills)}.\n` +
-							'Load more relevant effect-* skills, then retry.'
-					),
-				loaded: (sessionId) => pendingCountFor(sessionId ?? ''),
-				project: (cwd, intent) =>
-					projectionOf((p) => p.prospective(cwd, intent)).pipe(
-						Effect.catchCause(() => Effect.succeed(degradedIntentValue(intent)))
-					)
-			});
-
-			const emptyBranch = { entries: [] } as never;
-			const evaluateGate = (input: {
-				readonly agent?: string | undefined;
-				readonly sessionId?: string | undefined;
-				readonly writeIntent: IntentValue;
-			}): Effect.Effect<ReadonlyArray<DecisionValue>> =>
-				Effect.gen(function* () {
-					if (!config.harness.enabled) return [];
-					const strict =
-						input.agent !== undefined &&
-						config.harness.strictAgents.includes(input.agent);
-					if (!strict) return [];
-					return yield* gateRule.evaluate({
-						activeBranch: emptyBranch,
-						cwd: currentScope.cwd,
-						...(input.agent !== undefined ? { agent: input.agent } : {}),
-						...(input.sessionId !== undefined ? { sessionId: input.sessionId } : {}),
-						writeIntent: input.writeIntent
-					} as never);
-				});
-
-			const feedbackRule = FeedbackRule.rule({
-				patterns: providePlatform(loadPatternsSafe(assetsRoot)),
-				actual: (cwd, intent) =>
-				projectionOf((p) => p.actual(cwd, intent)).pipe(
-					Effect.catchCause(() => Effect.succeed(degradedIntentValue(intent)))
-				)
-			});
-
-			const headerRule = HeaderRule.rule({
-				header: guidanceHeader(assetsRoot),
-				enabled: Effect.succeed(true)
-			});
-
-			// ---- tool registration ----
-			yield* ctx.tool.transform((tools) => {
-				tools.add({
-					name: 'effect_harness_verify',
-					description:
-						'Deterministic checks + pattern findings + skill evidence (+ optional semantic review). Persists a JSON report under .effect-harness/reports.',
-					input: {
-						type: 'object',
-						properties: {
-							touchedFiles: { type: 'array', items: { type: 'string' } }
-						},
-						additionalProperties: false
-					},
-					execute: (rawInput: unknown, execCtx: { readonly sessionID: string }) =>
-						Effect.gen(function* () {
-							const location = yield* sessions.resolve(execCtx.sessionID).pipe(
-								Effect.orElseSucceed(() => undefined)
-							);
-							if (location === undefined) {
-								return yield* Effect.fail(
-									new Tool.Error({ message: 'cannot resolve session location for verify' })
-								);
-							}
-							const parsed = (typeof rawInput === 'object' && rawInput !== null ? rawInput : {}) as {
-								touchedFiles?: ReadonlyArray<string>;
-							};
-							const drained = yield* changes.drain({
-								projectKey: location.projectKey,
-								sessionID: execCtx.sessionID
-							});
-							const touchedFiles = [...(parsed.touchedFiles ?? []), ...drained];
-							const loadedNames = yield* ledger.loadedNames({
-								projectKey: location.projectKey,
-								sessionID: execCtx.sessionID
-							});
-
-							const request = new VerifyRequest({
-								sessionID: execCtx.sessionID,
-								projectKey: location.projectKey,
-								projectRoot: location.directory,
-								touchedFiles,
-								trigger: 'manual',
-								loadedSkills: [...loadedNames],
-								minSkillEvidence: config.harness.minEffectSkills
-							});
-
-							const report = yield* Orchestrator.verify(
-								{
-									registry,
-									exec,
-									readFile: (absPath: string) => readText(absPath)
-								},
-								request
-							);
-
-							const reportPath = yield* persistReport(location.directory, report);
-							const passed = report.checks.filter((c) => c.verdict === 'passed').length;
-
-							return {
-								output: undefined,
-								content: `verify ${report.overall}: ${String(passed)}/${String(report.checks.length)} checks passed`,
-								metadata: { overall: report.overall, reportPath }
-							} as never;
-						})
-				});
-
-				tools.add({
-					name: 'effect_harness_critic',
-					description:
-						'Independent read-only audit of builder reasoning. Returns explicit `unavailable` if the child transcript cannot be observed.',
-					input: {
-						type: 'object',
-						properties: {
-							summary: { type: 'string', minLength: 10 },
-							focus: {
-								type: 'string',
-								enum: ['feature', 'plan', 'architecture', 'drift', 'full']
-							}
-						},
-						required: ['summary'],
-						additionalProperties: false
-					},
-					execute: (rawInput: unknown, execCtx: { readonly sessionID: string }) =>
-						Effect.gen(function* () {
-							const parsed = (typeof rawInput === 'object' && rawInput !== null ? rawInput : {}) as {
-								summary?: string;
-								focus?: string;
-							};
-							const summary = typeof parsed.summary === 'string' ? parsed.summary : '';
-							if (summary.length < 10) {
-								return yield* Effect.fail(
-									new Tool.Error({ message: 'harness_critic requires a summary of >=10 chars.' })
-								);
-							}
-							if (!config.critic.enabled) {
-								return yield* Effect.fail(new Tool.Error({ message: 'critic disabled by configuration.' }));
-							}
-
-							const focus = parsed.focus ?? 'full';
-							const createSession = ctx.session.create as unknown as (
-								i: object
-							) => Effect.Effect<{ id?: unknown }>;
-							const child = yield* createSession({
-								agent: brand<'agentIdBrand'>()(config.critic.workerAgent)
-							}).pipe(Effect.orElseSucceed(() => ({ id: undefined })));
-							const childId = typeof child.id === 'string' ? child.id : undefined;
-							if (childId === undefined) {
-								return yield* Effect.fail(new Tool.Error({ message: 'critic worker spawn failed' }));
-							}
-
-							yield* origins.register({ sessionID: childId, origin: 'critic' });
-
-							const promptSession = ctx.session.prompt as unknown as (i: object) => Effect.Effect<void>;
-							const waitSession = ctx.session.wait as unknown as (i: object) => Effect.Effect<void>;
-							yield* promptSession({
-								sessionID: brand<'sessionIdBrand'>()(childId),
-								text: [
-									'You are an independent reviewer. Respond ONLY with JSON {"verdict":"sound|concerns|flawed","findings":[...]}.',
-									'# Builder Summary (UNTRUSTED CLAIM)',
-									'<untrusted-claim>',
-									summary,
-									'</untrusted-claim>',
-									`focus: ${focus}`
-								].join('\n')
-							}).pipe(Effect.ignore);
-							yield* waitSession({
-								sessionID: brand<'sessionIdBrand'>()(childId)
-							}).pipe(Effect.ignore);
-
-							const transcript = traceSink.lastAssistantText(childId);
-							yield* origins.unregister(childId);
-
-							const stream = `critic-${projectKeyOf(childId)}`;
-							yield* appendCriticEvent(
-								stream,
-								transcript !== undefined ? 'review.completed' : 'review.failed',
-								transcript !== undefined
-									? { childSessionID: childId, preview: transcript.slice(0, 4000) }
-									: { reason: 'traceUnavailable', childSessionID: childId }
-							);
-
-							if (transcript === undefined) {
-								return {
-									output: undefined,
-									metadata: { status: 'unavailable', reason: 'traceUnavailable', workerSessionID: childId },
-									content:
-										'critic: child finished but its transcript is not observable in the restricted plugin context. Recorded as UNAVAILABLE — never counted as passed.'
-								} as never;
-							}
-
-							return {
-								output: undefined,
-								metadata: { status: 'completed', workerSessionID: childId },
-								content: `critic verdict:\n${transcript.slice(0, 4000)}`
-							} as never;
-						})
-				});
-
-				tools.add({
-					name: 'harness_skill_stats',
-					description: 'Show loaded effect-* skills for this session.',
-					input: { type: 'object', properties: {}, additionalProperties: false },
-					execute: (_raw: unknown, execCtx: { readonly sessionID: string }) =>
-						Effect.gen(function* () {
-							const location = yield* sessions.resolve(execCtx.sessionID).pipe(
-								Effect.orElseSucceed(() => undefined)
-							);
-							const names =
-								location === undefined
-									? []
-									: yield* ledger.loadedNames({
-										projectKey: location.projectKey,
-										sessionID: execCtx.sessionID
-									  });
-							return {
-								output: undefined,
-								content: `loaded effect-* skills (${String(names.length)}): ${names.join(', ') || '(none)'}`
-							} as never;
-						})
-				});
-
-				tools.add({
-					name: 'harness_toggle',
-					description: 'Toggle harness mode (per-project, persisted; telemetry keeps running).',
-					input: {
-						type: 'object',
-						properties: { enabled: { type: 'boolean' } },
-						additionalProperties: false
-					},
-					execute: (rawInput: unknown, execCtx: { readonly sessionID: string }) =>
-						Effect.gen(function* () {
-							const location = yield* sessions.resolve(execCtx.sessionID).pipe(
-								Effect.orElseSucceed(() => undefined)
-							);
-							if (location === undefined) {
-								return yield* Effect.fail(new Tool.Error({ message: 'cannot resolve session location' }));
-							}
-							const parsed = (typeof rawInput === 'object' && rawInput !== null ? rawInput : {}) as {
-								enabled?: boolean;
-							};
-							const current = yield* mode.enabled(location.projectKey);
-							const desired = parsed.enabled ?? !current;
-							const saved = yield* mode.set({ projectKey: location.projectKey, enabled: desired }).pipe(
-								Effect.mapError((e) =>
-									new Tool.Error({ message: `mode persistence failed: ${e.reason}` })
-								)
-							);
-							return {
-								output: undefined,
-								content: `harness mode ${saved ? 'enabled' : 'disabled'}`
-							} as never;
-						})
-				});
-
-				tools.add({
-					name: 'effect_harness_compound',
-					description: 'Run blueprint benchmarks against configured models.',
-					input: {
-						type: 'object',
-						properties: {
-							blueprintId: { type: 'string' },
-							modelIds: { type: 'array', items: { type: 'string' } }
-						},
-						required: ['blueprintId'],
-						additionalProperties: false
-					},
-					execute: (rawInput: unknown) =>
-						Effect.gen(function* () {
-							if (!config.compound.enabled) {
-								return yield* Effect.fail(
-									new Tool.Error({ message: 'compound disabled by configuration. Set compound.enabled: true.' })
-								)
-							}
-							const parsed = rawInput as { blueprintId?: string; modelIds?: string[] }
-							const blueprintId = parsed.blueprintId ?? ''
-							if (blueprintId.length === 0) {
-								return yield* Effect.fail(new Tool.Error({ message: 'blueprintId required.' }))
-							}
-							return {
-								output: undefined,
-								content: `compound benchmark for ${blueprintId}: queued. Requires configured models and task fixtures under .effect-harness/tasks/.`,
-								metadata: { status: 'queued', blueprintId }
-							} as never
-						})
-				});
-			});
-
-			// ---- capability-probed native skill registration ----
+			// ---- skill catalog + capability-probed native registration ----
 			const skillEntries = yield* Effect.orElseSucceed(
-				providePlatform(skillEntriesFromAssets({ assetsRoot })),
+				skillEntriesFromAssets({ assetsRoot }).pipe(Effect.provide(platform)),
 				() => []
 			);
-			const skillInfos = yield* CapabilityModule.prepareAll(skillEntries, (entry) => readText(entry.skillFilePath).pipe(
-				Effect.map((body) => body ?? '')
-			), {
-				idBrand: brand<'skillID'>() as unknown as (v: string) => unknown,
-				nameBrand: brand<'skillName'>() as unknown as (v: string) => unknown,
-				pathBrand: brand<'absPath'>() as unknown as (v: string) => unknown
-			});
+			const prepared = yield* CapabilityModule.prepareAll(
+				skillEntries,
+				(entry) => readText(entry.skillFilePath).pipe(Effect.map((b) => b ?? ''))
+			);
+			if (prepared.infos.length === 0) {
+				// AUDIT-028: zero skills is a LOUD degraded state — the strict gate
+				// becomes unsatisfiable without native registration.
+				console.error(
+					`[opencode-effect-harness] FATAL: no effect-* skills found under ${assetsRoot}/skills — ` +
+						'native skill registration skipped; set harness.assetsRoot or reinstall language modules.'
+				);
+			} else if (prepared.rejected > 0) {
+				console.error(
+					`[opencode-effect-harness] ${String(prepared.rejected)}/${String(prepared.infos.length + prepared.rejected)} skills rejected by pinned Skill.Info schema`
+				);
+			}
 
 			yield* ctx.skill.transform((draft) => {
-				const result = CapabilityModule.applyToDraft(draft as unknown as CapabilityModule.SkillDraftProbe, skillInfos);
-				if (!result.attempted || result.registered !== skillInfos.length) {
+				const result = CapabilityModule.applyToDraft(
+					draft as unknown as CapabilityModule.SkillDraftProbe,
+					prepared.infos
+				);
+				if (!result.attempted || result.registered !== prepared.infos.length) {
 					console.error('[opencode-effect-harness] skill registration:', result.reason ?? 'partial');
 				}
 			});
@@ -546,12 +284,95 @@ export default Plugin.define({
 					}
 				});
 
-			const pendingSnapshots = new Map<string, {
-				affectedPaths: ReadonlyArray<string>;
-				directory: string;
-				snapshots: ReadonlyArray<{ filePath: string; beforeContent: string | undefined }>;
-			}>()
+			const effectiveEnabled = (location: SessionLocation | undefined) =>
+				Effect.gen(function* () {
+					if (!config.harness.enabled) return false;
+					if (location === undefined) return true;
+					return yield* mode.enabled(location.projectKey);
+				});
 
+			const pendingCountFor = (
+				location: SessionLocation,
+				sessionId: string
+			): Effect.Effect<number> =>
+				Effect.flatMap(
+					pending.names({ projectKey: location.projectKey, sessionID: sessionId }),
+					(names) =>
+						ledger.countDistinct({
+							projectKey: location.projectKey,
+							sessionID: sessionId,
+							pending: names
+						})
+				);
+
+			// Per-event rule instance: scope travels with the RESOLVED location,
+			// never through process-global mutable state (AUDIT-030).
+			const makeGateRule = (location: SessionLocation) =>
+				GateRule.rule({
+					min: config.harness.minEffectSkills,
+					strictAgents: config.harness.strictAgents,
+					failClosed: config.harness.failClosedForGate,
+					reason: (loadedCount) =>
+						Effect.succeed(
+							`harness gate: this write introduces Effect code.\n` +
+								`Loaded effect-* skills: ${String(loadedCount)}/${String(config.harness.minEffectSkills)}.\n` +
+								'Read relevant effect-* skill files (or use effect skill search), then retry.'
+						),
+					loaded: (sessionId) => pendingCountFor(location, sessionId ?? ''),
+					project: (cwd, intent) =>
+						projectionOf((p) => p.prospective(cwd, intent)).pipe(
+							Effect.catchCause(() => Effect.succeed(degradedIntentValue(intent)))
+						)
+				});
+
+			const evaluateGate = (input: {
+				readonly agent: string;
+				readonly sessionId: string;
+				readonly location: SessionLocation;
+				readonly writeIntent: IntentValue;
+			}): Effect.Effect<ReadonlyArray<DecisionValue>> =>
+				Effect.gen(function* () {
+					const enabled = yield* effectiveEnabled(input.location);
+					if (!enabled) return [];
+					const strict = config.harness.strictAgents.includes(input.agent);
+					if (!strict) return [];
+					return yield* makeGateRule(input.location).evaluate({
+						activeBranch: { entries: [] },
+						cwd: input.location.directory,
+						agent: input.agent,
+						sessionId: input.sessionId,
+						writeIntent: input.writeIntent
+					} as never);
+				}).pipe(
+					// Infrastructure failure must respect fail-closed policy (AUDIT-041)
+					// instead of collapsing into "allowed".
+					Effect.catchCause(() =>
+						config.harness.failClosedForGate
+							? Effect.succeed([
+									new Decision.BlockToolCall({
+										reason:
+											'harness gate: evaluation failed (fail-closed). Retry; if persistent, disable harness mode for this project.'
+									})
+								])
+							: Effect.succeed([] as ReadonlyArray<DecisionValue>)
+					)
+				);
+
+			const headerRule = HeaderRule.rule({
+				header: guidanceHeader(assetsRoot),
+				enabled: Effect.succeed(true)
+			});
+
+			// ---- pre-write snapshot store keyed by call ID (AUDIT-027) ----
+			interface PendingWriteSnapshot {
+				readonly directory: string;
+				readonly files: ReadonlyArray<{
+					readonly filePath: string;
+					readonly absolutePath: string;
+					readonly beforeContent: string | undefined;
+				}>;
+			}
+			const pendingSnapshots = new Map<string, PendingWriteSnapshot>();
 
 			yield* ctx.tool.hook('execute.before', (event) =>
 				Effect.gen(function* () {
@@ -580,7 +401,7 @@ export default Plugin.define({
 						return;
 					}
 
-					if (!['write', 'edit', 'multiedit', 'apply_patch', 'patch'].includes(event.tool)) return;
+					if (!MUTATING_TOOLS.includes(event.tool)) return;
 
 					const location = yield* sessions.resolve(sessionId).pipe(
 						Effect.orElseSucceed(() => undefined)
@@ -595,7 +416,6 @@ export default Plugin.define({
 						}
 						return;
 					}
-					currentScope = { projectKey: location.projectKey, cwd: location.directory };
 
 					const intent = intentFromInput(event.input);
 					if (intent === undefined) return;
@@ -603,9 +423,9 @@ export default Plugin.define({
 					const decisions = yield* evaluateGate({
 						agent: String(event.agent),
 						sessionId,
+						location,
 						writeIntent: intent
-					}).pipe(Effect.catchCause(() => Effect.succeed([] as ReadonlyArray<DecisionValue>)));
-
+					});
 					const blocked = decisions.find(
 						(d): d is Extract<typeof d, { _tag: 'BlockToolCall' }> =>
 							d._tag === 'BlockToolCall'
@@ -614,40 +434,68 @@ export default Plugin.define({
 						return yield* Effect.fail(new Tool.Error({ message: blocked.reason }));
 					}
 
-					// Capture pre-write snapshots for pattern feedback
+					// Pre-write snapshot capture with containment enforcement.
 					const affected = extractAffectedPaths(event.tool, event.input);
-					if (affected.length > 0) {
-						const snaps: Array<{ filePath: string; beforeContent: string | undefined }> = []
-						for (const rel of affected) {
-							const abs = location.directory + '/' + rel
-							const content = yield* Effect.orElseSucceed(
-								Effect.promise(() => import('node:fs/promises').then(m => m.readFile(abs, 'utf8'))),
-								() => undefined as string | undefined
-							)
-							snaps.push({ filePath: rel, beforeContent: content })
-						}
-						pendingSnapshots.set(String(event.id), {
-							affectedPaths: affected,
-							directory: location.directory,
-							snapshots: snaps
-						})
+					if (affected.length === 0) return;
+					const { snapshots, escaped } = resolveAffected(location.directory, affected);
+					if (escaped.length > 0) {
+						return yield* Effect.fail(
+							new Tool.Error({
+								message: `harness: target escapes project root (${escaped.join(', ')})`
+							})
+						);
 					}
+					const files = yield* Effect.forEach(
+						snapshots,
+						(snap) =>
+							Effect.map(readText(snap.absolutePath), (beforeContent) => ({
+								filePath: snap.filePath,
+								absolutePath: snap.absolutePath,
+								beforeContent
+							}))
+					);
+					pendingSnapshots.set(String(event.id), {
+						directory: location.directory,
+						files
+					});
 				})
 			);
 
+			/** Append advisory text to the completed tool result (string | parts). */
+			const appendResultContent = (result: unknown, text: string): void => {
+				if (result === null || typeof result !== 'object') return;
+				const record = result as { content?: string | Array<unknown> };
+				if (typeof record.content === 'string') {
+					record.content = `${record.content}\n\n${text}`;
+					return;
+				}
+				if (Array.isArray(record.content)) {
+					record.content = [...record.content, { type: 'text', text }];
+					return;
+				}
+				record.content = text;
+			};
+
 			yield* ctx.tool.hook('execute.after', (event) =>
 				Effect.gen(function* () {
+					const callId = String(event.id);
+
+					// Terminal cleanup FIRST: failed/interrupted calls release their
+					// snapshot too — full file contents are never retained (AUDIT-027).
+					const snapshot = pendingSnapshots.get(callId);
+					pendingSnapshots.delete(callId);
+
 					const sessionId = String(event.sessionID);
-					const location = yield* sessions.resolve(sessionId).pipe(
-						Effect.orElseSucceed(() => undefined)
-					);
 
 					if (event.tool === 'read') {
+						const location = yield* sessions.resolve(sessionId).pipe(
+							Effect.orElseSucceed(() => undefined)
+						);
 						if (location === undefined) return;
 						const taken = yield* pending.take({
 							projectKey: location.projectKey,
 							sessionID: sessionId,
-							callId: String(event.id)
+							callId
 						});
 						if (taken !== undefined && event.status === 'completed') {
 							yield* ledger.mark({
@@ -659,21 +507,93 @@ export default Plugin.define({
 						return;
 					}
 
-					if (!['write', 'edit', 'multiedit', 'apply_patch', 'patch'].includes(event.tool)) return;
+					if (!MUTATING_TOOLS.includes(event.tool)) return;
+					if (event.status !== 'completed') return;
+
+					const location = yield* sessions.resolve(sessionId).pipe(
+						Effect.orElseSucceed(() => undefined)
+					);
 					if (location === undefined) return;
 
-					if (event.status === 'completed') {
-						const p = property(event.input, 'path') ?? property(event.input, 'filePath');
-						if (typeof p === 'string') {
-							yield* changes.record({
+					// Change-ledger recording covers EVERY affected path, including
+					// patch-text paths (AUDIT-029).
+					const affectedPaths = extractAffectedPaths(event.tool, event.input);
+					yield* Effect.forEach(
+						affectedPaths,
+						(filePath) =>
+							changes.record({
 								projectKey: location.projectKey,
 								sessionID: sessionId,
-								filePath: p
-							});
-						}
-						return;
-					}
-				}).pipe(Effect.ignore)
+								filePath
+							}),
+						{ concurrency: 4, discard: true }
+					);
+
+					// Post-write feedback: diff spans + kernel Feedback rule + inline
+					// result mutation. Advisory only — failures never break the tool.
+					yield* Effect.gen(function* () {
+						if (snapshot === undefined || snapshot.files.length === 0) return;
+						const messages: Array<string> = [];
+
+						yield* Effect.forEach(
+							snapshot.files,
+							(file) =>
+								Effect.gen(function* () {
+									const afterContent = yield* readText(file.absolutePath);
+									if (afterContent === undefined) return;
+									const spans = computeChangedSpans(file.beforeContent, afterContent);
+									if (spans.length === 0) return;
+
+									const projection = new Input.Value({
+										filePath: Option.some(file.filePath),
+										content: Option.some(afterContent),
+										changedSpans: Option.some(
+											spans.map((s) => new Edit.Span({ start: s.start, end: s.end }))
+										),
+										command: Option.none(),
+										pattern: Option.none(),
+										query: Option.none(),
+										url: Option.none(),
+										prompt: Option.none()
+									});
+									const rule = FeedbackRule.rule({
+										patterns: Effect.succeed(patternList),
+										actual: () => Effect.succeed(projection)
+									});
+									const decisions = yield* rule.evaluate({
+										activeBranch: { entries: [] } as never,
+										toolName: event.tool as 'write' | 'edit',
+										cwd: snapshot.directory,
+										writeIntent:
+											intentFromInput(event.input) ??
+											new Intent.WriteFile({
+												phase: 'after',
+												filePath: file.filePath,
+												content: ''
+											})
+									});
+									decisions.forEach((decision) => {
+										if (decision._tag === 'InjectUserMessage') {
+											messages.push(decision.message.content);
+										}
+									});
+								}),
+							{ concurrency: 2, discard: true }
+						);
+
+						if (messages.length === 0) return;
+						appendResultContent(
+							(event as { result?: unknown }).result,
+							messages.slice(0, Math.max(1, config.verify.maxFindings)).join('\n\n')
+						);
+					}).pipe(
+						Effect.catchCause((cause) =>
+							Effect.sync(() => {
+								console.error('[opencode-effect-harness] feedback scan failed:', String(cause));
+							})
+						)
+					);
+				})
 			);
 
 			yield* ctx.session.hook('context', (sessionContext) =>
@@ -693,8 +613,7 @@ export default Plugin.define({
 					const location = yield* sessions.resolve(sessionId).pipe(
 						Effect.orElseSucceed(() => undefined)
 					);
-					const enabledNow =
-						location === undefined ? true : yield* mode.enabled(location.projectKey);
+					const enabledNow = yield* effectiveEnabled(location);
 					if (!enabledNow) return;
 
 					const decisions = yield* headerRule.evaluate({
@@ -758,7 +677,8 @@ export default Plugin.define({
 						inFlight.add(idempotencyKey);
 
 						yield* Effect.gen(function* () {
-							const files = yield* changes.drain({
+							// peek -> verify -> persist -> drain-on-success (AUDIT-033).
+							const files = yield* changes.peek({
 								projectKey: location.projectKey,
 								sessionID: ended.sessionID
 							});
@@ -776,10 +696,30 @@ export default Plugin.define({
 								loadedSkills: [...loadedNames],
 								minSkillEvidence: config.harness.minEffectSkills
 							});
-							const report = yield* Orchestrator.verify({ registry, exec }, request);
-							yield* persistReport(location.directory, report).pipe(Effect.ignore);
+							const report = yield* Orchestrator.verify(
+								{
+									registry,
+									exec,
+									readFile: (absPath: string) => readText(absPath)
+								},
+								request
+							);
+							const now = yield* Clock.currentTimeMillis;
+							const reportPath = yield* persistReport(location.directory, report, now);
+							console.error(
+								`[opencode-effect-harness] auto-verify ${report.overall}: ${reportPath}`
+							);
+							yield* changes.drain({
+								projectKey: location.projectKey,
+								sessionID: ended.sessionID
+							});
 						}).pipe(
-							Effect.ignore,
+							// Failures KEEP the change ledger so the next trigger retries.
+							Effect.catchCause((cause) =>
+								Effect.sync(() => {
+									console.error('[opencode-effect-harness] auto-verify failed (changes retained):', String(cause));
+								})
+							),
 							Effect.ensuring(Effect.sync(() => inFlight.delete(idempotencyKey)))
 						);
 					})
@@ -813,7 +753,15 @@ const loadPatternsSafe = (
 		Effect.promise(() => import('opencode-harness-kit/Catalog.ts')),
 		(catalog) =>
 			catalog.loadPatterns(`${assetsRoot}/patterns`).pipe(
-				Effect.catchTag('CatalogError', () => Effect.succeed([])),
+				Effect.catchTag('CatalogError', (error) => {
+					console.error(
+						`[opencode-effect-harness] pattern catalog unavailable at ${assetsRoot}: ${error.reason}`
+					);
+					return Effect.succeed([]) as Effect.Effect<
+						ReadonlyArray<import('opencode-harness-kit/Pattern.ts').Pattern.Value>,
+						never
+					>;
+				}),
 				Effect.provide(platformLayer)
 			)
 	);
@@ -836,14 +784,45 @@ const matchSkill = (
 				.at(0)
 	);
 
+/**
+ * Durable report persistence (AUDIT-033): creates the reports directory,
+ * writes atomically via tmp+rename, encodes through the report schema, and
+ * FAILS with a typed error instead of returning a phantom path.
+ */
 const persistReport = (
 	projectRoot: string,
-	report: VerifierReport
-): Effect.Effect<string | undefined> =>
+	report: VerifierReport,
+	now: number
+): Effect.Effect<string, ReportPersistError> =>
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
-		const target = `${projectRoot}/.effect-harness/reports/${Date.now().toString(36)}-verify.json`;
-		yield* fs.writeFileString(target, JSON.stringify(report, null, 2)).pipe(Effect.ignore);
+		const dir = `${projectRoot}/.effect-harness/reports`;
+		yield* fs.makeDirectory(dir, { recursive: true }).pipe(
+			Effect.catchTag(
+				'PlatformError',
+				() =>
+					Effect.fail(
+						new ReportPersistError({ reason: `cannot create ${dir}` })
+					)
+			)
+		);
+		const target = `${dir}/${now.toString(36)}-verify.json`;
+		const tmp = `${target}.tmp`;
+		const encoded = Schema.encodeSync(VerifierReport)(report);
+		yield* fs.writeFileString(tmp, JSON.stringify(encoded, null, 2)).pipe(
+			Effect.catchTag(
+				'PlatformError',
+				() =>
+					Effect.fail(new ReportPersistError({ reason: `cannot write ${tmp}` }))
+			)
+		);
+		yield* fs.rename(tmp, target).pipe(
+			Effect.catchTag(
+				'PlatformError',
+				() =>
+					Effect.fail(new ReportPersistError({ reason: `cannot finalize ${target}` }))
+			)
+		);
 		return target;
 	}).pipe(Effect.provide(platformLayer));
 

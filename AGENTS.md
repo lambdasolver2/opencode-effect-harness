@@ -29,11 +29,16 @@ Key patterns to watch for when writing code:
 - **No node: imports** — use platform services (FileSystem, Path, etc.)
 - **No as any / as never** — validate at boundaries with Schema
 
-Run the self-pattern check to verify your code passes all 47 detectors:
+Catalog integrity check (loads every shipped detector/skill and fails loudly
+on malformed or missing assets):
 
 ```sh
-bunx vitest run packages/effect-harness/test/SelfPatternCheck.test.ts
+bunx vitest run packages/harness-kit/src/Catalog.test.ts
 ```
+
+A whole-repository self-scan against all 47 detectors does not exist yet; the
+detectors run automatically against post-write content when the plugin is
+loaded in OpenCode.
 
 ## Planning & documents
 

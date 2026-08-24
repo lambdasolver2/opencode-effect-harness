@@ -14,21 +14,29 @@ import { Effect, Stream } from 'effect';
 export interface HostEvent {
 	readonly type: string;
 	readonly properties?: Record<string, unknown> | undefined;
+	/** Pinned protocol events carry their payload at top-level `data`. */
+	readonly data?: unknown;
 }
+
+const recordOf = (value: unknown): Record<string, unknown> | undefined =>
+	typeof value === 'object' && value !== null
+		? (value as Record<string, unknown>)
+		: undefined;
 
 const deepSessionId = (event: HostEvent): string | undefined => {
 	const props = event.properties as Record<string, unknown> | undefined;
 	const candidates: Array<unknown> = [
 		props?.sessionID,
-		props?.data ? Reflect.get(props.data as object, 'sessionID') : undefined
+		recordOf(props?.data)?.sessionID,
+		recordOf(event.data)?.sessionID
 	];
 	return candidates.find((v): v is string => typeof v === 'string');
 };
 
 const deepSkillName = (event: HostEvent): string | undefined => {
 	const props = event.properties as Record<string, unknown> | undefined;
-	const data = props?.data as Record<string, unknown> | undefined;
-	const name = data?.name ?? props?.name;
+	const name =
+		recordOf(props?.data)?.name ?? recordOf(event.data)?.name ?? props?.name;
 	return typeof name === 'string' ? name : undefined;
 };
 
@@ -134,7 +142,7 @@ export namespace LiveTraceSink {
 		if (!event.type.startsWith('message.part.updated')) return;
 		const props = event.properties as Record<string, unknown> | undefined;
 		const partContainer =
-			props?.part ?? (props?.data as Record<string, unknown> | undefined)?.part;
+			props?.part ?? recordOf(props?.data)?.part ?? recordOf(event.data)?.part;
 		const text = textFromPart(partContainer);
 		const sessionID = deepSessionId(event as HostEvent);
 		if (text !== undefined && sessionID !== undefined) sink.record(sessionID, text);

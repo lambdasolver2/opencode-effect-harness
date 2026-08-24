@@ -8,7 +8,7 @@ describe('overall', () => {
   it('failed when evidence insufficient', () => {
     expect(overall({ checks: [{ verdict: 'passed' }], skillEvidence: { status: 'insufficient' }, semantic: { status: 'skipped' } })).toBe('failed')
   })
-  it('never folds skipped semantic review into passed silently', () => {
-    expect(overall({ checks: [], skillEvidence: { status: 'skipped' }, semantic: { status: 'skipped' } })).toBe('passed')
+  it('never reports passed when nothing ran', () => {
+    expect(overall({ checks: [], skillEvidence: { status: 'skipped' }, semantic: { status: 'skipped' } })).toBe('error')
   })
 })

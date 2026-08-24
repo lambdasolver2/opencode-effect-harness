@@ -1,10 +1,12 @@
 /**
  * Capability — native skill registration behind an explicit capability probe
- * (spec A2). Host `SkillDraft` shapes are inspected at runtime; when `add` is
- * unsupported the result SAYS so instead of failing silently. Branded host
- * fields cross ONE localized conversion helper with validated strings.
+ * (spec A2 / AUDIT-042). Candidate skill payloads are validated against the
+ * PINNED host schema (`@opencode-ai/schema/skill`) so branded ids/names are
+ * produced by the SDK's own decoder instead of `as never` casts. Invalid or
+ * unsupported registrations are COUNTED AND REPORTED — never silent.
  */
-import { Effect } from 'effect';
+import { Effect, Schema } from 'effect';
+import { Skill as SkillSchema } from '@opencode-ai/schema/skill';
 
 export interface PreparedSkillInfo {
 	readonly id: unknown;
@@ -26,26 +28,84 @@ export interface RegistrationResult {
 	readonly reason?: string | undefined;
 }
 
+export interface PreparationResult {
+	readonly infos: ReadonlyArray<PreparedSkillInfo>;
+	/** Candidates rejected by the pinned host schema. */
+	readonly rejected: number;
+}
+
 const FRONTMATTER_BLOCK = /^---\n([\s\S]*?)\n---/;
 const DESCRIPTION_LINE = /(^|\n)description:\s*([^\n]+)/;
 
-/** Localized branded conversion — one boundary, validated inputs (A2/A42). */
-export const prepareInfo = (input: {
-	readonly entry: MinimalEntry;
+interface CandidateInfo {
+	readonly id: string;
+	readonly name: string;
+	readonly location: string;
+	readonly description: string;
 	readonly content: string;
-	readonly idBrand: (value: string) => unknown;
-	readonly nameBrand: (value: string) => unknown;
-	readonly pathBrand: (value: string) => unknown;
-}): PreparedSkillInfo => ({
-	kernelName: input.entry.name,
-	id: input.idBrand(input.entry.name),
-	name: input.nameBrand(input.entry.name),
-	location: input.pathBrand(input.entry.skillFilePath),
+}
+
+const buildCandidate = (
+	entry: MinimalEntry,
+	content: string
+): CandidateInfo => ({
+	id: entry.name,
+	name: entry.name,
+	location: entry.skillFilePath,
 	description:
-		input.content.match(FRONTMATTER_BLOCK)?.[1]?.match(DESCRIPTION_LINE)?.[2]?.trim() ??
-		`Effect v4 skill: ${input.entry.name}`,
-	content: input.content
+		content.match(FRONTMATTER_BLOCK)?.[1]?.match(DESCRIPTION_LINE)?.[2]?.trim() ??
+		`Effect v4 skill: ${entry.name}`,
+	content
 });
+
+/** Decode through the SDK schema; branded fields are produced here or not at all. */
+const decodeCandidate = (candidate: CandidateInfo): unknown => {
+	try {
+		return Schema.decodeUnknownSync(SkillSchema.Info)(candidate);
+	} catch {
+		return undefined;
+	}
+};
+
+/** Async preparation of all skill payloads (files load BEFORE transform). */
+export interface MinimalEntry {
+	readonly name: string;
+	readonly skillFilePath: string;
+}
+
+export const prepareAll = (
+	entries: ReadonlyArray<MinimalEntry>,
+	loadContent: (entry: MinimalEntry) => Effect.Effect<string>
+): Effect.Effect<PreparationResult> =>
+	Effect.forEach(
+		entries,
+		(entry) =>
+			Effect.map(loadContent(entry), (content) => ({ entry, content })),
+		{ concurrency: 8 }
+	).pipe(
+		Effect.map((loaded) => {
+			let rejected = 0;
+			const infos = loaded.flatMap(({ entry, content }) => {
+				const candidate = buildCandidate(entry, content);
+				const decoded = decodeCandidate(candidate);
+				if (decoded === undefined) {
+					rejected += 1;
+					return [];
+				}
+				return [
+					{
+						id: decoded,
+						name: decoded,
+						location: decoded,
+						description: candidate.description,
+						content,
+						kernelName: entry.name
+					}
+				];
+			});
+			return { infos, rejected };
+		})
+	);
 
 /**
  * Probe-and-apply synchronously inside the transform callback. Unsupported
@@ -76,28 +136,3 @@ export const applyToDraft = (
 	);
 	return { attempted: true, registered: infos.length };
 };
-
-/** Async preparation of all skill payloads (file loading happens BEFORE transform). */
-export interface MinimalEntry {
-	readonly name: string;
-	readonly skillFilePath: string;
-}
-
-export const prepareAll = (
-	entries: ReadonlyArray<MinimalEntry>,
-	loadContent: (entry: MinimalEntry) => Effect.Effect<string>,
-	brands: {
-		readonly idBrand: (value: string) => unknown;
-		readonly nameBrand: (value: string) => unknown;
-		readonly pathBrand: (value: string) => unknown;
-	}
-): Effect.Effect<ReadonlyArray<PreparedSkillInfo>> =>
-	Effect.forEach(
-		entries,
-		(entry) =>
-			Effect.orElseSucceed(
-				Effect.map(loadContent(entry), (content) => prepareInfo({ entry, content, ...brands })),
-				() => undefined
-			),
-		{ concurrency: 8 }
-	).pipe(Effect.map((list) => list.flatMap((i) => (i !== undefined ? [i] : []))));

@@ -105,6 +105,19 @@ const seal = (
 		`${sequence}|${previousHash}|${kind}|${fnv1a(stableStringify(payload))}|${recordedAt}|${actor}`
 	);
 
+const toIdIndex = (value: unknown): IdIndex => {
+	if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+		return {};
+	}
+	return Object.fromEntries(
+		Object.entries(value as Record<string, unknown>).flatMap(([key, seq]) =>
+			typeof seq === 'number' && Number.isInteger(seq) && seq >= 0
+				? [[key, seq] as const]
+				: []
+		)
+	);
+};
+
 interface IdIndex {
 	readonly [requestId: string]: number;
 }
@@ -203,6 +216,34 @@ export namespace Journal {
 								}
 								return Effect.succeed(
 									parsed.flatMap((p) => (p.ok ? [p.entry] : []))
+										).pipe(
+									// Tamper-evidence: sequence, linkage, seal verified on read.
+									Effect.flatMap((entries) => {
+										const brokenAt = entries.findIndex((entry, index) => {
+											if (entry.sequence !== index) return true;
+											const expected = seal(
+												entry.sequence,
+												entry.previousHash,
+												entry.kind,
+												entry.payload,
+												entry.recordedAt,
+												entry.actor
+											);
+											if (entry.hash !== expected) return true;
+											const previous =
+												index === 0 ? GENESIS_HASH : entries[index - 1]?.hash;
+											return entry.previousHash !== previous;
+										});
+										return brokenAt === -1
+											? Effect.succeed(entries)
+											: Effect.fail(
+													toError(
+														stream,
+														'read',
+														`broken chain at entry ${String(brokenAt)}`
+													)
+												);
+									})
 								);
 							})
 						);
@@ -210,7 +251,8 @@ export namespace Journal {
 
 				const readIds = (stream: string): Effect.Effect<IdIndex> =>
 					deps.fs.readFileString(idsPathOf(stream)).pipe(
-						Effect.flatMap((raw) => Effect.try(() => JSON.parse(raw) as IdIndex)),
+						Effect.flatMap((raw) => Effect.try(() => JSON.parse(raw) as unknown)),
+						Effect.map(toIdIndex),
 						Effect.orElseSucceed(() => ({}) as IdIndex)
 					);
 
@@ -307,12 +349,18 @@ export namespace Journal {
 									baseDir,
 									`${stream}.corrupt-${Date.now()}`
 								);
-								yield* Effect.ignore(
-									deps.fs.writeFileString(
+								// Quarantine MUST succeed before history is rewritten;
+								// otherwise the corrupt bytes remain the only copy.
+								yield* deps.fs.writeFileString(
 										quarantineTarget,
 										lines.slice(validCount).join('\n') + '\n'
-									)
-								);
+									).pipe(
+										Effect.catchTag('PlatformError', () =>
+											Effect.fail(
+												toError(stream, 'repair', 'quarantine write failed')
+											)
+										)
+									);
 								const kept =
 									validCount === 0
 										? ''

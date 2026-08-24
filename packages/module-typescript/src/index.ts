@@ -20,16 +20,21 @@ import {
 const TSC_DIAGNOSTIC_RE =
 	/(.+?)\((\d+),(\d+)\): error (TS\d+): (.+)/g;
 
-const DEFAULT_ROOT = new URL('../assets/', import.meta.url).pathname.replace(/\/$/, '');
+export const DEFAULT_ASSETS_ROOT = new URL('../assets/', import.meta.url).pathname.replace(/\/$/, '');
+
+export interface CreateOptions {
+	readonly assetsRoot?: string | undefined;
+}
 
 export const createModule = (
-	assetsRoot: string = DEFAULT_ROOT
+	options: CreateOptions = {}
 ): Effect.Effect<
 	VerificationModule,
 	CatalogError | InstanceType<typeof ModuleError>,
 	FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function*() {
+		const assetsRoot = options.assetsRoot ?? DEFAULT_ASSETS_ROOT;
 		const fs = yield* FileSystem.FileSystem;
 		const path = yield* Path.Path;
 		const patternsDir = path.join(assetsRoot, 'patterns');

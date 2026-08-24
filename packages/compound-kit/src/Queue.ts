@@ -6,7 +6,7 @@
  */
 import { Context, Effect, Layer, Schema } from 'effect';
 
-import { Journal } from 'opencode-harness-shared';
+import { Journal, JournalError } from 'opencode-harness-shared';
 import { CandidateInsight } from './Insight.ts';
 
 export class PendingProposal extends Schema.Class<PendingProposal>('PendingProposal')({
@@ -39,8 +39,10 @@ export namespace Proposals {
 			readonly stream: string;
 			readonly insight: CandidateInsight;
 			readonly now: number;
-		}): Effect.Effect<string>;
-		pending(stream: string): Effect.Effect<ReadonlyArray<PendingProposal>>;
+		}): Effect.Effect<string, JournalError>;
+		pending(
+			stream: string
+		): Effect.Effect<ReadonlyArray<PendingProposal>, JournalError>;
 		status(stream: string): Effect.Effect<
 			ReadonlyArray<{
 				readonly id: string;
@@ -51,9 +53,11 @@ export namespace Proposals {
 					| 'skipped'
 					| 'rejected';
 				readonly content?: string | undefined;
-			}>
-		>;
-		decide(stream: string, input: DecisionInput): Effect.Effect<void>;
+			}>, JournalError>;
+		decide(
+			stream: string,
+			input: DecisionInput
+		): Effect.Effect<void, JournalError>;
 	}
 
 	export class Tag extends Context.Service<Tag, Service>()(
@@ -73,7 +77,7 @@ export namespace Proposals {
 					now
 				}),
 				() => proposalId(insight.id)
-			).pipe(Effect.orElseSucceed(() => proposalId(insight.id))),
+			),
 
 		pending: (stream) =>
 			Effect.map(statusAll(journal, stream), (all) =>
@@ -108,7 +112,7 @@ export namespace Proposals {
 					reason: input.reason,
 					rewrittenContent: input.rewrittenContent
 				}
-			}).pipe(Effect.asVoid, Effect.orElseSucceed(() => undefined))
+			}).pipe(Effect.asVoid)
 	});
 
 	const statusAll = (
@@ -125,9 +129,9 @@ export namespace Proposals {
 				| 'skipped'
 				| 'rejected';
 			readonly content?: string | undefined;
-		}>
-	> =>
-		Effect.map(Effect.orElseSucceed(journal.read(stream), () => []), (entries) => {
+		}
+	>, JournalError> =>
+		Effect.map(journal.read(stream), (entries) => {
 			type Row = {
 				id: string;
 				insight: CandidateInsight;
