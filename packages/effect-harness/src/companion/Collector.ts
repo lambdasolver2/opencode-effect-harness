@@ -40,7 +40,8 @@ export namespace Collector {
 				const summaries: Array<Summary> = [];
 				let cursor: string | undefined;
 
-				for (;;) {
+				paginate: {
+				}
 					const page: {
 						data: ReadonlyArray<RawInfo>;
 						cursor?: { readonly next?: string | undefined };

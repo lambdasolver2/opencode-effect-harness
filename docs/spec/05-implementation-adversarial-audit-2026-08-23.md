@@ -1138,3 +1138,52 @@ the existing fallback script.
 7. **Compound SessionSource adapters** (live trace store + historical client collector) remain Phase 4b; compound tool reports this honestly.
 
 Acceptance evidence: commands above; new tests listed; grep outputs recorded in this entry.
+
+## Appendix Entry AUDIT-EVENT-2026-08-24-01
+
+- Recorded at: 2026-08-24
+- Repository snapshot: modular per-language architecture on main
+- Actor: implementation agent
+- Related findings: AUDIT-001 through AUDIT-026
+- Event: remediation completion report
+
+### Architecture delivered
+
+Five-package modular layout replacing the single consolidated package:
+- `packages/shared` (`opencode-harness-shared`) — neutral primitives
+- `packages/harness-kit` (`opencode-harness-kit`) — enforcement kernel
+- `packages/verify-kit` (`opencode-verify-kit`) — verification engine
+- `packages/compound-kit` (`opencode-compound-kit`) — compound domain
+- `packages/effect-harness` (`opencode-effect-harness`) — plugin + companion
+
+Language modules are separate installable packages:
+- `packages/module-typescript` (`@opencode-effect-harness/module-typescript`)
+  carries 53 Effect v4 skills / 46 patterns / 4 guidance files as its own
+  assets; exports `createModule()` factory.
+- `packages/module-bend` (`@opencode-effect-harness/module-bend`)
+  ships its own `bend-gen-run` skill and `bend-imperative-loop` pattern;
+  exports `createModule()` factory.
+
+Core composition root loads modules by configured ID via dynamic import of
+the installed package — no hardcoded module references, no path traversal,
+capability-probed at startup.
+
+### Gates closed by this pass
+
+| Gate | Status | Evidence |
+|---|---|---|
+| Legacy fixture migration | ✅ done | old packages deleted; new tests cover same semantics |
+| Packed-artifact install | ✅ done | pack-probe.sh passes |
+| tsgo toolchain | ⚠️ installed but CLI is wrapper-only; plain tsc used | @effect/tsgo@0.36.5 |
+| Live OpenCode2 server | ✅ plugin loaded (tools visible in session) | system-update confirmed tools present |
+| Companion collector/CLI | ✅ done | src/companion/{Collector,cli}.ts |
+| Compound SessionSource adapters | ✅ LiveSessions.ts implemented | event-driven capture port |
+| Zero imperative loops | ✅ verified | grep clean |
+
+### Remaining known deviations
+
+1. Bend module detectors returns empty array pending platform-layer wiring.
+2. Companion TUI not implemented (declared reduced scope).
+3. effect-tsgo diagnostics requires native TS-Go binary not available in this environment.
+4. Mine-evolve mode requires HistoricalSessionSource which needs a running server with sessions to mine.
+
