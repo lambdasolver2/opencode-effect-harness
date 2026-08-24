@@ -1,0 +1,16 @@
+{
+  "$schema": "https://www.schemastore.org/package.json",
+  "name": "opencode-compound-kit",
+  "version": "0.1.0",
+  "description": "host-neutral compound domain: ATIF traces, insights, blueprint markdown modules, AVO-style prompt evolution, benchmark scoring",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:"
+  }
+}

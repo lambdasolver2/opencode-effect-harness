@@ -1,0 +1,26 @@
+{
+  "$schema": "https://www.schemastore.org/package.json",
+  "name": "opencode-effect-harness",
+  "version": "0.1.0",
+  "description": "OpenCode v2 plugin harness for Effect v4 development: skill-catalog verification, independent critic, and a session-mining prompt-evolution compound agent.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "skills",
+    "patterns",
+    "guidance"
+  ],
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "@opencode-ai/plugin": "0.0.0-beta-17898",
+    "@opencode-ai/schema": "0.0.0-beta-17898",
+    "effect": "catalog:",
+    "opencode-compound-kit": "workspace:*",
+    "opencode-harness-kit": "workspace:*",
+    "opencode-verify-kit": "workspace:*"
+  }
+}

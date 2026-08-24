@@ -1,0 +1,43 @@
+{
+  "$schema": "https://www.schemastore.org/package.json",
+  "name": "opencode-effect-harness-workspace",
+  "version": "0.1.0",
+  "description": "workspace root for the opencode-effect-harness plugin and its modular kits",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "harnesses/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsgo --noEmit || tsc --noEmit",
+    "check": "bun run typecheck && bun run test",
+    "probe": "bun run scripts/probe.ts",
+    "build:publishable": "bun run packages/effect-harness/scripts/build.ts"
+  },
+  "devDependencies": {
+    "@ast-grep/napi": "^0.42.3",
+    "@effect/vitest": "4.0.0-rc.110",
+    "@types/bun": "^1.3.14",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.7",
+    "yaml": "^2.9.0",
+    "@opencode-ai/plugin": "0.0.0-beta-17898",
+    "@opencode-ai/schema": "0.0.0-beta-17898",
+    "effect": "4.0.0-rc.110"
+  },
+  "catalog": {
+    "@ast-grep/napi": "^0.42.3",
+    "@effect/platform-node": "4.0.0-rc.110",
+    "@effect/vitest": "4.0.0-rc.110",
+    "effect": "4.0.0-rc.110"
+  },
+  "overrides": {
+    "effect": "4.0.0-rc.110"
+  },
+  "dependencies": {
+    "@opencode-ai/client": "0.0.0-beta-17898"
+  }
+}

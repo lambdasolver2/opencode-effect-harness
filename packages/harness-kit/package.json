@@ -1,0 +1,19 @@
+{
+  "$schema": "https://www.schemastore.org/package.json",
+  "name": "opencode-harness-kit",
+  "version": "0.1.0",
+  "description": "reusable kernel for opencode agent harness extensions",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "@ast-grep/napi": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:",
+    "picomatch": "^4.0.4",
+    "yaml": "^2.9.0"
+  }
+}

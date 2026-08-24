@@ -1,0 +1,17 @@
+{
+  "$schema": "https://www.schemastore.org/package.json",
+  "name": "opencode-verify-kit",
+  "version": "0.1.0",
+  "description": "host-neutral verification engine: language verification modules, checker execution, verifier reports",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "effect": "catalog:",
+    "opencode-harness-kit": "workspace:*",
+    "picomatch": "^4.0.4"
+  }
+}
