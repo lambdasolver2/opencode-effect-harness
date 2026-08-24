@@ -580,7 +580,7 @@ export default Plugin.define({
 						return;
 					}
 
-					if (event.tool !== 'write' && event.tool !== 'edit') return;
+					if (!['write', 'edit', 'multiedit', 'apply_patch', 'patch'].includes(event.tool)) return;
 
 					const location = yield* sessions.resolve(sessionId).pipe(
 						Effect.orElseSucceed(() => undefined)
@@ -659,7 +659,7 @@ export default Plugin.define({
 						return;
 					}
 
-					if (event.tool !== 'write' && event.tool !== 'edit') return;
+					if (!['write', 'edit', 'multiedit', 'apply_patch', 'patch'].includes(event.tool)) return;
 					if (location === undefined) return;
 
 					if (event.status === 'completed') {
