@@ -4,10 +4,10 @@ export default defineConfig({
 	test: {
 		setupFiles: ['./vitest.setup.ts'],
 		include: [
-			'packages/*/test/**/*.test.ts',
-			'harnesses/*/test/**/*.test.ts'
+			'packages/*/src/**/*.test.ts',
+			'packages/*/test/**/*.test.ts'
 		],
-		passWithNoTests: true,
+		passWithNoTests: false,
 		globals: false,
 		testTimeout: 30000,
 		hookTimeout: 30000,
