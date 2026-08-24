@@ -29,15 +29,17 @@
     "@opencode-ai/client": "0.0.0-beta-17898",
     "@opencode-ai/plugin": "0.0.0-beta-17898",
     "@opencode-ai/schema": "0.0.0-beta-17898",
-    "effect": "catalog:",
-    "picomatch": "^4.0.4",
-    "yaml": "^2.9.0",
-    "@opencode-effect-harness/module-typescript": "workspace:*",
     "@opencode-effect-harness/module-bend": "workspace:*",
-    "opencode-harness-shared": "workspace:*",
+    "@opencode-effect-harness/module-typescript": "workspace:*",
+    "@types/diff": "^8.0.0",
+    "diff": "^9.0.0",
+    "effect": "catalog:",
+    "opencode-compound-kit": "workspace:*",
     "opencode-harness-kit": "workspace:*",
+    "opencode-harness-shared": "workspace:*",
     "opencode-verify-kit": "workspace:*",
-    "opencode-compound-kit": "workspace:*"
+    "picomatch": "^4.0.4",
+    "yaml": "^2.9.0"
   },
   "devDependencies": {
     "@ast-grep/napi": "^0.42.3",

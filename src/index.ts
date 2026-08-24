@@ -28,6 +28,8 @@ import { Decision } from 'opencode-harness-kit/Decision.ts';
 import { Intent } from 'opencode-harness-kit/Intent.ts';
 import { Projection } from 'opencode-harness-kit/Projection.ts';
 import { Gate as GateRule } from 'opencode-harness-kit/rule/Gate.ts';
+import { extractAffectedPaths, readFileOrUndefined } from './Snapshots.ts'
+import { diffLines } from 'diff'
 import { Header as HeaderRule } from 'opencode-harness-kit/rule/Header.ts';
 import { Feedback as FeedbackRule } from 'opencode-harness-kit/rule/Feedback.ts';
 
@@ -544,6 +546,13 @@ export default Plugin.define({
 					}
 				});
 
+			const pendingSnapshots = new Map<string, {
+				affectedPaths: ReadonlyArray<string>;
+				directory: string;
+				snapshots: ReadonlyArray<{ filePath: string; beforeContent: string | undefined }>;
+			}>()
+
+
 			yield* ctx.tool.hook('execute.before', (event) =>
 				Effect.gen(function* () {
 					const sessionId = String(event.sessionID);
@@ -603,6 +612,25 @@ export default Plugin.define({
 					);
 					if (blocked !== undefined) {
 						return yield* Effect.fail(new Tool.Error({ message: blocked.reason }));
+					}
+
+					// Capture pre-write snapshots for pattern feedback
+					const affected = extractAffectedPaths(event.tool, event.input);
+					if (affected.length > 0) {
+						const snaps: Array<{ filePath: string; beforeContent: string | undefined }> = []
+						for (const rel of affected) {
+							const abs = location.directory + '/' + rel
+							const content = yield* Effect.orElseSucceed(
+								Effect.promise(() => import('node:fs/promises').then(m => m.readFile(abs, 'utf8'))),
+								() => undefined as string | undefined
+							)
+							snaps.push({ filePath: rel, beforeContent: content })
+						}
+						pendingSnapshots.set(String(event.id), {
+							affectedPaths: affected,
+							directory: location.directory,
+							snapshots: snaps
+						})
 					}
 				})
 			);
