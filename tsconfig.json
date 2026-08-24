@@ -28,8 +28,11 @@
   },
   "include": [
     "packages/*/src",
+    "src",
     "packages/*/test",
+    "test",
     "packages/*/scripts",
+    "scripts",
     "modules/**/*.ts",
     "scripts/*.ts"
   ],

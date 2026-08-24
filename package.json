@@ -1,10 +1,18 @@
 {
   "$schema": "https://www.schemastore.org/package.json",
-  "name": "opencode-effect-harness-workspace",
-  "version": "0.1.0",
-  "description": "workspace root for the opencode-effect-harness plugin and its modular kits",
+  "name": "opencode-effect-harness",
+  "version": "0.2.0-alpha.1",
+  "description": "OpenCode v2 plugin: Effect v4 skill-gate enforcement, verification + critic, compound workflows.",
+  "license": "MIT",
   "private": true,
   "type": "module",
+  "bin": {
+    "opencode-effect-harness": "./src/companion/cli.ts"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./companion": "./src/companion/cli.ts"
+  },
   "workspaces": [
     "packages/*"
   ],
@@ -18,6 +26,22 @@
     "e2e": "bun run scripts/e2e-client.ts",
     "pack:probe": "bash scripts/pack-probe.sh"
   },
+  "dependencies": {
+    "@ast-grep/napi": "catalog:",
+    "@effect/platform-node": "catalog:",
+    "@opencode-ai/client": "0.0.0-beta-17898",
+    "@opencode-ai/plugin": "0.0.0-beta-17898",
+    "@opencode-ai/schema": "0.0.0-beta-17898",
+    "effect": "catalog:",
+    "picomatch": "^4.0.4",
+    "yaml": "^2.9.0",
+    "@opencode-effect-harness/module-typescript": "workspace:*",
+    "@opencode-effect-harness/module-bend": "workspace:*",
+    "opencode-harness-shared": "workspace:*",
+    "opencode-harness-kit": "workspace:*",
+    "opencode-verify-kit": "workspace:*",
+    "opencode-compound-kit": "workspace:*"
+  },
   "devDependencies": {
     "@ast-grep/napi": "^0.42.3",
     "@effect/tsgo": "^0.36.5",
@@ -29,7 +53,9 @@
     "typescript": "^5.9.2",
     "vitest": "^4.1.7",
     "yaml": "^2.9.0",
-    "@typescript/native-preview": "^7.0.0-dev"
+    "@typescript/native-preview": "^7.0.0-dev",
+    "@effect/platform-node": "4.0.0-rc.110",
+    "@types/node": "^22.0.0"
   },
   "catalog": {
     "@ast-grep/napi": "^0.42.3",
@@ -39,8 +65,5 @@
   },
   "overrides": {
     "effect": "4.0.0-rc.110"
-  },
-  "dependencies": {
-    "@opencode-ai/client": "0.0.0-beta-17898"
   }
 }

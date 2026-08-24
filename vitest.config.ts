@@ -4,8 +4,8 @@ export default defineConfig({
 	test: {
 		setupFiles: ['./vitest.setup.ts'],
 		include: [
-			'packages/*/src/**/*.test.ts',
-			'packages/*/test/**/*.test.ts'
+			'src/**/*.test.ts',
+			'packages/*/src/**/*.test.ts'
 		],
 		passWithNoTests: false,
 		globals: false,

@@ -5,38 +5,6 @@
     "": {
       "name": "opencode-effect-harness-workspace",
       "dependencies": {
-        "@opencode-ai/client": "0.0.0-beta-17898",
-      },
-      "devDependencies": {
-        "@ast-grep/napi": "^0.42.3",
-        "@effect/tsgo": "^0.36.5",
-        "@effect/vitest": "4.0.0-rc.110",
-        "@opencode-ai/plugin": "0.0.0-beta-17898",
-        "@opencode-ai/schema": "0.0.0-beta-17898",
-        "@types/bun": "^1.3.14",
-        "@typescript/native-preview": "^7.0.0-dev",
-        "effect": "4.0.0-rc.110",
-        "typescript": "^5.9.2",
-        "vitest": "^4.1.7",
-        "yaml": "^2.9.0",
-      },
-    },
-    "packages/compound-kit": {
-      "name": "opencode-compound-kit",
-      "version": "0.2.0-alpha.1",
-      "dependencies": {
-        "@effect/platform-node": "catalog:",
-        "effect": "catalog:",
-        "opencode-harness-shared": "workspace:*",
-      },
-    },
-    "packages/effect-harness": {
-      "name": "opencode-effect-harness",
-      "version": "0.2.0-alpha.1",
-      "bin": {
-        "opencode-effect-harness": "./src/companion/cli.ts",
-      },
-      "dependencies": {
         "@ast-grep/napi": "catalog:",
         "@effect/platform-node": "catalog:",
         "@opencode-ai/client": "0.0.0-beta-17898",
@@ -53,7 +21,28 @@
         "yaml": "^2.9.0",
       },
       "devDependencies": {
+        "@ast-grep/napi": "^0.42.3",
+        "@effect/platform-node": "4.0.0-rc.110",
+        "@effect/tsgo": "^0.36.5",
+        "@effect/vitest": "4.0.0-rc.110",
+        "@opencode-ai/plugin": "0.0.0-beta-17898",
+        "@opencode-ai/schema": "0.0.0-beta-17898",
+        "@types/bun": "^1.3.14",
         "@types/node": "^22.0.0",
+        "@typescript/native-preview": "^7.0.0-dev",
+        "effect": "4.0.0-rc.110",
+        "typescript": "^5.9.2",
+        "vitest": "^4.1.7",
+        "yaml": "^2.9.0",
+      },
+    },
+    "packages/compound-kit": {
+      "name": "opencode-compound-kit",
+      "version": "0.2.0-alpha.1",
+      "dependencies": {
+        "@effect/platform-node": "catalog:",
+        "effect": "catalog:",
+        "opencode-harness-shared": "workspace:*",
       },
     },
     "packages/harness-kit": {
@@ -453,8 +442,6 @@
     "obug": ["obug@2.1.4", "", {}, "sha512-4a+OsYv9UktOJKE+l1A4OufDgdRF9PifWj+tJnHURo/P+WOxpG4GzUFL9qCalmWauao6ogiG+QvnCovwPoyAWA=="],
 
     "opencode-compound-kit": ["opencode-compound-kit@workspace:packages/compound-kit"],
-
-    "opencode-effect-harness": ["opencode-effect-harness@workspace:packages/effect-harness"],
 
     "opencode-harness-kit": ["opencode-harness-kit@workspace:packages/harness-kit"],
 
