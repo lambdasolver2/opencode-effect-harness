@@ -21,10 +21,7 @@
     "test:watch": "vitest",
     "typecheck": "tsgo --noEmit || tsc --noEmit",
     "check": "bun run typecheck && bun run test",
-    "probe": "bun run scripts/probe.ts",
-    "typecheck:tsgo": "tsgo --noEmit",
-    "e2e": "bun run scripts/e2e-client.ts",
-    "pack:probe": "bash scripts/pack-probe.sh"
+    "typecheck:tsgo": "bunx tsgo --noEmit"
   },
   "dependencies": {
     "@ast-grep/napi": "catalog:",
