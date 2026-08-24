@@ -1,5 +1,7 @@
 /**
- * Log — append-only experiment log as TSV rows. Pure codecs (round-trip safe).
+ * Log — append-only experiment log as TSV rows. Pure codecs, round-trip safe
+ * INCLUDING literal backslashes (escape order matters), with strict numeric
+ * and boolean validation; malformed rows decode to undefined (never fabricated).
  */
 import { Schema } from 'effect';
 
@@ -27,54 +29,69 @@ const HEADERS = [
 	'notes'
 ] as const;
 
-const escapeCell = (value: string): string => value.replace(/\t/g, '\\t').replace(/\n/g, '\\n');
-const unescapeCell = (value: string): string => value.replace(/\\t/g, '\t').replace(/\\n/g, '\n');
+const escapeCell = (value: string): string =>
+	value
+		.replace(/\\/g, '\\\\')
+		.replace(/\t/g, '\\t')
+		.replace(/\n/g, '\\n')
+		.replace(/\r/g, '\\r');
+
+const unescapeCell = (value: string): string =>
+	value.replace(/\\([\\trn])/g, (_, escaped: string) =>
+		escaped === 't'
+			? '\t'
+			: escaped === 'n'
+				? '\n'
+				: escaped === 'r'
+					? '\r'
+					: '\\'
+	);
 
 export const header = (): string => HEADERS.join('\t');
 
-/** Encode one row to a TSV line. */
 export const encodeRow = (row: Row): string =>
 	[
-		row.timestamp,
+		escapeCell(row.timestamp),
 		row.kind,
-		row.blueprintId,
-		row.modelProvider,
-		row.modelName,
-		row.taskId,
+		escapeCell(row.blueprintId),
+		escapeCell(row.modelProvider),
+		escapeCell(row.modelName),
+		escapeCell(row.taskId),
 		String(row.score),
 		row.passed ? '1' : '0',
 		escapeCell(row.notes)
 	].join('\t');
 
-/** Decode a TSV line back to a Row. Returns undefined on malformed lines. */
 export const decodeRow = (line: string): Row | undefined => {
 	const cells = line.split('\t');
 	if (cells.length !== HEADERS.length) return undefined;
 	const [timestamp, kind, blueprintId, modelProvider, modelName, taskId, score, passed, notes] =
 		cells as [string, string, string, string, string, string, string, string, string];
+	const validKinds = ['benchmark', 'evolution-commit', 'evolution-attempt'];
+	const scoreNumber = Number(score);
 	if (
-		!['benchmark', 'evolution-commit', 'evolution-attempt'].includes(kind)
+		!validKinds.includes(kind) ||
+		!Number.isFinite(scoreNumber) ||
+		(passed !== '0' && passed !== '1')
 	) {
 		return undefined;
 	}
 	return new Row({
-		timestamp,
+		timestamp: unescapeCell(timestamp),
 		kind: kind as 'benchmark' | 'evolution-commit' | 'evolution-attempt',
-		blueprintId,
-		modelProvider,
-		modelName,
-		taskId,
-		score: Number(score),
+		blueprintId: unescapeCell(blueprintId),
+		modelProvider: unescapeCell(modelProvider),
+		modelName: unescapeCell(modelName),
+		taskId: unescapeCell(taskId),
+		score: scoreNumber,
 		passed: passed === '1',
 		notes: unescapeCell(notes)
 	});
 };
 
-/** Encode a full log (header + rows). */
 export const encodeLog = (rows: ReadonlyArray<Row>): string =>
 	[header(), ...rows.map(encodeRow)].join('\n');
 
-/** Decode full TSV content; skips the header row and malformed lines. */
 export const decodeLog = (content: string): ReadonlyArray<Row> => {
 	const lines = content.split('\n').filter((line) => line.length > 0);
 	return lines.slice(1).flatMap((line) => {

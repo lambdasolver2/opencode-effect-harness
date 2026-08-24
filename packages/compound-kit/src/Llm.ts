@@ -1,14 +1,12 @@
 /**
  * Llm — the single boundary between compound-core and any LLM backend.
- * Two adapters satisfy this: OpenCodeSessionExecutor (spawns a child session)
- * and DirectAiExecutor (@effect/ai providers for CI mode).
- *
- * All prompt inputs are treated as untrusted data (spec A44): callers wrap
- * transcript/tool-output content in delimiters before passing here.
+ * Two adapters satisfy this: an OpenCode session executor and the direct-AI
+ * adapter (`LlmOpenAi`). All prompt inputs are untrusted data; callers wrap
+ * transcript/tool-output content in delimiters before calling.
  */
-import { Context, Effect, Layer, Schema } from 'effect';
+import { Context, Layer, Schema } from 'effect';
 
-import type { ModelReference } from './Trace.ts';
+import type { ModelReference } from 'opencode-harness-shared';
 
 export class Prompt extends Schema.Class<Prompt>('Prompt')({
 	system: Schema.String,
@@ -28,18 +26,16 @@ export class Error extends Schema.TaggedError<Error>()('LlmError', {
 	cause: Schema.optionalKey(Schema.String)
 }) {}
 
-export declare namespace Llm {
+export namespace Llm {
 	export interface Service {
 		readonly complete: (
 			prompt: Prompt,
 			model: ModelReference
-		) => Effect.Effect<Outcome, Error>;
+		) => import('effect').Effect.Effect<Outcome, Error>;
 	}
-}
 
-export namespace Llm {
-	export class Tag extends Context.Service<Tag, Llm.Service>()(
-		'ox-effect-harness/compound/Llm'
+	export class Tag extends Context.Service<Tag, Service>()(
+		'opencode-effect-harness/compound/Llm'
 	) {}
 
 	export const layer = (impl: Llm.Service): Layer.Layer<Tag> =>

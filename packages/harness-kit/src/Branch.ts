@@ -1,21 +1,16 @@
 import { Schema } from 'effect';
 
+/** Neutral conversation snapshot with explicit compaction markers. */
 export namespace Branch {
 	export class UserMessageEntry extends Schema.TaggedClass<UserMessageEntry>()(
 		'UserMessageEntry',
-		{
-			id: Schema.String,
-			content: Schema.String
-		}
+		{ id: Schema.String, content: Schema.String }
 	) {}
 
 	export class AssistantMessageEntry
 		extends Schema.TaggedClass<AssistantMessageEntry>()(
 			'AssistantMessageEntry',
-			{
-				id: Schema.String,
-				content: Schema.String
-			}
+			{ id: Schema.String, content: Schema.String }
 		) {}
 
 	export class CustomEntry extends Schema.TaggedClass<CustomEntry>()(
@@ -63,10 +58,7 @@ export namespace Branch {
 	export class ThinkingLevelChangeEntry
 		extends Schema.TaggedClass<ThinkingLevelChangeEntry>()(
 			'ThinkingLevelChangeEntry',
-			{
-				id: Schema.String,
-				thinkingLevel: Schema.String
-			}
+			{ id: Schema.String, thinkingLevel: Schema.String }
 		) {}
 
 	export class ModelChangeEntry extends Schema.TaggedClass<ModelChangeEntry>()(
@@ -89,7 +81,7 @@ export namespace Branch {
 		ModelChangeEntry
 	]);
 
-	export class Value extends Schema.Class<Value>('Branch')({
+	export class Value extends Schema.Class<Value>('BranchValue')({
 		entries: Schema.Array(Entry)
 	}) {}
 }

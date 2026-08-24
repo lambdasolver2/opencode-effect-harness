@@ -1,26 +1,38 @@
 {
-  "$schema": "https://www.schemastore.org/package.json",
   "name": "opencode-effect-harness",
-  "version": "0.1.0",
-  "description": "OpenCode v2 plugin harness for Effect v4 development: skill-catalog verification, independent critic, and a session-mining prompt-evolution compound agent.",
+  "version": "0.2.0-alpha.1",
+  "description": "OpenCode v2 plugin: Effect v4 skill-gate enforcement, verification + critic, compound workflows.",
   "license": "MIT",
   "type": "module",
+  "bin": {
+    "opencode-effect-harness": "./src/companion/cli.ts"
+  },
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./companion": "./src/companion/cli.ts",
+    "./kernel": "../harness-kit/src/index.ts",
+    "./verify": "../verify-kit/src/index.ts",
+    "./compound": "../compound-kit/src/index.ts"
   },
   "files": [
     "src",
-    "skills",
-    "patterns",
-    "guidance"
+    "assets",
+    "assets-bend"
   ],
   "dependencies": {
+    "@ast-grep/napi": "catalog:",
     "@effect/platform-node": "catalog:",
+    "@opencode-ai/client": "0.0.0-beta-17898",
     "@opencode-ai/plugin": "0.0.0-beta-17898",
     "@opencode-ai/schema": "0.0.0-beta-17898",
     "effect": "catalog:",
     "opencode-compound-kit": "workspace:*",
     "opencode-harness-kit": "workspace:*",
-    "opencode-verify-kit": "workspace:*"
+    "opencode-harness-shared": "workspace:*",
+    "opencode-verify-kit": "workspace:*",
+    "picomatch": "^4.0.4",
+    "yaml": "^2.9.0",
+    "@opencode-effect-harness/module-typescript": "workspace:*",
+    "@opencode-effect-harness/module-bend": "workspace:*"
   }
 }

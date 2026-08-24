@@ -1,11 +1,5 @@
 declare module 'picomatch' {
-	interface MatcherOptions {
-		readonly dot?: boolean | undefined;
-		readonly basename?: boolean | undefined;
-	}
-	function picomatch(
-		glob: string,
-		options?: MatcherOptions
-	): (value: string) => boolean;
-	export = picomatch;
+  interface Matcher { (input: string): boolean }
+  function pm(glob: string | ReadonlyArray<string>, options?: object): Matcher;
+  export default pm;
 }

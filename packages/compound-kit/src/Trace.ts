@@ -1,9 +1,7 @@
 /**
- * Trace — bounded solution-trace digests and sanitized ATIF trajectories.
- *
- * ATIF schemas are wire-compatible with effect-autoagent's Atif.ts; the
- * digest is our addition: a bounded, transferable summary (attempt, failure,
- * detection, correction, lesson) that feeds the distiller and evolution loop.
+ * Trace — sanitized ATIF-compatible trajectories plus bounded solution-trace
+ * digests. ATIF schemas stay wire-compatible; the digest is the bounded,
+ * transferable summary feeding distillation and evolution.
  */
 import { Schema } from 'effect';
 
@@ -62,16 +60,14 @@ export class Digest extends Schema.Class<Digest>('TraceDigest')({
 	fullTraceRef: Schema.optionalKey(Schema.String)
 }) {}
 
-export class FailureLesson extends Schema.Class<FailureLesson>('FailureLesson')(
-	{
-		sourceTrace: Schema.String,
-		attempt: Schema.String,
-		failure: Schema.String,
-		detection: Schema.String,
-		resolution: Schema.String,
-		invariant: Schema.String
-	}
-) {}
+export class FailureLesson extends Schema.Class<FailureLesson>('FailureLesson')({
+	sourceTrace: Schema.String,
+	attempt: Schema.String,
+	failure: Schema.String,
+	detection: Schema.String,
+	resolution: Schema.String,
+	invariant: Schema.String
+}) {}
 
 export class Provenance extends Schema.Class<Provenance>('TraceProvenance')({
 	sessionID: Schema.String,
@@ -86,6 +82,16 @@ export class Provenance extends Schema.Class<Provenance>('TraceProvenance')({
 	errorSignature: Schema.optionalKey(Schema.String)
 }) {}
 
+/** SessionTrace = trajectory + provenance. */
+export class SessionTrace extends Schema.Class<SessionTrace>('SessionTrace')({
+	trajectory: Trajectory,
+	provenance: Provenance
+}) {}
+
+/**
+ * THE neutral session event projection. Adapters convert host-branded events
+ * into this value; nothing downstream imports OpenCode event types.
+ */
 export interface SessionEvent {
 	readonly sessionID: string;
 	readonly sequence: number | undefined;
@@ -99,9 +105,3 @@ export interface SessionEvent {
 	readonly timestamp: number;
 	readonly payload: unknown;
 }
-
-export type ModelReference = {
-	readonly provider: string;
-	readonly model: string;
-	readonly variant?: string | undefined;
-};

@@ -1,0 +1,17 @@
+{
+  "name": "opencode-harness-shared",
+  "version": "0.2.0-alpha.1",
+  "description": "Neutral shared primitives: model refs, argv command contract, append-only journal.",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
+  "dependencies": {
+    "effect": "catalog:"
+  },
+  "devDependencies": {
+    "@effect/platform-node": "catalog:"
+  }
+}

@@ -1,21 +1,19 @@
 import { Schema } from 'effect';
 
 export namespace Edit {
-	export class Span extends Schema.Class<Span>('EditReplacementSpan')({
+	export class Span extends Schema.Class<Span>('EditSpan')({
 		start: Schema.Number,
 		end: Schema.Number
 	}) {}
 
-	export class Value extends Schema.Class<Value>('EditReplacement')({
+	export class Value extends Schema.Class<Value>('EditValue')({
 		oldText: Schema.String,
 		newText: Schema.String
 	}) {}
 
 	export class UniqueMatch extends Schema.TaggedClass<UniqueMatch>()(
 		'UniqueMatch',
-		{
-			span: Span
-		}
+		{ span: Span }
 	) {}
 
 	export class MissingMatch extends Schema.TaggedClass<MissingMatch>()(
@@ -25,9 +23,7 @@ export namespace Edit {
 
 	export class AmbiguousMatch extends Schema.TaggedClass<AmbiguousMatch>()(
 		'AmbiguousMatch',
-		{
-			occurrenceCount: Schema.Number
-		}
+		{ occurrenceCount: Schema.Number }
 	) {}
 
 	export class OverlappingMatch extends Schema.TaggedClass<OverlappingMatch>()(
@@ -47,18 +43,20 @@ export namespace Edit {
 		OverlappingMatch,
 		EmptyOldText
 	]);
-}
 
-export namespace Edit {
+	export type AnyResolution =
+		| UniqueMatch
+		| MissingMatch
+		| AmbiguousMatch
+		| OverlappingMatch
+		| EmptyOldText;
+
 	export const occurrenceCount = (replacement: Value, source: string): number =>
 		replacement.oldText.length === 0
 			? 0
 			: source.split(replacement.oldText).length - 1;
 
-	export const resolution = (
-		replacement: Value,
-		source: string
-	): UniqueMatch | MissingMatch | AmbiguousMatch | OverlappingMatch | EmptyOldText => {
+	export const resolution = (replacement: Value, source: string): AnyResolution => {
 		if (replacement.oldText.length === 0) return new EmptyOldText({});
 		const count = occurrenceCount(replacement, source);
 		if (count === 0) return new MissingMatch({});
@@ -79,13 +77,4 @@ export namespace Edit {
 
 	export const isApplicable = (replacement: Value, source: string): boolean =>
 		resolution(replacement, source) instanceof UniqueMatch;
-}
-
-import { make } from 'effect/unstable/reactivity/Atom';
-
-export namespace EditAtoms {
-	export const resolution = (replacement: Edit.Value, source: string) =>
-		make(Edit.resolution(replacement, source));
-	export const isApplicable = (replacement: Edit.Value, source: string) =>
-		make(Edit.isApplicable(replacement, source));
 }

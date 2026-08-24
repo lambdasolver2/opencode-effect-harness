@@ -1,11 +1,13 @@
 /**
- * Source — session acquisition contracts. Two adapters:
- *  - Live: event-driven, server plugin context (no list/export)
- *  - Historical: full @opencode-ai/client in the TUI/CLI collector
+ * Source — session acquisition ports plus the bounded digest builder.
+ * Two adapters exist: Live (server plugin, event-driven) and Historical
+ * (companion full-client). The server context can NEVER enumerate history.
  */
-import { Effect, Schema, Stream } from 'effect';
+import { Context, Effect, Schema, Stream } from 'effect';
 
 import { Digest as TraceDigest } from './Trace.ts';
+import type { SessionEvent } from './Trace.ts';
+export type { SessionEvent };
 
 export class Summary extends Schema.Class<Summary>('SessionSummary')({
 	sessionID: Schema.String,
@@ -14,31 +16,43 @@ export class Summary extends Schema.Class<Summary>('SessionSummary')({
 	updatedAt: Schema.String
 }) {}
 
-export type SessionEvent =
-	| { readonly kind: 'text'; readonly text: string }
-	| { readonly kind: 'reasoning'; readonly text: string }
-	| { readonly kind: 'tool'; readonly toolName: string; readonly input: unknown; readonly output?: string }
-	| { readonly kind: 'usage'; readonly tokensIn: number; readonly tokensOut: number }
-	| { readonly kind: 'execution'; readonly outcome: 'success' | 'failed' | 'interrupted' }
-	| { readonly kind: 'compaction' };
+export class SourceError extends Schema.TaggedError<SourceError>()(
+	'SourceError',
+	{ reason: Schema.String }
+) {}
 
 export namespace Live {
 	export interface Service {
-		readonly explicit: (sessionID: string) => Effect.Effect<Summary, Error>;
-		readonly follow: Stream.Stream<SessionEvent>;
+		explicit(sessionID: string): Effect.Effect<Summary, SourceError>;
+		follow(): Stream.Stream<SessionEvent>;
 	}
+
+	export class Tag extends Context.Service<Tag, Service>()(
+		'opencode-effect-harness/compound/LiveSessionSource'
+	) {}
+}
+
+export interface HistoricalPage {
+	readonly summaries: ReadonlyArray<Summary>;
+	readonly nextCursor?: string | undefined;
 }
 
 export namespace Historical {
 	export interface Service {
-		readonly list: (
-			scope: 'project' | 'all',
-			filter?: { readonly directory?: string; readonly since?: string }
-		) => Effect.Effect<ReadonlyArray<Summary>, Error>;
-		readonly export: (
-			id: string
-		) => Effect.Effect<{ info: Summary; messages: ReadonlyArray<unknown> }, Error>;
+		list(input: {
+			readonly scope: 'project' | 'all';
+			readonly directory?: string | undefined;
+			readonly cursor?: string | undefined;
+		}): Effect.Effect<HistoricalPage, SourceError>;
+		exportSanitized(sessionID: string): Effect.Effect<
+			{ info: Summary; messages: ReadonlyArray<unknown> },
+			SourceError
+		>;
 	}
+
+	export class Tag extends Context.Service<Tag, Service>()(
+		'opencode-effect-harness/compound/HistoricalSessionSource'
+	) {}
 }
 
 /** Build a bounded TraceDigest from raw trace parts. Pure. */

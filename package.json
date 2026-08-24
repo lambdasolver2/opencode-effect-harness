@@ -6,8 +6,7 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*",
-    "harnesses/*"
+    "packages/*"
   ],
   "scripts": {
     "test": "vitest run",
@@ -15,18 +14,21 @@
     "typecheck": "tsgo --noEmit || tsc --noEmit",
     "check": "bun run typecheck && bun run test",
     "probe": "bun run scripts/probe.ts",
-    "build:publishable": "bun run packages/effect-harness/scripts/build.ts"
+    "typecheck:tsgo": "tsgo --noEmit",
+    "e2e": "bun run scripts/e2e-client.ts",
+    "pack:probe": "bash scripts/pack-probe.sh"
   },
   "devDependencies": {
     "@ast-grep/napi": "^0.42.3",
+    "@effect/tsgo": "^0.36.5",
     "@effect/vitest": "4.0.0-rc.110",
-    "@types/bun": "^1.3.14",
-    "typescript": "^5.9.2",
-    "vitest": "^4.1.7",
-    "yaml": "^2.9.0",
     "@opencode-ai/plugin": "0.0.0-beta-17898",
     "@opencode-ai/schema": "0.0.0-beta-17898",
-    "effect": "4.0.0-rc.110"
+    "@types/bun": "^1.3.14",
+    "effect": "4.0.0-rc.110",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.7",
+    "yaml": "^2.9.0"
   },
   "catalog": {
     "@ast-grep/napi": "^0.42.3",

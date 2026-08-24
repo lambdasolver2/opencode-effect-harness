@@ -29,7 +29,7 @@ export namespace Intent {
 
 export namespace Intent {
 	/** Raw content view: write content, or joined newTexts of edits. */
-	export const contentRaw = (intent: WriteFile | EditFile): string => {
+	export const contentRaw = (intent: Intent.WriteFile | Intent.EditFile): string => {
 		const parts =
 			intent instanceof Intent.WriteFile
 				? [intent.content]
@@ -38,11 +38,4 @@ export namespace Intent {
 				);
 		return parts.join('\n');
 	};
-}
-
-import { make } from 'effect/unstable/reactivity/Atom';
-
-export namespace IntentAtoms {
-	export const contentRaw = (intent: Intent.WriteFile | Intent.EditFile) =>
-		make(Intent.contentRaw(intent));
 }

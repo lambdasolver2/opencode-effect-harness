@@ -1,8 +1,8 @@
 import type { Rule as AstGrepRuleDefinition } from '@ast-grep/napi';
-
+import picomatch from 'picomatch';
 import { Schema } from 'effect';
 
-import { Rule } from './Rule.ts';
+import { RuleDefinition } from './RuleDefinition.ts';
 
 export namespace Pattern {
 	export const Event = Schema.Literals(['before', 'after'] as const);
@@ -15,7 +15,7 @@ export namespace Pattern {
 		}
 	) {}
 
-	const AstGrepRuleDefinition = Schema.declare<AstGrepRuleDefinition>(
+	const AstGrepRuleDefinitionSchema = Schema.declare<AstGrepRuleDefinition>(
 		(input): input is AstGrepRuleDefinition =>
 			typeof input === 'object' && input !== null &&
 			!Array.isArray(input),
@@ -27,13 +27,12 @@ export namespace Pattern {
 		{
 			// An AST detector matches if ANY of these ast-grep patterns or rule
 			// objects matches. YAML frontmatter may spell legacy `pattern` as a
-			// single string or a list; the catalog normalizes both forms to this
-			// array. Full ast-grep rule objects are read from `rule` / `rules`.
+			// single string or a list; the catalog normalizes both forms.
 			patterns: Schema.Array(Schema.String),
 			inside: Schema.optionalKey(Schema.String),
-			rules: Schema.optionalKey(Schema.Array(AstGrepRuleDefinition)),
+			rules: Schema.optionalKey(Schema.Array(AstGrepRuleDefinitionSchema)),
 			constraints: Schema.optionalKey(
-				Schema.Record(Schema.String, AstGrepRuleDefinition)
+				Schema.Record(Schema.String, AstGrepRuleDefinitionSchema)
 			)
 		}
 	) {}
@@ -50,12 +49,12 @@ export namespace Pattern {
 		snippet: Schema.String
 	}) {}
 
-	export class Value extends Schema.Class<Value>('Pattern')({
+	export class Value extends Schema.Class<Value>('PatternValue')({
 		name: Schema.String,
 		description: Schema.String,
 		event: Event,
 		toolRegex: Schema.String,
-		level: Rule.Severity,
+		level: RuleDefinition.Severity,
 		glob: Schema.optionalKey(Schema.String),
 		ignoreGlob: Schema.optionalKey(Schema.Array(Schema.String)),
 		detector: Detector,
@@ -63,28 +62,17 @@ export namespace Pattern {
 		suggestedSkills: Schema.optionalKey(Schema.Array(Schema.String)),
 		sourcePath: Schema.String
 	}) {}
-}
 
-export namespace Pattern {
-	/** Suffix/equality glob check used by catalog consumers. */
+	/** Real glob semantics (picomatch) — equality/suffix was insufficient. */
 	export const globMatchesFilePath = (
 		pattern: Value,
 		filePath?: string
 	): boolean => {
 		if (pattern.glob === undefined) return true;
 		if (filePath === undefined) return false;
-		return pattern.glob === filePath || filePath.endsWith(pattern.glob);
+		return picomatch(pattern.glob)(filePath);
 	};
 
 	export const matchesToolName = (pattern: Value, toolName: string): boolean =>
 		new RegExp(pattern.toolRegex).test(toolName);
-}
-
-import { make } from 'effect/unstable/reactivity/Atom';
-
-export namespace PatternAtoms {
-	export const globMatchesFilePath = (pattern: Pattern.Value, filePath?: string) =>
-		make(Pattern.globMatchesFilePath(pattern, filePath));
-	export const matchesToolName = (pattern: Pattern.Value, toolName: string) =>
-		make(Pattern.matchesToolName(pattern, toolName));
 }

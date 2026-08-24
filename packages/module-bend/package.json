@@ -1,0 +1,22 @@
+{
+  "$schema": "https://www.schemastore.org/package.json",
+  "name": "@opencode-effect-harness/module-bend",
+  "version": "0.2.0-alpha.1",
+  "description": "Bend verification module example: own skills/patterns catalogs, bend check.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src",
+    "assets"
+  ],
+  "dependencies": {
+    "@effect/platform-node": "catalog:",
+    "effect": "catalog:",
+    "opencode-harness-kit": "workspace:*",
+    "opencode-harness-shared": "workspace:*",
+    "opencode-verify-kit": "workspace:*"
+  }
+}

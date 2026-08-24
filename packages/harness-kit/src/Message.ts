@@ -11,19 +11,10 @@ export namespace Message {
 		content: Schema.String,
 		deliverAs: Schema.optionalKey(Delivery)
 	}) {}
-}
 
-export namespace Message {
 	export const isEmpty = (message: Message.Value): boolean =>
 		message.content.trim().length === 0;
 
 	export const normalized = (message: Message.Value): string =>
 		message.content.replace(/\s+/g, ' ').trim();
-}
-
-import { make } from 'effect/unstable/reactivity/Atom';
-
-export namespace MessageAtoms {
-	export const isEmpty = (message: Message.Value) => make(Message.isEmpty(message));
-	export const normalized = (message: Message.Value) => make(Message.normalized(message));
 }
