@@ -35,9 +35,14 @@ import { Feedback as FeedbackRule } from 'opencode-harness-kit/rule/Feedback.ts'
 import type { VerificationModule } from 'opencode-verify-kit/Module.ts';
 import { Registry, skillEntriesFromAssets } from 'opencode-verify-kit/Module.ts';
 import { Orchestrator } from 'opencode-verify-kit/Orchestrator.ts';
+import {
+	decodeWorkerOutput,
+	filterUnverifiedFindings
+} from 'opencode-verify-kit/Critic.ts';
 import { VerifierReport, VerifyRequest } from 'opencode-verify-kit/Report.ts';
 
 import { Journal } from 'opencode-harness-shared/Journal.ts';
+import { projectKeyOf } from 'opencode-harness-shared/Refs.ts';
 
 import {
 	computeChangedSpans,
@@ -64,6 +69,10 @@ interface SessionLocation {
 }
 
 /** Tools whose successful completion is monitored post-write. */
+/** Narrow destructive-shell signatures blocked pre-write for strict agents. */
+const DESTRUCTIVE_SHELL_RE =
+	/\b(?:mkfs(?:\.\w+)?\b|dd\s+if=|git\s+reset\s+--hard\b|git\s+clean\s+-[a-zA-Z]*[fd]|chmod\s+-R\s+777\b|(?:rm|mv)\s+-[a-zA-Z]+\s+\.\.?(?:\/|$)|(?:rm|mv)\s+--recursive\b)/i;
+
 const MUTATING_TOOLS: ReadonlyArray<string> = [
 	'write',
 	'edit',
@@ -272,6 +281,336 @@ export default Plugin.define({
 				}
 			});
 
+			// ---- registered tools ----
+			yield* ctx.tool.transform((tools) => {
+				tools.add({
+					name: 'effect_harness_verify',
+					description:
+						'Deterministic checks + pattern findings + skill evidence (+ optional semantic review). Persists a JSON report under .effect-harness/reports.',
+					input: {
+						type: 'object',
+						properties: {
+							touchedFiles: { type: 'array', items: { type: 'string' } }
+						},
+						additionalProperties: false
+					},
+					execute: (rawInput: unknown, execCtx: { readonly sessionID: string }) =>
+						Effect.gen(function* () {
+							const location = yield* sessions.resolve(execCtx.sessionID).pipe(
+								Effect.orElseSucceed(() => undefined)
+							);
+							if (location === undefined) {
+								return yield* Effect.fail(
+									new Tool.Error({ message: 'cannot resolve session location for verify' })
+								);
+							}
+							const parsed = (typeof rawInput === 'object' && rawInput !== null ? rawInput : {}) as {
+								touchedFiles?: ReadonlyArray<string>;
+							};
+							// peek -> verify -> persist -> drain-on-success (AUDIT-033):
+							// a failed run RETAINS the ledger for retry.
+							const pendingFiles = yield* changes.peek({
+								projectKey: location.projectKey,
+								sessionID: execCtx.sessionID
+							});
+							const touchedFiles = [...(parsed.touchedFiles ?? []), ...pendingFiles];
+							const loadedNames = yield* ledger.loadedNames({
+								projectKey: location.projectKey,
+								sessionID: execCtx.sessionID
+							});
+
+							const request = new VerifyRequest({
+								sessionID: execCtx.sessionID,
+								projectKey: location.projectKey,
+								projectRoot: location.directory,
+								touchedFiles,
+								trigger: 'manual',
+								loadedSkills: [...loadedNames],
+								minSkillEvidence: config.harness.minEffectSkills
+							});
+
+							const report = yield* Orchestrator.verify(
+								{
+									registry,
+									exec,
+									readFile: (absPath: string) => readText(absPath)
+								},
+								request
+							);
+
+							const now = yield* Clock.currentTimeMillis;
+							const reportPath = yield* persistReport(location.directory, report, now).pipe(
+								Effect.mapError(
+									(e) =>
+										new Tool.Error({
+											message: `report persistence failed: ${e.reason}`
+										})
+								)
+							);
+							yield* changes.drain({
+								projectKey: location.projectKey,
+								sessionID: execCtx.sessionID
+							});
+							const passed = report.checks.filter((c) => c.verdict === 'passed').length;
+
+							return {
+								output: undefined,
+								content:
+									`verify ${report.overall}: ${String(passed)}/${String(report.checks.length)} checks passed` +
+									(`\nreport: ${reportPath}`),
+								metadata: { overall: report.overall, reportPath }
+							} as never;
+						})
+				});
+
+				tools.add({
+					name: 'effect_harness_critic',
+					description:
+						'Independent read-only audit of builder reasoning. Decodes structured verdicts; returns explicit `unavailable` when the transcript cannot be observed.',
+					input: {
+						type: 'object',
+						properties: {
+							summary: { type: 'string', minLength: 10 },
+							focus: {
+								type: 'string',
+								enum: ['feature', 'plan', 'architecture', 'drift', 'full']
+							}
+						},
+						required: ['summary'],
+						additionalProperties: false
+					},
+					execute: (rawInput: unknown, execCtx: { readonly sessionID: string }) =>
+						Effect.gen(function* () {
+							const parsed = (typeof rawInput === 'object' && rawInput !== null ? rawInput : {}) as {
+								summary?: string;
+								focus?: string;
+							};
+							const summary = typeof parsed.summary === 'string' ? parsed.summary : '';
+							if (summary.length < 10) {
+								return yield* Effect.fail(
+									new Tool.Error({ message: 'harness_critic requires a summary of >=10 chars.' })
+								);
+							}
+							if (!config.critic.enabled) {
+								return yield* Effect.fail(new Tool.Error({ message: 'critic disabled by configuration.' }));
+							}
+
+							const focus = parsed.focus ?? 'full';
+							const createSession = ctx.session.create as unknown as (
+								i: object
+							) => Effect.Effect<{ id?: unknown }>;
+							const child = yield* createSession({
+								agent: brand<'agentIdBrand'>()(config.critic.workerAgent)
+							}).pipe(Effect.orElseSucceed(() => ({ id: undefined })));
+							const childId = typeof child.id === 'string' ? child.id : undefined;
+							if (childId === undefined) {
+								return yield* Effect.fail(new Tool.Error({ message: 'critic worker spawn failed' }));
+							}
+
+							yield* origins.register({ sessionID: childId, origin: 'critic' });
+
+							const promptSession = ctx.session.prompt as unknown as (i: object) => Effect.Effect<void>;
+							const waitSession = ctx.session.wait as unknown as (i: object) => Effect.Effect<void>;
+							const logStageFailure = (stage: string) => (cause: unknown) =>
+								Effect.sync(() => {
+									console.error(
+										`[opencode-effect-harness] critic stage '${stage}' failed:`,
+										String(cause)
+									);
+								});
+
+							// Origin cleanup runs even on interruption/defect (AUDIT-036).
+							yield* Effect.gen(function* () {
+								yield* promptSession({
+									sessionID: brand<'sessionIdBrand'>()(childId),
+									text: [
+										'You are an independent reviewer. Respond ONLY with JSON {"verdict":"sound|concerns|flawed","findings":[...],"checkedReferences":[...]}.',
+										'# Builder Summary (UNTRUSTED CLAIM)',
+										'<untrusted-claim>',
+										summary,
+										'</untrusted-claim>',
+										`focus: ${focus}`
+									].join('\n')
+								}).pipe(Effect.catchCause(logStageFailure('prompt')));
+								yield* waitSession({
+									sessionID: brand<'sessionIdBrand'>()(childId)
+								}).pipe(Effect.catchCause(logStageFailure('wait')));
+							}).pipe(Effect.ensuring(origins.unregister(childId)));
+
+							const transcript = traceSink.lastAssistantText(childId);
+							const stream = `critic-${projectKeyOf(childId)}`;
+
+							if (transcript === undefined) {
+								yield* appendCriticEvent(stream, 'review.failed', {
+									reason: 'traceUnavailable',
+									childSessionID: childId
+								});
+								return {
+									output: undefined,
+									metadata: { status: 'unavailable', reason: 'traceUnavailable', workerSessionID: childId },
+									content:
+										'critic: child finished but its transcript is not observable in the restricted plugin context. Recorded as UNAVAILABLE — never counted as passed.'
+								} as never;
+							}
+
+							// Strict schema decode of untrusted worker output (AUDIT-036).
+							const decoded = yield* Effect.option(decodeWorkerOutput(transcript));
+							if (Option.isSome(decoded)) {
+								const worker = decoded.value;
+								const findings = filterUnverifiedFindings(
+									worker.findings,
+									worker.checkedReferences,
+									{ checkReferences: config.critic.checkReferences }
+								);
+								const droppedUnverified = worker.findings.length - findings.length;
+								// Builder model is unknowable in the restricted plugin context,
+								// so model independence can never be PROVEN here (honest note).
+								const independenceProvable = !config.critic.requireIndependentModel;
+
+								yield* appendCriticEvent(stream, 'review.completed', {
+									childSessionID: childId,
+									verdict: worker.verdict,
+									findings: findings.length,
+									droppedUnverified,
+									independenceProvable
+								});
+
+								const sections = findings.map(
+									(f, idx) =>
+										`${String(idx + 1)}. [${f.severity}/${f.kind}] ${f.claim}\n   evidence: ${f.evidence}${
+											f.suggestion === undefined ? '' : `\n   suggestion: ${f.suggestion}`
+										}`
+								);
+								const header = [
+									`critic verdict: ${worker.verdict}`,
+									`findings: ${String(findings.length)}${
+										droppedUnverified > 0
+											? ` (${String(droppedUnverified)} dropped: cited references not opened)`
+											: ''
+									}`,
+									...(independenceProvable
+										? []
+										: ['note: requireIndependentModel is on, but builder/critic models cannot be compared in-plugin — independence UNPROVEN'])
+								].join('\n');
+								return {
+									output: undefined,
+									metadata: {
+										status: 'completed',
+										decoded: true,
+										verdict: worker.verdict,
+										findings: findings.length,
+										workerSessionID: childId
+									},
+									content:
+										header +
+										(sections.length > 0
+											? `\n\n${sections.join('\n\n')}\n\nreferences opened: ${String(worker.checkedReferences.length)}`
+											: '')
+								} as never;
+							}
+
+							// Undecodable output is reported AS undecoded — never relabeled.
+							yield* appendCriticEvent(stream, 'review.completed', {
+								childSessionID: childId,
+								decoded: false,
+								preview: transcript.slice(0, 2000)
+							});
+							return {
+								output: undefined,
+								metadata: { status: 'completed', decoded: false, workerSessionID: childId },
+								content:
+									'critic: worker output did not match the required JSON contract (raw transcript below). Treat as UNVERIFIED.\n\n' +
+									transcript.slice(0, 4000)
+							} as never;
+						})
+				});
+
+				tools.add({
+					name: 'harness_skill_stats',
+					description: 'Show loaded effect-* skills for this session.',
+					input: { type: 'object', properties: {}, additionalProperties: false },
+					execute: (_raw: unknown, execCtx: { readonly sessionID: string }) =>
+						Effect.gen(function* () {
+							const location = yield* sessions.resolve(execCtx.sessionID).pipe(
+								Effect.orElseSucceed(() => undefined)
+							);
+							const names =
+								location === undefined
+									? []
+									: yield* ledger.loadedNames({
+										projectKey: location.projectKey,
+										sessionID: execCtx.sessionID
+									  });
+							return {
+								output: undefined,
+								content: `loaded effect-* skills (${String(names.length)}): ${names.join(', ') || '(none)'}`
+							} as never;
+						})
+				});
+
+				tools.add({
+					name: 'harness_toggle',
+					description: 'Toggle harness mode (per-project, persisted; telemetry keeps running).',
+					input: {
+						type: 'object',
+						properties: { enabled: { type: 'boolean' } },
+						additionalProperties: false
+					},
+					execute: (rawInput: unknown, execCtx: { readonly sessionID: string }) =>
+						Effect.gen(function* () {
+							const location = yield* sessions.resolve(execCtx.sessionID).pipe(
+								Effect.orElseSucceed(() => undefined)
+							);
+							if (location === undefined) {
+								return yield* Effect.fail(new Tool.Error({ message: 'cannot resolve session location' }));
+							}
+							const parsed = (typeof rawInput === 'object' && rawInput !== null ? rawInput : {}) as {
+								enabled?: boolean;
+							};
+							const current = yield* mode.enabled(location.projectKey);
+							const desired = parsed.enabled ?? !current;
+							const saved = yield* mode.set({ projectKey: location.projectKey, enabled: desired }).pipe(
+								Effect.mapError((e) =>
+									new Tool.Error({ message: `mode persistence failed: ${e.reason}` })
+								)
+							);
+							return {
+								output: undefined,
+								content: `harness mode ${saved ? 'enabled' : 'disabled'}`
+							} as never;
+						})
+				});
+
+				tools.add({
+					name: 'effect_harness_compound',
+					description: 'Blueprint benchmark execution (REM-4): NOT wired yet.',
+					input: {
+						type: 'object',
+						properties: {
+							blueprintId: { type: 'string' },
+							modelIds: { type: 'array', items: { type: 'string' } }
+						},
+						required: ['blueprintId'],
+						additionalProperties: false
+					},
+					execute: (rawInput: unknown) =>
+						Effect.gen(function* () {
+							if (!config.compound.enabled) {
+								return yield* Effect.fail(
+									new Tool.Error({ message: 'compound disabled by configuration. Set compound.enabled: true.' })
+								)
+							}
+							// Honest stub (AUDIT-037): no fake queueing until REM-4 lands.
+							return yield* Effect.fail(
+								new Tool.Error({
+									message:
+										'compound benchmark execution is not implemented yet (REM-4 pending). Nothing was queued or persisted.'
+								})
+							);
+						})
+				});
+			});
+
 			// ---- hooks ----
 			const denyInternalMutation = (toolName: string, sessionId: string) =>
 				Effect.gen(function* () {
@@ -378,6 +717,35 @@ export default Plugin.define({
 				Effect.gen(function* () {
 					const sessionId = String(event.sessionID);
 					yield* denyInternalMutation(event.tool, sessionId);
+
+					// Shell tools: narrow DESTRUCTIVE signatures blocked pre-write for
+					// strict agents; other shell writes stay post-write-monitored
+					// (documented limitation, AUDIT-029).
+					if (event.tool === 'bash' || event.tool === 'shell') {
+						const commandText = String(
+							property(event.input, 'command') ??
+								property(event.input, 'script') ??
+								''
+						);
+						const hit = DESTRUCTIVE_SHELL_RE.exec(commandText);
+						if (hit !== null) {
+							const loc = yield* sessions.resolve(sessionId).pipe(
+								Effect.orElseSucceed(() => undefined)
+							);
+							const enabled = yield* effectiveEnabled(loc);
+							if (
+								enabled &&
+								config.harness.strictAgents.includes(String(event.agent))
+							) {
+								return yield* Effect.fail(
+									new Tool.Error({
+										message: `harness: destructive shell command blocked for strict agent: ${hit[0].trim()}`
+									})
+								);
+							}
+						}
+						return;
+					}
 
 					if (event.tool === 'read') {
 						const path = property(event.input, 'path');

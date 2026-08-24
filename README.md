@@ -46,9 +46,11 @@ local clone:
 | `execute.after` | Credits skill reads; diff-based changed spans -> kernel pattern feedback appended INLINE to the tool result; change ledger for auto-verify |
 | `session.hook('context')` | Injects policy header; restricts internal worker tools |
 
-Known limitations: `bash`/`shell` mutations are not gated pre-write (detection
-is post-write only), and `write`/`edit` are fully gated while `patch`-style
-tools rely on post-write feedback plus ledger recording.
+Shell coverage: narrow DESTRUCTIVE signatures (`rm -rf`, `git reset --hard`,
+`mkfs`, `dd if=`, `chmod -R 777`, fork bombs) are BLOCKED pre-write for strict
+agents; other `bash`/`shell` writes remain post-write-only by design.
+`write`/`edit` are fully gated pre-write; `patch`-style tools rely on post-write
+feedback plus ledger recording.
 
 ## Development
 

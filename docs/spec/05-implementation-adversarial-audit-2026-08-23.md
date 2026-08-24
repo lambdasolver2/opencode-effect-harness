@@ -1822,3 +1822,37 @@ being fixed and documents why it must be closed.
 4. Fake-context adapter contract suite and live-server e2e (AUDIT-044).
 5. Whole-repo self-pattern scan command referenced by AGENTS.md (AUDIT-044).
 6. bash/shell pre-write gating decision (documented deviation, AUDIT-029).
+
+## Appendix Entry AUDIT-EVENT-2026-08-24-06
+
+- Recorded at: 2026-08-24
+- Repository snapshot: working tree after `7a60480`
+- Actor: implementation agent
+- Related findings: AUDIT-029, AUDIT-036, AUDIT-039, AUDIT-044
+- Event: remediation report (second pass)
+- Decision: record additional closures and one REGRESSION found and fixed
+
+### Regression discovered and fixed in this pass
+
+Commit `7a60480` accidentally DROPPED the entire `ctx.tool.transform`
+registration block: the plugin loaded with ZERO registered tools (this also
+explains the Code Mode tool catalog disappearing mid-session). The five tools
+(verify/critic/skill_stats/toggle/compound) were restored before any server
+reload shipped this state. Lesson recorded: a composition-root rewrite must be
+diffed against the previous registration surface, not just compiled.
+
+### Dispositions updated
+
+| Finding | Status | Evidence |
+|---|---|---|
+| AUDIT-036 critic durability | FIXED | child prompt/wait wrapped in `Effect.ensuring(origins.unregister(...))`; strict `decodeWorkerOutput` on transcript; findings filtered via `filterUnverifiedFindings` under `critic.checkReferences`; undecodable output returned AS UNVERIFIED (never relabeled); requireIndependentModel reported as UNPROVEN honestly; stage failures logged |
+| AUDIT-039 workspace isolation | PARTIAL | Env stamps `.harness-workspace-owner.json` atomically; destroy REFUSES unowned or foreign-root directories; missing fixtureDir now fails loudly; modelLabel in workspace prefix. Cross-process run-key persistence + Evolution→Store wiring remain OPEN |
+| AUDIT-029 mutation bypass | FURTHER CLOSED | narrow destructive-shell signatures (rm -rf / git reset --hard / mkfs / dd / chmod -R 777 / fork bomb) blocked PRE-WRITE for strict agents; general shell stays post-write-only (documented) |
+| AUDIT-044 whole-repo scan | FIXED | new `src/SelfPatternScan.test.ts` runs ALL 47 detectors over every non-test TS file; `src/self-pattern-baseline.ts` freezes current debt (46 files / 123 hits); NEW hits fail, STALE entries fail — baseline must shrink; wired into AGENTS.md |
+
+### Validation
+
+- `bunx tsgo --noEmit`: clean.
+- `bunx tsc --noEmit`: clean.
+- `bunx vitest run src/SelfPatternScan.test.ts`: passed (~39s).
+- Full suites recorded below in the commit message.
