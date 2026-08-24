@@ -6,6 +6,7 @@
  * exit-vs-signal distinction, and a minimal environment allowlist. Node
  * process APIs are confined to this adapter file.
  */
+import { spawn } from 'node:child_process';
 import { Effect, Layer } from 'effect';
 
 import { CommandResult, CommandSpec, Exec, ExecError } from 'opencode-harness-shared';
@@ -28,8 +29,7 @@ const spawnOnce = (
 		Effect.tryPromise({
 			try: () =>
 				new Promise<SpawnOutcome>((resolve, reject) => {
-					const { spawn } = require('node:child_process') as typeof import('node:child_process');
-					const child = spawn(spec.executable, [...spec.args], {
+						const child = spawn(spec.executable, [...spec.args], {
 						cwd,
 						env,
 						stdio: ['ignore', 'pipe', 'pipe']
@@ -43,12 +43,12 @@ const spawnOnce = (
 					let truncated = false;
 
 					const dec = new TextDecoder();
-					child.stdout.on('data', (chunk: Buffer) => {
+					child.stdout!.on('data', (chunk: Buffer) => {
 						outBytes += chunk.byteLength;
 						if (outBytes <= cap) out += dec.decode(chunk);
 						else truncated = true;
 					});
-					child.stderr.on('data', (chunk: Buffer) => {
+					child.stderr!.on('data', (chunk: Buffer) => {
 						errBytes += chunk.byteLength;
 						if (errBytes <= cap) err += dec.decode(chunk);
 						else truncated = true;

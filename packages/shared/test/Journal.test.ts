@@ -88,7 +88,7 @@ describe('Journal (append-only)', () => {
 					const after = yield* j.read('s');
 					expect(after).toHaveLength(2);
 
-					const files = readdirSync(baseDir).filter((f) => f.includes('.corrupt'));
+					const files = readdirSync(baseDir).filter((f: string) => f.includes('.corrupt'));
 					expect(files.length).toBe(1);
 				}).pipe(Effect.provide(Journal.layer(baseDir).pipe(Layer.provide(platform))))
 			);

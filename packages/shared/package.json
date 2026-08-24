@@ -12,6 +12,7 @@
     "effect": "catalog:"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "@effect/platform-node": "catalog:"
   }
 }

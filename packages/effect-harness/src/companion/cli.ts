@@ -10,7 +10,7 @@
  */
 import { Effect } from 'effect';
 
-import { Collector } from './Collector.ts';
+import * as CollectorModule from './Collector.ts';
 
 const args = process.argv.slice(2);
 const command = args[0] ?? 'sessions';
@@ -19,7 +19,7 @@ const baseUrl =
 	`http://127.0.0.1:${process.env.OPENCODE_PORT ?? '49374'}`;
 
 const program = Effect.gen(function* () {
-	const collector = Collector.make({
+	const collector = CollectorModule.make({
 		baseUrl,
 		...(process.env.OPENCODE_DIRECTORY !== undefined
 			? { directory: process.env.OPENCODE_DIRECTORY }

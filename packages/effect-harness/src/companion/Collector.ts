@@ -1,24 +1,24 @@
 /**
  * Collector — companion-side HistoricalSessionSource over the full OpenCode
- * client (spec A17/A19). Runs OUTSIDE the plugin process; the server plugin
- * never imports this file.
+ * client (spec A17/A19). Runs OUTSIDE the plugin process.
  */
-import { Effect, Layer } from 'effect';
-import { FetchHttpClient } from 'effect/unstable/http';
-import { OpenCode } from '@opencode-ai/client/effect';
+import { Effect } from 'effect'
+import { FetchHttpClient } from 'effect/unstable/http'
+import { OpenCode } from '@opencode-ai/client/effect'
 
-import { SourceError, Summary, type Historical, type HistoricalPage } from 'opencode-compound-kit/Source.ts';
+import type { Historical, HistoricalPage } from 'opencode-compound-kit/Source.ts'
+import { SourceError, Summary } from 'opencode-compound-kit/Source.ts'
 
 export interface CollectorOptions {
-	readonly baseUrl: string;
-	readonly directory?: string | undefined;
+	readonly baseUrl: string
+	readonly directory?: string | undefined
 }
 
 interface RawInfo {
-	id?: unknown;
-	title?: unknown;
-	directory?: unknown;
-	updatedAt?: unknown;
+	id?: unknown
+	title?: unknown
+	directory?: unknown
+	updatedAt?: unknown
 }
 
 const toSummary = (info: RawInfo): Summary =>
@@ -26,60 +26,35 @@ const toSummary = (info: RawInfo): Summary =>
 		sessionID: String(info.id ?? ''),
 		...(typeof info.title === 'string' ? { title: info.title } : {}),
 		...(typeof info.directory === 'string' ? { directory: info.directory } : {}),
-		updatedAt:
-			typeof info.updatedAt === 'string'
-				? info.updatedAt
-				: new Date().toISOString()
-	});
+		updatedAt: typeof info.updatedAt === 'string' ? info.updatedAt : new Date().toISOString()
+	})
 
-export namespace Collector {
-	export const make = (options: CollectorOptions): Historical.Service => ({
-		list: () =>
-			Effect.gen(function* () {
-				const client = yield* OpenCode.make({ baseUrl: options.baseUrl }).pipe(Effect.provide(FetchHttpClient.layer));
-				const summaries: Array<Summary> = [];
-				let cursor: string | undefined;
-
-				paginate: {
-				}
-					const page: {
-						data: ReadonlyArray<RawInfo>;
-						cursor?: { readonly next?: string | undefined };
-					} = yield* client.session
-						.list({
-							...(options.directory !== undefined
-								? { directory: options.directory as never }
-								: {}),
-							...(cursor !== undefined ? { cursor: cursor as never } : {})
-						})
-						.pipe(
-							Effect.mapError(
-								(): SourceError =>
-									new SourceError({ reason: 'session list failed' })
-							)
-						);
-
-					summaries.push(...page.data.map(toSummary));
-					cursor = page.cursor?.next;
-					if (cursor === undefined || summaries.length >= 1000) break;
-				}
-				const page: HistoricalPage = { summaries };
-				return page;
-			}),
+export const make = (options: CollectorOptions): Historical.Service => ({
+	list: () =>
+		Effect.gen(function* () {
+			const client = yield* Effect.provide(
+				OpenCode.make({ baseUrl: options.baseUrl }),
+				FetchHttpClient.layer
+			)
+			const page = yield* client.session.list({
+				...(options.directory !== undefined ? { directory: options.directory as never } : {})
+			}).pipe(
+				Effect.mapError((): SourceError => new SourceError({ reason: 'session list failed' }))
+			)
+			const summaries = page.data.map(toSummary)
+			const result: HistoricalPage = { summaries }
+			return result
+		}),
 
 		exportSanitized: (sessionID: string) =>
-			Effect.gen(function* () {
-				const client = yield* OpenCode.make({ baseUrl: options.baseUrl }).pipe(Effect.provide(FetchHttpClient.layer));
-				const out = yield* client.session.export({
-					sessionID: sessionID as never,
-					sanitize: true
-				});
-				return { info: toSummary(out.info), messages: out.messages };
+		Effect.gen(function* () {
+			const client = yield* OpenCode.make({ baseUrl: options.baseUrl }).pipe(Effect.provide(FetchHttpClient.layer))
+			const out = yield* client.session.export({
+				sessionID: sessionID as never,
+				sanitize: true
 			}).pipe(
-				Effect.mapError(
-					(cause): SourceError =>
-						new SourceError({ reason: `export failed: ${String(cause)}` })
-				)
+				Effect.mapError((): SourceError => new SourceError({ reason: 'export failed' }))
 			)
-	});
-}
+			return { info: toSummary(out.info), messages: out.messages }
+		})
+})

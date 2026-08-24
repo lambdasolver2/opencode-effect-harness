@@ -34,5 +34,8 @@
     "yaml": "^2.9.0",
     "@opencode-effect-harness/module-typescript": "workspace:*",
     "@opencode-effect-harness/module-bend": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0"
   }
 }

@@ -28,7 +28,8 @@
     "effect": "4.0.0-rc.110",
     "typescript": "^5.9.2",
     "vitest": "^4.1.7",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.0",
+    "@typescript/native-preview": "^7.0.0-dev"
   },
   "catalog": {
     "@ast-grep/napi": "^0.42.3",
