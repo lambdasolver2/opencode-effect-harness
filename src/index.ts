@@ -43,6 +43,7 @@ import { VerifierReport, VerifyRequest } from 'opencode-verify-kit/Report.ts';
 
 import { Journal } from 'opencode-harness-shared/Journal.ts';
 import { projectKeyOf } from 'opencode-harness-shared/Refs.ts';
+import { partitionWithinRoot } from 'opencode-harness-shared/PathGuard.ts';
 
 import {
 	computeChangedSpans,
@@ -68,10 +69,11 @@ interface SessionLocation {
 	readonly projectKey: string;
 }
 
-/** Tools whose successful completion is monitored post-write. */
-/** Narrow destructive-shell signatures blocked pre-write for strict agents. */
+/** Narrow destructive-shell signatures blocked pre-write for strict agents:
+ *  fork bombs, mkfs/dd, hard git resets/cleans, chmod -R 777, relative-path
+ *  rm/mv escapes, and rm of any flag combination targeting filesystem root. */
 const DESTRUCTIVE_SHELL_RE =
-	/\b(?:mkfs(?:\.\w+)?\b|dd\s+if=|git\s+reset\s+--hard\b|git\s+clean\s+-[a-zA-Z]*[fd]|chmod\s+-R\s+777\b|(?:rm|mv)\s+-[a-zA-Z]+\s+\.\.?(?:\/|$)|(?:rm|mv)\s+--recursive\b)/i;
+	/\b(?::\(\)\s*\{\s*:\|:&\s*\};:|mkfs(?:\.\w+)?\b|dd\s+if=|git\s+reset\s+--hard\b|git\s+clean\s+-[a-zA-Z]*[fd]|chmod\s+-R\s+777\b|(?:rm|mv)\s+-[a-zA-Z]+\s+\.\.?(?:\/|$)|\brm\s+(?:-{1,2}[a-zA-Z-]+\s+)+\/(?:\s|$))/i;
 
 const MUTATING_TOOLS: ReadonlyArray<string> = [
 	'write',
@@ -224,7 +226,11 @@ export default Plugin.define({
 							return [] as ReadonlyArray<VerificationModule>;
 						}
 						// Uniform contract: createModule({assetsRoot}) -> Effect (AUDIT-034).
-						const created = yield* factory({ assetsRoot }).pipe(
+						// Forward an assetsRoot override ONLY when explicitly configured;
+						// otherwise each module resolves its OWN bundled catalog.
+						const moduleOptions =
+							config.harness.assetsRoot !== undefined ? { assetsRoot } : {};
+						const created = yield* factory(moduleOptions).pipe(
 							providePlatform,
 							Effect.orElseSucceed(() => undefined)
 						);
@@ -247,7 +253,14 @@ export default Plugin.define({
 			const appendCriticEvent = (stream: string, kind: string, payload: unknown): Effect.Effect<void> =>
 				Journal.Service.use((j: Journal.Interface) =>
 					j.append({ stream, kind, payload, actor: 'critic' })
-				).pipe(Effect.provide(journalLayer), Effect.ignore);
+				).pipe(
+					Effect.provide(journalLayer),
+					Effect.catchCause((cause) =>
+						Effect.sync(() => {
+							console.error('[opencode-effect-harness] critic journal append failed:', String(cause));
+						})
+					)
+				);
 
 			// ---- skill catalog + capability-probed native registration ----
 			const skillEntries = yield* Effect.orElseSucceed(
@@ -307,13 +320,26 @@ export default Plugin.define({
 							const parsed = (typeof rawInput === 'object' && rawInput !== null ? rawInput : {}) as {
 								touchedFiles?: ReadonlyArray<string>;
 							};
+							// Caller-supplied paths are containment-checked fail-closed.
+							const requestedTouched = parsed.touchedFiles ?? [];
+							const touchedPartition = partitionWithinRoot(
+								location.directory,
+								requestedTouched
+							);
+							if (touchedPartition.escaped.length > 0) {
+								return yield* Effect.fail(
+									new Tool.Error({
+										message: `harness: touchedFiles escape project root (${touchedPartition.escaped.join(', ')})`
+									})
+								);
+							}
 							// peek -> verify -> persist -> drain-on-success (AUDIT-033):
 							// a failed run RETAINS the ledger for retry.
 							const pendingFiles = yield* changes.peek({
 								projectKey: location.projectKey,
 								sessionID: execCtx.sessionID
 							});
-							const touchedFiles = [...(parsed.touchedFiles ?? []), ...pendingFiles];
+							const touchedFiles = [...touchedPartition.contained, ...pendingFiles];
 							const loadedNames = yield* ledger.loadedNames({
 								projectKey: location.projectKey,
 								sessionID: execCtx.sessionID
@@ -394,6 +420,17 @@ export default Plugin.define({
 							if (!config.critic.enabled) {
 								return yield* Effect.fail(new Tool.Error({ message: 'critic disabled by configuration.' }));
 							}
+							// Independence POLICY is enforceable here: the restricted plugin
+							// context cannot compare builder/critic models, so requiring it
+							// must FAIL instead of completing with a note.
+							if (config.critic.requireIndependentModel) {
+								return yield* Effect.fail(
+									new Tool.Error({
+										message:
+											'critic: requireIndependentModel is enabled but model comparison is impossible in-plugin. Disable it or use the companion critic.'
+									})
+								);
+							}
 
 							const focus = parsed.focus ?? 'full';
 							const createSession = ctx.session.create as unknown as (
@@ -411,8 +448,10 @@ export default Plugin.define({
 
 							const promptSession = ctx.session.prompt as unknown as (i: object) => Effect.Effect<void>;
 							const waitSession = ctx.session.wait as unknown as (i: object) => Effect.Effect<void>;
+let stageFailed: string | undefined;
 							const logStageFailure = (stage: string) => (cause: unknown) =>
 								Effect.sync(() => {
+									stageFailed = stage;
 									console.error(
 										`[opencode-effect-harness] critic stage '${stage}' failed:`,
 										String(cause)
@@ -436,6 +475,23 @@ export default Plugin.define({
 									sessionID: brand<'sessionIdBrand'>()(childId)
 								}).pipe(Effect.catchCause(logStageFailure('wait')));
 							}).pipe(Effect.ensuring(origins.unregister(childId)));
+
+							if (stageFailed !== undefined) {
+								const streamFailed = `critic-${projectKeyOf(childId)}`;
+								yield* appendCriticEvent(streamFailed, 'review.failed', {
+									reason: `${stageFailed}-failed`,
+									childSessionID: childId
+								});
+								return {
+									output: undefined,
+									metadata: {
+										status: 'unavailable',
+										reason: `${stageFailed}-failed`,
+										workerSessionID: childId
+									},
+									content: `critic: ${stageFailed} stage failed — recorded as UNAVAILABLE, never counted as passed.`
+								} as never;
+							}
 
 							const transcript = traceSink.lastAssistantText(childId);
 							const stream = `critic-${projectKeyOf(childId)}`;
@@ -786,7 +842,7 @@ export default Plugin.define({
 					}
 
 					const intent = intentFromInput(event.input);
-					if (intent === undefined) return;
+					if (intent !== undefined) {
 
 					const decisions = yield* evaluateGate({
 						agent: String(event.agent),
@@ -801,6 +857,8 @@ export default Plugin.define({
 					if (blocked !== undefined) {
 						return yield* Effect.fail(new Tool.Error({ message: blocked.reason }));
 					}
+					}
+
 
 					// Pre-write snapshot capture with containment enforcement.
 					const affected = extractAffectedPaths(event.tool, event.input);
@@ -883,9 +941,18 @@ export default Plugin.define({
 					);
 					if (location === undefined) return;
 
+					// Persisted toggle disables post-write monitoring too (AUDIT-041).
+					const enabledNow = yield* effectiveEnabled(location);
+					if (!enabledNow) return;
+
 					// Change-ledger recording covers EVERY affected path, including
-					// patch-text paths (AUDIT-029).
-					const affectedPaths = extractAffectedPaths(event.tool, event.input);
+					// patch-text paths (AUDIT-029). Escapes are dropped loudly here;
+					// containment was already fail-closed in execute.before.
+					const affectedAll = extractAffectedPaths(event.tool, event.input);
+					const { contained: affectedPaths } = partitionWithinRoot(
+						location.directory,
+						affectedAll
+					);
 					yield* Effect.forEach(
 						affectedPaths,
 						(filePath) =>

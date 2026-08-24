@@ -22,7 +22,7 @@ const SKIP_DIRS = new Set([
 const REPO_ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
 
 const isScanned = (rel: string): boolean =>
-	rel.endsWith('.ts') &&
+	(rel.endsWith('.ts') || rel.endsWith('.tsx')) &&
 	!rel.endsWith('.test.ts') &&
 	!rel.startsWith('src/vitest.');
 

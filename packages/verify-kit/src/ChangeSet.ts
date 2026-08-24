@@ -5,6 +5,8 @@
  */
 import { Context, Effect, FileSystem, Layer, Path, Schema } from 'effect';
 
+import { withinRoot } from 'opencode-harness-shared/PathGuard.ts';
+
 export class ChangedFile extends Schema.Class<ChangedFile>('ChangedFile')({
 	path: Schema.String,
 	before: Schema.optionalKey(Schema.String),
@@ -43,8 +45,13 @@ export namespace ChangeSetProvider {
 					fromPaths: (input) =>
 						Effect.gen(function*() {
 							const capped = input.paths.slice(0, MAX_FILES);
+							// Out-of-root paths are DROPPED and reflected in `truncated`.
+							const contained = capped.filter(
+								(rel) => withinRoot(input.projectRoot, rel) !== undefined
+							);
+							const droppedOutside = capped.length - contained.length;
 							const files = yield* Effect.forEach(
-								capped,
+								contained,
 								(rel) => {
 									const abs = path.isAbsolute(rel)
 										? rel
@@ -64,7 +71,8 @@ export namespace ChangeSetProvider {
 							return new ChangeSet({
 								projectRoot: input.projectRoot,
 								files,
-								truncated: input.paths.length > MAX_FILES
+								truncated:
+								input.paths.length > MAX_FILES || droppedOutside > 0
 							});
 						})
 				});

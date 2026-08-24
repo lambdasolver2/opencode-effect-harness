@@ -83,11 +83,11 @@ export namespace Proposals {
 			Effect.map(statusAll(journal, stream), (all) =>
 				all
 					.filter((entry) => entry.status === 'pending')
-					.map((entry) =>
+					.map((row) =>
 						new PendingProposal({
-							id: entry.id,
-							insight: entry.insight,
-							proposedAt: 0
+							id: row.id,
+							insight: row.insight,
+							proposedAt: row.proposedAt ?? 0
 						})
 					)
 			),
@@ -121,6 +121,7 @@ export namespace Proposals {
 	): Effect.Effect<
 		ReadonlyArray<{
 			readonly id: string;
+			readonly proposedAt?: number | undefined;
 			readonly insight: CandidateInsight;
 			readonly status:
 				| 'pending'
@@ -134,6 +135,7 @@ export namespace Proposals {
 		Effect.map(journal.read(stream), (entries) => {
 			type Row = {
 				id: string;
+				proposedAt?: number;
 				insight: CandidateInsight;
 				status: 'pending' | 'approved' | 'edited-approved' | 'skipped' | 'rejected';
 				content?: string | undefined;
@@ -153,7 +155,12 @@ export namespace Proposals {
 					const insight = safeDecode(payload.insight);
 					if (insight !== undefined) {
 						const id = proposalId(insight.id);
-						acc.set(id, { id, insight, status: 'pending' });
+						acc.set(id, {
+						id,
+						proposedAt: entry.recordedAt,
+						insight,
+						status: 'pending'
+					});
 					}
 					return acc;
 				}
@@ -186,6 +193,7 @@ export namespace Proposals {
 			const rows = [...table.entries()].map(([, row]) => row);
 			return rows.map((row) => ({
 				id: row.id,
+				proposedAt: row.proposedAt,
 				insight: row.insight,
 				status: row.status,
 				...(row.content !== undefined ? { content: row.content } : {})

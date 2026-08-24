@@ -1856,3 +1856,63 @@ diffed against the previous registration surface, not just compiled.
 - `bunx tsc --noEmit`: clean.
 - `bunx vitest run src/SelfPatternScan.test.ts`: passed (~39s).
 - Full suites recorded below in the commit message.
+
+## Appendix Entry AUDIT-EVENT-2026-08-24-07
+
+- Recorded at: 2026-08-24
+- Repository snapshot: working tree after `bc0560a` (review-driven fixes)
+- Actor: implementation agent responding to critical re-review
+- Related findings: AUDIT-029, AUDIT-032, AUDIT-035, AUDIT-036, AUDIT-038,
+  AUDIT-039, AUDIT-044
+- Event: remediation report (third pass — defects in the previous remediation)
+- Decision: record corrections of regressions introduced by earlier passes
+
+### Defects found by re-review and FIXED here
+
+1. **Env.destroy could never delete owned workspaces** (`bc0560a`): the owner
+   marker was written as JSON but decoded WITHOUT parsing, so every workspace
+   was classified foreign. The existing test passed because it never asserted
+   removal. Fixed (JSON.parse before schema decode) and the test now asserts
+   removal AND refusal for unowned/out-of-scope directories (3 Env tests).
+   destroy is additionally scoped to `<root>/.workspaces`.
+2. **Bend module received the TypeScript assets root**: loader forwarded a
+   single global path. Now an override is forwarded ONLY when explicitly
+   configured; otherwise each module resolves its own bundled catalog.
+3. **Verification reads bypassed containment**: manual `touchedFiles` are now
+   fail-closed validated at the tool boundary; Orchestrator's joinPath uses
+   PathGuard (escapes yield no findings instead of reads); ChangeSet drops
+   out-of-root paths and reflects that in `truncated`.
+4. **Patch-shaped inputs skipped snapshot capture**: execute.before now
+   performs gate evaluation only when an intent exists, then ALWAYS captures
+   containment-checked snapshots for every mutating tool.
+5. **Persisted toggle did not disable post-write monitoring**: record+feedback
+   now run only when effective mode is enabled.
+6. **Critic strictness/independence**: decodeWorkerOutput rejects malformed
+   findings/checkedReferences wholesale (no silent drops/coercion);
+   requireIndependentModel now FAILS the tool (honest impossibility) instead
+   of annotating a completed verdict; prompt/wait failures return explicit
+   `unavailable`; critic journal append failures are logged.
+7. **Journal read hardening**: `read`/`latest` validate stream names (traversal
+   rejected) and an existing-but-unreadable stream file fails loudly instead
+   of being treated as empty history.
+8. **Accuracy fixes**: destructive-shell regex now actually matches fork bombs
+   and flagged `rm` against filesystem root; README wording matches the regex;
+   Queue `proposedAt` carries the real journal timestamp; self-scan includes
+   `.tsx`; stale "46-pattern" test title corrected.
+
+### Self-scan enforcement demonstrated
+
+The new whole-repo scan immediately flagged `avoid-any`/`casting-awareness`
+hits INTRODUCED BY this fix pass in `Env.ts`; the code was fixed rather than
+growing the baseline (shrink-only debt policy held).
+
+### Validation
+
+- `bunx tsgo --noEmit`: clean. `bunx tsc --noEmit`: clean.
+- `bunx vitest run`: 20 files / 53 tests passed. `bun test`: 53 passed.
+
+### Still open
+
+- Symlink-realpath containment (lexical PathGuard only), cross-process locks
+  (Journal/Store/Runner), Evolution→Store persistence, packed-artifact probe,
+  fake-context adapter contract suite, whole-critic durability (report model).

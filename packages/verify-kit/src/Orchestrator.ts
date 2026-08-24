@@ -14,6 +14,7 @@
 import { Effect, Option, Result } from 'effect';
 
 import { Exec } from 'opencode-harness-shared';
+import { withinRoot } from 'opencode-harness-shared/PathGuard.ts';
 import { Input } from 'opencode-harness-kit/Input.ts';
 import { findPatternMatches } from 'opencode-harness-kit/Matcher.ts';
 import type { Pattern } from 'opencode-harness-kit/Pattern.ts';
@@ -145,8 +146,12 @@ export namespace Orchestrator {
 								if (deps.readFile === undefined) {
 									return Effect.succeed([] as ReadonlyArray<LocatedFinding>);
 								}
+								const abs = joinPath(request.projectRoot, file);
+								if (abs === undefined) {
+									return Effect.succeed([] as ReadonlyArray<LocatedFinding>);
+								}
 								return Effect.flatMap(
-									deps.readFile(joinPath(request.projectRoot, file)),
+									deps.readFile(abs),
 									(content) => {
 										if (content === undefined) {
 											return Effect.succeed([] as ReadonlyArray<LocatedFinding>);
@@ -238,6 +243,7 @@ export namespace Orchestrator {
 			});
 		});
 
-	const joinPath = (root: string, rel: string): string =>
-		root.endsWith('/') ? `${root}${rel}` : `${root}/${rel}`;
+	/** Containment-checked join; undefined when rel escapes projectRoot. */
+	const joinPath = (root: string, rel: string): string | undefined =>
+		withinRoot(root, rel);
 }

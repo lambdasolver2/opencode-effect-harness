@@ -186,9 +186,24 @@ export namespace Journal {
 					reason: string
 				) => new JournalError({ operation, stream, reason });
 
-				const readFileRaw = (stream: string) =>
-					deps.fs.readFileString(filePathOf(stream)).pipe(
-						Effect.catchTag('PlatformError', () => Effect.succeed(''))
+				// Missing file == empty history; an EXISTING but unreadable file
+				// fails loudly instead of being silently treated as empty.
+				const readFileRaw = (stream: string): Effect.Effect<string, JournalError> =>
+					deps.fs.exists(filePathOf(stream)).pipe(
+						Effect.catchTag('PlatformError', () => Effect.succeed(false)),
+						Effect.flatMap((exists) =>
+							exists
+								? deps.fs.readFileString(filePathOf(stream)).pipe(
+										Effect.catchTag(
+											'PlatformError',
+											() =>
+												Effect.fail(
+													toError(stream, 'read', 'stream file unreadable')
+												)
+										)
+								  )
+								: Effect.succeed('')
+						)
 					);
 
 				const decodeEntries = (
@@ -325,7 +340,11 @@ export namespace Journal {
 					}));
 
 				const read: Interface['read'] = (stream) =>
-					Effect.flatMap(readFileRaw(stream), (raw) => decodeEntries(raw, stream));
+					safeSegment(stream)
+						? Effect.flatMap(readFileRaw(stream), (raw) =>
+								decodeEntries(raw, stream)
+						  )
+						: Effect.fail(toError(stream, 'read', 'invalid stream name'));
 
 				const latest: Interface['latest'] = (stream) =>
 					Effect.map(read(stream), (entries) => Option.fromUndefinedOr(entries.at(-1)));

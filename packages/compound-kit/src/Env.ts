@@ -8,6 +8,7 @@
 import { Clock, Context, Effect, FileSystem, Layer, Option, Path, Ref, Schema } from 'effect';
 
 import { InvalidInput } from 'opencode-harness-shared';
+import { withinRoot } from 'opencode-harness-shared/PathGuard.ts';
 
 const safeSegment = (value: string): boolean =>
 	/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/.test(value);
@@ -126,14 +127,42 @@ export namespace Env {
 							}
 							return workspace;
 						}),
-					destroy: (dirPath) =>
+					destroy: (dirPath): Effect.Effect<void> =>
 						Effect.gen(function*() {
-							// Ownership check: refuse to remove anything not stamped by
-							// THIS root (or unstamped entirely).
-							const raw = yield* fs.readFileString(path.join(dirPath, OWNER_FILE)).pipe(
+							// Scope guard: only directories under THIS root's .workspaces are
+							// even eligible for removal (AUDIT-039 follow-up).
+							const workspacesRoot = path.join(options.root, '.workspaces');
+							if (withinRoot(workspacesRoot, dirPath) === undefined) {
+								yield* Effect.sync(() => {
+									console.error(
+										`[compound/env] refusing to delete outside workspaces root: ${dirPath}`
+									);
+								});
+								return;
+							}
+							// Ownership guard: marker must parse AND name this root.
+							const markerOpt = yield* fs.readFileString(path.join(dirPath, OWNER_FILE)).pipe(
 								Effect.option
 							);
-							if (Option.isNone(raw)) {
+							const rawText = Option.isNone(markerOpt) ? undefined : markerOpt.value;
+							const owner = yield* Effect.suspend(() => {
+								if (rawText === undefined) return Effect.succeed(undefined);
+								return Effect.mapError(
+									Effect.try(
+										() =>
+											Schema.decodeUnknownSync(WorkspaceOwner)(
+												JSON.parse(rawText)
+											)
+									),
+									(): InvalidInput =>
+										new InvalidInput({ reason: 'workspace marker unreadable' })
+								);
+							}).pipe(
+								Effect.catchTag('InvalidInput', () =>
+									Effect.succeed(undefined)
+								)
+							);
+							if (owner === undefined || owner.root !== options.root) {
 								yield* Effect.sync(() => {
 									console.error(
 										`[compound/env] refusing to delete unowned workspace: ${dirPath}`
@@ -141,18 +170,7 @@ export namespace Env {
 								});
 								return;
 							}
-							const decoded = yield* Effect.try({
-								try: () => Schema.decodeUnknownSync(WorkspaceOwner)(raw.value),
-								catch: () => undefined
-							}).pipe(Effect.option);
-							if (Option.isNone(decoded) || decoded.value.root !== options.root) {
-								yield* Effect.sync(() => {
-									console.error(
-										`[compound/env] refusing to delete foreign-root workspace: ${dirPath}`
-									);
-								});
-								return;
-							}
+							// Remove FIRST, then best-effort clear the marker copy inside it.
 							yield* fs.remove(dirPath, { recursive: true }).pipe(
 								Effect.catchTag('PlatformError', () =>
 									Effect.sync(() => {

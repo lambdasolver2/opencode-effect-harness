@@ -105,67 +105,89 @@ export interface CriticWorkerOutput {
 }
 
 /** Strict decode of worker output; malformed output is a typed error upstream. */
+/** STRICT decode: a malformed findings/checkedReferences field or ANY invalid
+ * entry rejects the WHOLE worker output. Nothing is silently dropped or
+ * coerced — malformed output is a typed error upstream (AUDIT-036). */
 export const decodeWorkerOutput = (
 	raw: string
 ): Effect.Effect<CriticWorkerOutput, CriticDecodeError> =>
 	Effect.try({
 		try: () => {
 			const parsed: unknown = JSON.parse(raw);
-			if (typeof parsed !== 'object' || parsed === null) {
+			if (
+				typeof parsed !== 'object' ||
+				parsed === null ||
+				Array.isArray(parsed)
+			) {
 				throw new Error('expected JSON object');
 			}
 			const record = parsed as Record<string, unknown>;
-			const verdict = String(record.verdict ?? '');
-			if (!['sound', 'concerns', 'flawed'].includes(verdict)) {
+			const verdict = record.verdict;
+			if (
+				verdict !== 'sound' &&
+				verdict !== 'concerns' &&
+				verdict !== 'flawed'
+			) {
 				throw new Error('invalid verdict');
 			}
-			const findingsRaw = Array.isArray(record.findings) ? record.findings : [];
-			const findings: CriticWorkerOutput['findings'] = findingsRaw.flatMap(
-				(entry) => {
-					const f = entry as Record<string, unknown> | null;
-					if (f === null || typeof f !== 'object') return [];
-					const severity = String(f.severity ?? '');
-					const kind = String(f.kind ?? '');
-					const claim = String(f.claim ?? '');
-					const evidence = String(f.evidence ?? '');
-					if (
-						!['critical', 'major', 'minor', 'note'].includes(severity) ||
-						![
-							'logical-flaw',
-							'hallucination',
-							'domain-error',
-							'reference-mismatch',
-							'architecture-drift',
-							'missing-consideration'
-						].includes(kind) ||
-						claim.length === 0
-					) {
-						return [];
+			if (!Array.isArray(record.findings)) {
+				throw new Error('findings must be an array');
+			}
+			const SEVERITIES: ReadonlyArray<string> = [
+				'critical',
+				'major',
+				'minor',
+				'note'
+			];
+			const KINDS: ReadonlyArray<string> = [
+				'logical-flaw',
+				'hallucination',
+				'domain-error',
+				'reference-mismatch',
+				'architecture-drift',
+				'missing-consideration'
+			];
+			type Finding = CriticWorkerOutput['findings'][number];
+			const findings = record.findings.map((entry, index): Finding => {
+				if (typeof entry !== 'object' || entry === null) {
+					throw new Error(`finding ${String(index)} is not an object`);
+				}
+				const f = entry as Record<string, unknown>;
+				if (typeof f.severity !== 'string' || !SEVERITIES.includes(f.severity)) {
+					throw new Error(`finding ${String(index)} severity`);
+				}
+				if (typeof f.kind !== 'string' || !KINDS.includes(f.kind)) {
+					throw new Error(`finding ${String(index)} kind`);
+				}
+				if (typeof f.claim !== 'string' || f.claim.length === 0) {
+					throw new Error(`finding ${String(index)} claim`);
+				}
+				if (typeof f.evidence !== 'string' || f.evidence.length === 0) {
+					throw new Error(`finding ${String(index)} evidence`);
+				}
+				if (f.suggestion !== undefined && typeof f.suggestion !== 'string') {
+					throw new Error(`finding ${String(index)} suggestion`);
+				}
+				return {
+					severity: f.severity as Finding['severity'],
+					kind: f.kind as Finding['kind'],
+					claim: f.claim,
+					evidence: f.evidence,
+					...(f.suggestion === undefined ? {} : { suggestion: f.suggestion })
+				};
+			});
+			if (!Array.isArray(record.checkedReferences)) {
+				throw new Error('checkedReferences must be an array of strings');
+			}
+			const checkedReferences = record.checkedReferences.map(
+				(ref, index): string => {
+					if (typeof ref !== 'string') {
+						throw new Error(`checkedReferences ${String(index)} not a string`);
 					}
-					return [
-						{
-							// validated against the literal lists above
-							severity: severity as CriticWorkerOutput['findings'][number]['severity'],
-							kind: kind as CriticWorkerOutput['findings'][number]['kind'],
-							claim,
-							evidence,
-							...(typeof f.suggestion === 'string'
-								? { suggestion: f.suggestion }
-								: {})
-						}
-					];
+					return ref;
 				}
 			);
-			const checkedReferences = Array.isArray(record.checkedReferences)
-				? record.checkedReferences.filter(
-						(r): r is string => typeof r === 'string'
-					)
-				: [];
-			return {
-				verdict: verdict as CriticWorkerOutput['verdict'],
-				findings,
-				checkedReferences
-			};
+			return { verdict, findings, checkedReferences };
 		},
 		catch: (cause) => new CriticDecodeError({ reason: String(cause) })
 	});

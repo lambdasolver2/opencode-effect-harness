@@ -46,9 +46,11 @@ local clone:
 | `execute.after` | Credits skill reads; diff-based changed spans -> kernel pattern feedback appended INLINE to the tool result; change ledger for auto-verify |
 | `session.hook('context')` | Injects policy header; restricts internal worker tools |
 
-Shell coverage: narrow DESTRUCTIVE signatures (`rm -rf`, `git reset --hard`,
-`mkfs`, `dd if=`, `chmod -R 777`, fork bombs) are BLOCKED pre-write for strict
-agents; other `bash`/`shell` writes remain post-write-only by design.
+Shell coverage: narrow DESTRUCTIVE signatures are BLOCKED pre-write for strict
+agents — fork bombs, `mkfs`, `dd if=`, `git reset --hard`, `git clean -fd`,
+`chmod -R 777`, relative-path `rm`/`mv` escapes, and any flagged `rm`
+targeting filesystem root. Other `bash`/`shell` writes remain post-write-only
+by design (detection, not prevention).
 `write`/`edit` are fully gated pre-write; `patch`-style tools rely on post-write
 feedback plus ledger recording.
 

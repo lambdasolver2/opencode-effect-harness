@@ -8,7 +8,7 @@ const platform = Layer.mergeAll(NodeFs.layer, NodePath.layer)
 const ASSETS = new URL('../../module-typescript/assets/', import.meta.url).pathname.replace(/\/$/, '')
 
 describe('Catalog', () => {
-	it('loads the full 46-pattern inventory', async () => {
+	it('loads the full 47-pattern inventory', async () => {
 		const patterns = await Effect.runPromise(loadPatterns(`${ASSETS}/patterns`).pipe(Effect.provide(platform)))
 		expect(patterns.length).toBe(47)
 		for (const p of patterns) {
