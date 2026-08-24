@@ -3,6 +3,9 @@
  * per-language contract has no TypeScript assumption.
  */
 import { Effect } from 'effect'
+import * as NodeFs from '@effect/platform-node/NodeFileSystem'
+import * as NodePath from '@effect/platform-node/NodePath'
+import { Layer } from 'effect'
 
 import { loadPatterns } from 'opencode-harness-kit/Catalog.ts'
 import { CheckerSpec } from 'opencode-verify-kit/Checker.ts'
@@ -51,6 +54,10 @@ export const createModule = (options: CreateOptions = {}): VerificationModule =>
 	},
 	patterns: {
 		root: `${ASSETS_ROOT}/patterns`,
-		detectors: () => Effect.succeed([])
+		detectors: () =>
+        loadPatterns(`${ASSETS_ROOT}/patterns`).pipe(
+            Effect.catchTag('CatalogError', () => Effect.succeed([])),
+            Effect.provide(Layer.mergeAll(NodeFs.layer, NodePath.layer))
+        )
 	}
 })

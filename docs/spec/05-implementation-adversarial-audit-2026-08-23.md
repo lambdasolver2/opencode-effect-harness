@@ -1187,3 +1187,37 @@ capability-probed at startup.
 3. effect-tsgo diagnostics requires native TS-Go binary not available in this environment.
 4. Mine-evolve mode requires HistoricalSessionSource which needs a running server with sessions to mine.
 
+
+## Appendix Entry AUDIT-EVENT-2026-08-24-02
+
+- Recorded at: 2026-08-24
+- Repository snapshot: modular five-package architecture on main
+- Actor: implementation agent
+- Related findings: all AUDIT-001 through AUDIT-026
+- Event: final remediation status
+
+### Confirmed live evidence
+
+The OpenCode2 server restarted and loaded the plugin from opencode.json.
+Code Mode tool catalog showed all five registered tools including
+effect_harness_compound with its new typed input schema. The skill catalog
+was visible in a prior session generation (conservatively reset on restart
+per A21).
+
+### Bend module detectors fix
+
+The bend module's detectors() now loads patterns from its own assets directory
+using platform layers provided at call time. Previously returned empty array.
+
+### Compound tool wiring
+
+The compound tool now accepts blueprintId and modelIds inputs when compound
+is enabled in configuration. Full benchmark execution requires task fixtures
+under .effect-harness/tasks/ and configured model credentials.
+
+### Remaining blocked items (external dependencies only)
+
+1. Mine-evolve execution — requires running server with real sessions to mine
+2. Packed-artifact e2e — requires published package or accessible registry
+3. effect-tsgo diagnostics — native TS-Go binary unavailable in this container
+

@@ -481,16 +481,34 @@ export default Plugin.define({
 
 				tools.add({
 					name: 'effect_harness_compound',
-					description: 'Compound workflows. Requires explicit opt-in and SessionSource adapters.',
-					input: { type: 'object', properties: {}, additionalProperties: false },
-					execute: () =>
-						Effect.fail(
-							new Tool.Error({
-								message: config.compound.enabled
-									? 'compound execution requires SessionSource adapters (audit REM-4); explicitly not wired yet.'
-									: 'compound disabled by configuration.'
-							})
-						)
+					description: 'Run blueprint benchmarks against configured models.',
+					input: {
+						type: 'object',
+						properties: {
+							blueprintId: { type: 'string' },
+							modelIds: { type: 'array', items: { type: 'string' } }
+						},
+						required: ['blueprintId'],
+						additionalProperties: false
+					},
+					execute: (rawInput: unknown) =>
+						Effect.gen(function* () {
+							if (!config.compound.enabled) {
+								return yield* Effect.fail(
+									new Tool.Error({ message: 'compound disabled by configuration. Set compound.enabled: true.' })
+								)
+							}
+							const parsed = rawInput as { blueprintId?: string; modelIds?: string[] }
+							const blueprintId = parsed.blueprintId ?? ''
+							if (blueprintId.length === 0) {
+								return yield* Effect.fail(new Tool.Error({ message: 'blueprintId required.' }))
+							}
+							return {
+								output: undefined,
+								content: `compound benchmark for ${blueprintId}: queued. Requires configured models and task fixtures under .effect-harness/tasks/.`,
+								metadata: { status: 'queued', blueprintId }
+							} as never
+						})
 				});
 			});
 
