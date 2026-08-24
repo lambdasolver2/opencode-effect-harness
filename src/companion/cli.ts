@@ -20,7 +20,7 @@ const baseUrl =
 
 const program = Effect.gen(function* () {
 	const collector = CollectorModule.make({
-		baseUrl,
+		
 		...(process.env.OPENCODE_DIRECTORY !== undefined
 			? { directory: process.env.OPENCODE_DIRECTORY }
 			: {})
