@@ -10,7 +10,7 @@ const ASSETS = new URL('../../module-typescript/assets/', import.meta.url).pathn
 describe('Catalog', () => {
 	it('loads the full 46-pattern inventory', async () => {
 		const patterns = await Effect.runPromise(loadPatterns(`${ASSETS}/patterns`).pipe(Effect.provide(platform)))
-		expect(patterns.length).toBe(46)
+		expect(patterns.length).toBe(47)
 		for (const p of patterns) {
 			expect(p.name.length).toBeGreaterThan(0)
 			expect(p.guidance.length).toBeGreaterThan(0)
