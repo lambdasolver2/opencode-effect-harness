@@ -1221,3 +1221,543 @@ under .effect-harness/tasks/ and configured model credentials.
 2. Packed-artifact e2e — requires published package or accessible registry
 3. effect-tsgo diagnostics — native TS-Go binary unavailable in this container
 
+## Appendix Entry AUDIT-EVENT-2026-08-24-03
+
+- Recorded at: 2026-08-24
+- Repository snapshot: `e4c1b13b31b1eb14ae335f281ecb8d9b499f70f7`
+- Actor: independent adversarial implementation review
+- Related findings: AUDIT-001 through AUDIT-026, especially AUDIT-004,
+  AUDIT-005, AUDIT-007, AUDIT-018, AUDIT-019, and AUDIT-020
+- Event: correction and current-snapshot review
+- Decision: preserve `release-blocked`; the prior remediation-completion claims
+  are not supported by the current source tree. This entry does not edit or
+  close any earlier finding.
+
+### Evidence Snapshot
+
+- `bunx tsgo --noEmit`: exited successfully with no diagnostic output.
+- `bunx tsc --noEmit`: exited successfully with no diagnostic output.
+- `bunx vitest run`: 16 test files and 32 tests passed.
+- `bunx vitest run packages/effect-harness/test/SelfPatternCheck.test.ts`:
+  failed because that path does not exist and the configured include only covers
+  `src/**/*.test.ts` and `packages/*/src/**/*.test.ts`.
+- The TypeScript asset tree contains 53 skill directories, 47 pattern files,
+  and 4 guidance files under `packages/module-typescript/assets`; the default
+  root `assets` directory does not exist.
+- The repository is clean at this snapshot, so the findings below describe
+  committed behavior rather than uncommitted edits.
+
+### AUDIT-027 [P0] Claimed inline feedback, snapshots, and diff spans are dead
+
+Evidence:
+
+- `src/index.ts:257-263` constructs `feedbackRule`, but there is no call to
+  `feedbackRule.evaluate` anywhere in the repository.
+- `src/index.ts:549-553` creates `pendingSnapshots` and
+  `src/index.ts:617-634` stores snapshots, but no code reads or removes them.
+- `src/index.ts:665-675` returns after recording a top-level `path` or
+  `filePath`; it never computes a diff, evaluates a pattern, or mutates
+  `event.result`.
+- `src/index.ts:31-32` imports `readFileOrUndefined` and `diffLines`, but neither
+  import participates in the hook path.
+- `src/Snapshots.ts:27-42` contains `computeChangedSpans`, but no caller uses
+  it. Its `for` loop also violates the repository's own no-imperative-loop
+  catalog rule.
+
+The completed-tool result does not receive findings, and the model therefore
+does not see inline feedback. The pre-write map retains complete file contents
+for every intercepted call indefinitely, including calls that fail, are
+interrupted, or have no after-event. The three claimed improvements and the
+result-mutation variant are consequently absent at runtime, not merely missing
+a test.
+
+Required change: make one authoritative after-hook path consume and delete a
+snapshot for every terminal outcome, compute spans from the actual before/after
+contents, preserve the spans in the neutral projection, evaluate only relevant
+findings, and append a typed text part to the exact completed tool result. Add
+fake-context tests proving both mutation and cleanup.
+
+### AUDIT-028 [P0] Default catalog wiring disables native skill registration
+
+Evidence:
+
+- `src/index.ts:117-119` resolves the default `assetsRoot` to `../assets` from
+  the root `src` directory, which is `<repository>/assets`; that directory is
+  absent. The bundled catalogs are under
+  `packages/module-typescript/assets` and `packages/module-bend/assets`.
+- `opencode-verify-kit/Module.ts:83-101` converts a missing skills directory
+  and missing skill files into empty arrays.
+- `src/index.ts:518-535` treats an empty skill list as a successful registration
+  (`registered === skillInfos.length === 0`) and only logs on partial failure.
+- `src/index.ts:809-819` converts pattern catalog failure to an empty list, and
+  `src/index.ts:850-866` converts missing guidance to an empty header.
+
+With default options, the transform can register zero skills while reporting no
+failure, the header is empty, and pattern feedback has no catalog even if it is
+later wired. The root also does not pass `assetsRoot` into the dynamically
+loaded module factory at `src/index.ts:185-190`, so configured asset roots do not
+consistently control module catalogs.
+
+Required change: derive the default from the selected module asset manifest,
+validate the expected inventory and hashes, and fail startup or produce an
+explicit degraded capability result when required assets are absent. Zero
+registered skills must not be treated as a successful native registration.
+
+### AUDIT-029 [P0] Mutation tools still bypass the gate and change ledger
+
+Evidence:
+
+- `src/index.ts:583-601` gates only `write`, `edit`, `multiedit`, `apply_patch`,
+  and `patch`; shell mutation through `bash` or `shell` is not gated even though
+  `src/Origins.ts:15-23` classifies both as mutation-capable.
+- `intentFromInput` at `src/index.ts:64-101` has no patch-text parser. A patch
+  input therefore reaches `src/index.ts:600-601`, returns without an intent,
+  and is allowed without projection or skill policy.
+- `src/index.ts:665-673` records only top-level `path`/`filePath`. Patch paths
+  embedded in patch text are not added to `ChangeLedger`, so later manual or
+  automatic verification misses those files.
+- `src/Origins.ts:15-23` omits `apply_patch`, allowing an internal read-only
+  child to mutate through that tool despite the execute-before recheck.
+
+The patch helper in `src/Snapshots.ts` is therefore not end-to-end support. A
+builder can write framework code through a shell command or patch-shaped input
+without satisfying the gate, and a successful patch can disappear from the
+verification request.
+
+Required change: define one validated mutation-tool registry shared by the gate,
+origin restriction, intent extraction, snapshot capture, and change ledger.
+Unsupported or unparseable mutation inputs must fail closed under the configured
+policy rather than return early.
+
+### AUDIT-030 [P0] Gate evaluation uses process-global mutable scope
+
+Evidence:
+
+- `src/index.ts:208` stores `currentScope` as a mutable closure value.
+- `src/index.ts:211-217` uses that value to select pending and loaded skill
+  state, while `src/index.ts:248-253` uses it as the projection cwd.
+- `src/index.ts:598` overwrites it for each concurrent tool event before the
+  asynchronous projection and ledger effects complete.
+
+Two sessions in different projects can interleave such that one write is
+projected against the other session's directory or counts the other project's
+pending reads. This violates project/session isolation even though the backing
+`PendingReads` service itself has scoped keys.
+
+Required change: pass an immutable resolved `SessionLocation` through each hook
+evaluation and remove `currentScope` entirely. Add a concurrent two-project
+fixture that asserts each gate uses only its own root and ledger state.
+
+### AUDIT-031 [P0] Event parsing does not match the pinned protocol shape
+
+Evidence:
+
+- The pinned protocol declaration uses top-level `data.sessionID` for execution
+  events at
+  `node_modules/.bun/@opencode-ai+protocol@0.0.0-beta-17898/node_modules/@opencode-ai/protocol/dist/groups/event.d.ts:6320-6334`
+  and top-level `data.name`/`data.sessionID` for skill activation at
+  `:6430-6446`.
+- `src/Events.ts:14-32` only models and reads `properties`, not top-level
+  `data`.
+- `src/index.ts:713-716` forcibly casts the host subscription to the local
+  `HostEvent` type, hiding the mismatch from the compiler.
+- `src/LiveSessions.ts:10-35` repeats the properties-only shape.
+
+Selectors therefore return `undefined` for real protocol events. Skill credit,
+compaction reset, automatic verification, and live child transcript capture
+will not run against the pinned host unless the host happens to wrap events in a
+nonstandard shape.
+
+Required change: decode the exact pinned host event union at the adapter
+boundary, preserve `data`, and test real recorded event fixtures. Do not replace
+the host type with a cast to a narrower local interface.
+
+### AUDIT-032 [P0] Verification can report success while doing no verification
+
+Evidence:
+
+- `src/index.ts:167-197` turns unknown, missing, and malformed module loads into
+  empty module arrays. The dynamic `ModuleFactory` cast is unchecked.
+- `src/index.ts:316-323` calls the orchestrator without a reviewer, so
+  `verify.semanticReview: true` still produces the explicit skipped state.
+- `src/index.ts:779` calls automatic verification without a `readFile` dependency,
+  making its pattern result empty by construction.
+- `packages/verify-kit/src/Orchestrator.ts:133-153` turns catalog/read failures
+  into empty findings and always supplies an empty, truncated change set to a
+  configured reviewer at `:201-215`.
+- `packages/verify-kit/src/Report.ts:90-96` returns `passed` for an empty check
+  list with skipped evidence and skipped semantic review. The test at
+  `packages/verify-kit/src/Report.test.ts:11-13` codifies this false-green
+  behavior.
+
+A missing module, empty touched-file request, unavailable pattern catalog, or
+unavailable reviewer can thus be presented as a successful verification. This
+is especially dangerous because the tool description promises deterministic
+checks, pattern findings, skill evidence, and optional semantic review.
+
+Required change: distinguish unavailable/error/skipped from pass, reject empty
+verification unless the request explicitly permits it, wire a real bounded
+ChangeSet provider and reviewer, and make module loading errors visible in the
+report and tool result.
+
+### AUDIT-033 [P0] Verification state is drained before durable success
+
+Evidence:
+
+- Manual verification drains changes at `src/index.ts:296-300` before the
+  orchestrator runs.
+- Automatic verification drains changes at `src/index.ts:760-765` before
+  verification and persistence complete.
+- `src/index.ts:779-783` ignores verification and persistence failures.
+- `src/index.ts:839-848` does not create `.effect-harness/reports`, ignores the
+  write failure, serializes directly with `JSON.stringify`, and returns the
+  target path regardless of whether a file was written.
+- The in-memory `inFlight` set at `src/index.ts:717-783` prevents only concurrent
+  duplicate work; it does not persist an event/run id, so repeated terminal
+  events can rerun verification.
+
+A failed run can lose the pending change list while leaving no report, while a
+tool or automatic caller can claim a report path that does not exist. This is a
+data-loss and auditability defect.
+
+Required change: create an immutable run record, persist atomically before
+draining or use a recoverable pending state, make report persistence typed and
+durable, and key idempotency by a persisted project/session/event identity.
+
+### AUDIT-034 [P0] Dynamic module contracts and Bend loading are incompatible
+
+Evidence:
+
+- `src/index.ts:160-162` assumes every module factory returns
+  `Effect.Effect<VerificationModule>`.
+- `packages/module-bend/src/index.ts:21-25` returns a plain
+  `VerificationModule`, not an Effect.
+- `src/index.ts:185-193` casts the imported value to `ModuleFactory` and then
+  calls `providePlatform(factory())`, hiding the incompatible runtime contract.
+- `packages/module-bend/src/index.ts:17-19` declares `assetsRoot` but ignores
+  it; `:15` and `:40-61` hard-code the module-relative asset path.
+- `packages/module-bend/src/index.ts:48-50` uses synchronous Node filesystem
+  access inside `Effect.promise`, and `:57-61` converts catalog failure into an
+  empty detector list.
+
+Configuring the Bend module can fail at startup or silently remove the module,
+and its detector/skill failures are not represented as module errors. The
+separate-language architecture is therefore not a reliable extension point.
+
+Required change: publish one shared factory contract, decode/probe it before
+calling, pass options explicitly, and make module construction/catalog failure
+typed and fail-visible.
+
+### AUDIT-035 [P0] Input paths are not constrained to the project root
+
+Evidence:
+
+- Snapshot paths are concatenated at `src/index.ts:621-624` without resolving or
+  checking containment.
+- `packages/verify-kit/src/Orchestrator.ts:149-150` constructs paths with a
+  string join from unvalidated `touchedFiles`.
+- `packages/verify-kit/src/ChangeSet.ts:45-58` accepts absolute paths and
+  `..` segments and treats read failures as empty file content.
+- `packages/harness-kit/src/Normalize.ts:49-54` resolves paths without a
+  project-root containment check.
+- `src/Sessions.ts:38-44,76-85` accepts a host directory as a string without
+  normalization, absolute-path validation, or symlink policy.
+
+Inputs such as `../../secret.ts` or an absolute path can cause snapshot,
+verification, and pattern-reading code to inspect files outside the active
+project. This is a cross-project data disclosure risk, not merely a path-style
+issue.
+
+Required change: normalize with the injected `Path` service, require an
+absolute canonical project root, reject traversal and symlink escapes, and use
+the same checked path value in projections, ChangeSets, reports, and ledgers.
+
+### AUDIT-036 [P1] Critic execution is not a durable independent review
+
+Evidence:
+
+- `src/index.ts:369-397` casts host session methods, discards prompt and wait
+  failures with `Effect.ignore`, and has no `Effect.ensuring` around origin
+  cleanup at `:380-400`.
+- `src/index.ts:399-424` returns raw transcript text as completed output and
+  never calls the schema-backed `decodeWorkerOutput` in
+  `packages/verify-kit/src/Critic.ts:107-171`.
+- The root does not supply builder/critic model metadata, plan references,
+  trace references, reference checks, or a persisted `CriticReport`.
+- `packages/verify-kit/src/Critic.ts:122-163` silently changes a malformed
+  findings field into an empty list and drops invalid entries instead of
+  rejecting the whole worker response.
+- `src/Events.ts:132-140` records message parts without proving assistant role,
+  message identity, or bounded transcript ownership.
+
+The child can fail while the parent still returns a nominally completed review,
+or a malformed response can appear sound with no findings. An interrupted call
+can also leave a child origin and prompt entry registered indefinitely.
+
+Required change: use a read-only worker adapter with an acquire/release origin
+scope, strict schema decoding, model/reference policy enforcement, bounded
+trace capture, and a durable report/journal state machine.
+
+### AUDIT-037 [P0] Compound registration is a queue-shaped stub, not execution
+
+Evidence:
+
+- `src/index.ts:484-514` validates a cast object and returns `queued`; it does
+  not call `Distill`, `Proposals`, `Runner`, `Scorecard`, `Store`, or
+  `Evolution`, and ignores `modelIds`.
+- `src/LiveSessions.ts:44-67` never consumes `hostStream`; `follow()` always
+  returns `Stream.empty` and `explicit()` fabricates a current timestamp even
+  for an unknown session.
+- `packages/compound-kit/src/Suite.ts:136-143` does not bind the LLM to the
+  isolated workspace, does not apply composed module prompts, and ignores
+  worker/tools/timeout/budget execution policy.
+
+The exposed compound tool cannot benchmark a blueprint. A successful `queued`
+message is misleading because no request is persisted and no worker, task,
+acceptance check, or score is run.
+
+Required change: either remove the tool until the workflow is wired or make it
+call a durable, schema-backed compound service and return a real run/proposal
+reference with explicit pending state.
+
+### AUDIT-038 [P1] Append-only storage claims exceed actual integrity guarantees
+
+Evidence:
+
+- `packages/shared/src/Journal.ts:181-209` validates line shape but never checks
+  sequence monotonicity, `previousHash`, or recomputes `hash`.
+- `packages/shared/src/Journal.ts:176-179` converts every filesystem read error
+  into an empty journal; `read` and `latest` at `:285-289` do not validate the
+  stream name before constructing a path.
+- Request-id event and index writes occur separately at `:270-280`, so a crash
+  between them can append a duplicate on retry.
+- `packages/shared/src/Journal.ts:310-315` ignores quarantine-write failure and
+  then rewrites the source file at `:317-320`.
+- `packages/compound-kit/src/Queue.ts:65-76` and `:100-111` convert journal
+  failures into apparent proposal success. Terminal decisions are not rejected
+  or validated against known proposal state at `:145-180`.
+- `packages/compound-kit/src/Store.ts:157-159` treats unreadable existing
+  Markdown as empty, and `:239-244` permits a pointer to a nonexistent version.
+  Its per-id locks are process-local at `:114-128`.
+
+The system can accept tampered or reordered journal history, read outside its
+base directory, claim durable approval after a failed append, or lose one of
+two concurrent writers. “Append-only” alone does not establish an auditable
+state machine.
+
+Required change: validate stream paths on every operation, verify the chain on
+read, preserve storage errors, make event/index persistence crash-recoverable,
+and enforce proposal/pointer transitions against durable state with cross-process
+locking or compare-and-swap.
+
+### AUDIT-039 [P1] Compound evolution and workspace isolation are not safe
+
+Evidence:
+
+- `packages/compound-kit/src/Env.ts:53-70` combines an in-memory counter and
+  `Date.now()` for workspace names, so independent processes can collide; a
+  collision is created recursively rather than rejected.
+- `packages/compound-kit/src/Env.ts:72-81` silently permits a missing fixture,
+  and `:84-85` recursively deletes any caller-supplied path without ownership
+  validation while ignoring cleanup failure.
+- `packages/compound-kit/src/Evolution.ts:114-187` returns an in-memory lineage
+  and never connects commits or failed attempts to `Store`; `journalAttempt`
+  does not update `lessons`.
+- `packages/compound-kit/src/Scorecard.ts:84-107` does not require every
+  configured model to have every expected task and accepts arbitrary score
+  values.
+
+Benchmark results and evolution promotion cannot be trusted across processes or
+restarts, and cleanup can remove an unintended directory. The isolated-path
+claim is not a security boundary until ownership and uniqueness are proven.
+
+Required change: use atomic exclusive workspace creation with ownership
+metadata, reject missing fixtures, scope destroy to owned descendants, persist
+run keys/results, validate score ranges/completeness, and connect promotion to
+durable lineage events.
+
+### AUDIT-040 [P1] Effect boundary and functional-programming rules remain
+violated
+
+Evidence:
+
+- `src/index.ts:621-625` and `src/Snapshots.ts:74-80` use direct
+  `node:fs/promises`; `packages/module-bend/src/index.ts:48-50` uses
+  `node:fs` and synchronous reads.
+- `packages/compound-kit/src/Openai.ts:49-65` uses native `fetch`, raw
+  `JSON.stringify`, `AbortSignal.timeout`, and wall-clock `Date.now()` inside a
+  core package adapter.
+- `src/companion/cli.ts:17-25` reads `process.env` directly and serializes
+  output with raw JSON; `src/ExecNode.ts:100-121` reads process environment
+  directly as well.
+- Direct JSON parsing/casting remains in
+  `packages/shared/src/Journal.ts:125,213`,
+  `packages/verify-kit/src/Critic.ts:113-117`,
+  `packages/verify-kit/src/Reviewer.ts:51-79`,
+  `packages/compound-kit/src/Distill.ts:149-192`, and
+  `packages/compound-kit/src/Store.ts:217-219,258-260`.
+- Imperative loops remain in `src/Snapshots.ts:34-41,48-54` and unsafe
+  `as never`/broad casts remain throughout `src/index.ts` and
+  `src/companion/Collector.ts`.
+- `Effect.promise` is used for expected filesystem failures at
+  `src/index.ts:623-625`; rejection is not converted to a typed failure before
+  the surrounding policy runs.
+- `src/ExecNode.ts:57-65` sets a local timeout/truncation state but omits it from
+  `SpawnOutcome`; `:122-130` therefore reports `timedOut: false` for the normal
+  completed outcome and derives truncation from character length rather than
+  the byte counters.
+
+Some Node usage is appropriate in a deliberately isolated adapter, but the
+current boundaries are not consistently isolated, validated, or error-aware.
+The repository's own Effect catalog would flag several of these patterns, while
+the configured self-check is absent from the tree.
+
+Required change: keep platform implementations in adapters, inject Clock/HTTP/
+FileSystem/Config services into core code, use Schema codecs at all untrusted
+boundaries, remove broad casts, and preserve timeout/truncation/error metadata.
+
+### AUDIT-041 [P1] Toggle and failure policies are not applied consistently
+
+Evidence:
+
+- `src/index.ts:243-247` checks only static `config.harness.enabled`; it never
+  reads persisted `ModeState`, so `harness_toggle` does not disable the gate.
+- `src/index.ts:265-268` hard-enables `headerRule`, and `:700-709` can inject the
+  header even when static harness mode is disabled unless the persisted mode
+  happens to be consulted later.
+- `src/index.ts:603-607` catches every gate cause and replaces it with an empty
+  decision list, overriding `failClosedForGate` for ledger, state, and policy
+  failures.
+- `src/ModeState.ts:48-55` treats storage read failures as the default enabled
+  state, which is fail-open for a disabling policy.
+- `src/index.ts:394-397`, `:676`, `:709`, and `:780-783` broadly ignore failures
+  from child execution, hooks, context mutation, and report persistence.
+
+The same configuration can claim that enforcement is disabled while still
+injecting policy, and infrastructure failures can silently turn blocking paths
+into allowed writes. Error handling must follow the state machine rather than
+turn every failure into an empty/success value.
+
+Required change: resolve one effective per-project mode for gate/header/
+feedback, preserve configured fail-open versus fail-closed semantics only at
+the declared boundary, and expose operational failures as typed results or
+explicit logs with run identifiers.
+
+### AUDIT-042 [P1] Native skill registration does not use the SDK contract
+
+Evidence:
+
+- `src/Capability.ts:9-16` stores `id`, `name`, and `location` as `unknown`.
+- `src/Capability.ts:33-47` accepts arbitrary brand callbacks instead of using
+  the pinned SDK `Skill.ID`, `Skill.Name`, and `Skill.Info` constructors/schema.
+- `src/index.ts:525-527` passes values through `as unknown as` callbacks, and
+  `src/index.ts:530-531` casts the draft to `SkillDraftProbe` before registering
+  raw objects.
+- The installed SDK declares branded skill fields in
+  `@opencode-ai/schema`'s `skill.d.ts`, but no `Skill.Info.make()` or equivalent
+  SDK construction is used in this path.
+
+The claim that branded skill registration was fixed is incorrect. A changed SDK
+draft shape can accept a structurally invalid object or fail only at runtime,
+while the capability result still treats an empty list as success.
+
+Required change: construct the exact pinned `Skill.Info` value through the SDK
+schema/brand API, validate the complete draft operation against a fake context,
+and report unsupported or partial registration explicitly.
+
+### AUDIT-043 [P1] Public packaging and documentation still overstate installability
+
+Evidence:
+
+- The root `package.json:3-8` is private and `:32-40` depends on private
+  workspace packages through `workspace:*`.
+- `packages/compound-kit/package.json`, `packages/harness-kit/package.json`,
+  `packages/shared/package.json`, and `packages/verify-kit/package.json` are
+  private; the language modules also use `workspace:*` dependencies and export
+  raw TypeScript source at `packages/module-*/package.json:8-20`.
+- `package.json:12-14` exports only the root plugin and companion path; no
+  self-contained compiled/runtime artifact is declared.
+- `README.md:20-25` nevertheless advertises `opencode2 plugin add
+  opencode-effect-harness`, and `README.md:30-35` describes compound benchmark
+  execution as an available tool although `src/index.ts:484-514` is a stub.
+- `README.md:13` says 47 TypeScript patterns while
+  `packages/module-typescript/package.json:5` and its module description say
+  46; the current filesystem contains 47.
+
+An external install cannot resolve private workspace runtime dependencies from
+the advertised package, and the documentation gives false feature and asset
+status to users and future reviewers.
+
+Required change: choose one publishable artifact or publish versioned package
+dependencies, test the packed artifact in a scratch project, and generate README
+counts/status from the verified manifest and release matrix.
+
+### AUDIT-044 [P0] Test suite is not an adapter or release validation suite
+
+Evidence:
+
+- There are only 16 discovered test files and 32 tests; no tests exercise
+  `ctx.tool.transform`, `execute.before`, `execute.after`, `ctx.skill.transform`,
+  the context hook, or the real event stream.
+- No tests cover `src/Snapshots.ts`, `src/Capability.ts`, `src/Events.ts`,
+  `src/LiveSessions.ts`, `src/companion/Collector.ts`, `src/ExecNode.ts`, or
+  the OpenCode session/child-origin lifecycle.
+- No test proves result mutation, snapshot cleanup, patch path extraction in the
+  hooks, cross-project isolation, default asset discovery, module-load failure,
+  report durability, or semantic ChangeSet delivery.
+- `vitest.config.ts:6-15` discovers only colocated source tests and disables
+  file isolation; no live-server, fake-context, packed-artifact, or crash/retry
+  suite is configured.
+- The required self-pattern path in `AGENTS.md:32-36` is absent, so the pattern
+  catalog is not currently being run against the repository.
+
+Green unit tests therefore establish only a narrow set of pure fixtures. They do
+not support claims of OpenCode hook behavior, enforcement safety, package
+installability, verification durability, or compound execution.
+
+Required change: add colocated adapter contract tests with recorded host shapes,
+security/concurrency fixtures, complete module/catalog tests, persistence crash
+tests, and a packed-artifact/live-server release suite. Make missing required
+validation commands fail explicitly rather than silently reducing scope.
+
+### Effect Review Summary
+
+The code uses several good primitives: `Schema.Class`, tagged errors, `Ref`,
+`Effect.forEach`, explicit module ports, and an append-only journal abstraction.
+Those primitives do not compensate for the following architectural problems:
+
+- The OpenCode adapter still contains duplicate policy paths instead of routing
+  all hooks through one kernel controller.
+- Mutable closure state (`currentScope`, `pendingSnapshots`, `inFlight`) is
+  outside the Ref-backed service model and is not lifecycle-safe.
+- Error channels are repeatedly erased with `Effect.ignore`, `orElseSucceed`,
+  or broad catches at exactly the boundaries where the product needs a durable
+  failed/degraded state.
+- Schemas exist for many outputs but are bypassed by casts, manual coercion, and
+  direct JSON parsing before and after those schemas.
+- Core, adapter, and companion responsibilities are not consistently separated;
+  Node APIs, environment access, and host casts leak across package boundaries.
+
+The next implementation pass should prioritize current runtime truth over
+renaming or additional abstractions: repair the root hook lifecycle and asset
+path, make every mutation path fail-closed and project-scoped, fix the protocol
+decoder, make verification/report persistence durable, and add fake-context
+tests before claiming any of the previous remediation gates are closed.
+
+## Appendix Entry AUDIT-EVENT-2026-08-24-04
+
+- Recorded at: 2026-08-24
+- Repository snapshot: `e4c1b13b31b1eb14ae335f281ecb8d9b499f70f7`
+- Actor: adversarial review correction
+- Related findings: AUDIT-041
+- Event: correction
+- Evidence: `src/index.ts:696-699`
+- Decision: clarify the mode-semantics finding without changing the prior entry
+
+The context hook does read persisted `ModeState` before injecting the policy
+header. The precise defect is that it does not combine that value with static
+`config.harness.enabled`: when static configuration disables the harness, the
+context hook can still inject the header. In addition, unresolved locations use
+`true` and storage-read failures in `src/ModeState.ts:48-55` also default to
+`true`. The persisted toggle works only when location resolution succeeds and
+the storage read returns a valid value.
