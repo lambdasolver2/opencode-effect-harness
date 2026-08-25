@@ -1916,3 +1916,65 @@ growing the baseline (shrink-only debt policy held).
 - Symlink-realpath containment (lexical PathGuard only), cross-process locks
   (Journal/Store/Runner), Evolution→Store persistence, packed-artifact probe,
   fake-context adapter contract suite, whole-critic durability (report model).
+
+## Appendix Entry AUDIT-EVENT-2026-08-25-01
+
+- Recorded at: 2026-08-25
+- Repository snapshot: worktree at `1310e66` plus this pass
+- Actor: implementation agent
+- Related findings: AUDIT-002, AUDIT-008, AUDIT-023, AUDIT-028, AUDIT-029,
+  AUDIT-032, AUDIT-033, AUDIT-035, AUDIT-044
+- Event: remediation report (fourth pass)
+- Decision: record closures from the "definitely must fix" list
+
+### Closed in this pass
+
+1. **Patch inputs now receive pre-write gate policy** (AUDIT-029): patch text
+   is treated as new code and routed through `Intent.WriteFile`, so strict
+   agents need loaded skills before an `apply_patch`/`patch` call that touches
+   Effect code — no more silent bypass.
+2. **Symlink-hardened containment** (AUDIT-035): new `src/RealPath.ts`
+   security adapter resolves real paths; snapshot capture and every
+   verification read compare REAL project root vs REAL target via
+   `containedTarget`. Lexical-only containment is gone on these paths.
+3. **Authoritative asset inventory** (AUDIT-002/023/028):
+   `packages/module-typescript/assets/manifest.tsv` pins all 104 files
+   (47 patterns / 53 skills / 4 guidance) with byte sizes and HARD required
+   counts; `verifyAssetsManifest` runs inside `createModule`, so any drift
+   fails the module (and is logged by the loader) instead of silently
+   shrinking enforcement.
+4. **No-false-green semantic review** (AUDIT-032): `semanticRequired` is wired
+   from config; when review is enabled but unavailable the report records
+   explicit `error` rather than `skipped→passed`.
+5. **Pattern-scan visibility** (AUDIT-032/008): `VerifierReport` gained
+   `patternScanStatus`/`patternScanError`; catalog unavailability can no
+   longer masquerade as "no findings".
+6. **Durable run identity** (AUDIT-033): host event ids flow through
+   `ExecutionEnded`; the last successfully processed id persists per
+   project/session and report filenames use it — replays never re-verify,
+   and manual reports carry session-derived names (collision-safe).
+
+### Baseline ledger events (shrink-only policy)
+
+- ADDED justified: `src/RealPath.ts`
+  (`prefer-option-over-null`, `use-filesystem-service`) — security adapter.
+- PRUNED stale: index-level `require-effect-concurrency` vanished after the
+  refactor; newly-visible equivalents on module-typescript/Ledger/Origins were
+  baselined with written justification (matcher window / single-writer Ref).
+
+### Validation
+
+- `bunx tsgo --noEmit`: clean. `bunx tsc --noEmit`: clean.
+- `bunx vitest run`: 20 files / 53 tests passed — INCLUDING
+  SelfPatternScan (all 47 detectors repo-wide) and Catalog integrity.
+- `bun test`: 53 passed.
+
+### Still open
+
+1. Fake-context adapter contract suite + live-server smoke (AUDIT-044 core).
+2. Critic durable `CriticReport` artifact + truly independent reference checks
+   (AUDIT-010/036 remainder).
+3. Cross-process locks (Journal/Store/Runner) and Evolution→Store persistence
+   (AUDIT-038/039 remainder) — required only if compound is product scope.
+4. Packaging decision: publishable artifact or documented source-only scope
+   (AUDIT-009/043).

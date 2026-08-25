@@ -76,6 +76,11 @@ export class VerifierReport extends Schema.Class<VerifierReport>('VerifierReport
 		})
 	),
 	patternFindings: Schema.Array(PatternFinding),
+	/** Explicit visibility: pattern scanning was complete, degraded, or off. */
+	patternScanStatus: Schema.optionalKey(
+		Schema.Literals(['ok', 'error', 'skipped'])
+	),
+	patternScanError: Schema.optionalKey(Schema.String),
 	skillEvidence: SkillEvidence,
 	semantic: SemanticReview,
 	overall: Schema.Literals(['passed', 'failed', 'error'])

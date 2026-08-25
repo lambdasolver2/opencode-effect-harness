@@ -12,6 +12,7 @@
 import { Effect, Stream } from 'effect';
 
 export interface HostEvent {
+	readonly id?: unknown;
 	readonly type: string;
 	readonly properties?: Record<string, unknown> | undefined;
 	/** Pinned protocol events carry their payload at top-level `data`. */
@@ -48,6 +49,8 @@ export interface SkillActivated {
 export interface ExecutionEnded {
 	readonly sessionID: string;
 	readonly outcome: 'succeeded' | 'failed' | 'interrupted';
+	/** Host event id — durable idempotency key for auto-runs. */
+	readonly eventId: string | undefined;
 }
 
 export interface Compacted {
@@ -85,13 +88,14 @@ export const selectExecutionEnded = (event: HostEvent): ExecutionEnded | undefin
 	}
 	const sessionID = deepSessionId(event);
 	if (sessionID === undefined) return undefined;
+	const eventId = typeof event.id === 'string' ? event.id : undefined;
 	const outcome =
 		event.type === 'session.execution.succeeded'
 			? ('succeeded' as const)
 			: event.type === 'session.execution.failed'
 				? ('failed' as const)
 				: ('interrupted' as const);
-	return { sessionID, outcome };
+	return { sessionID, outcome, eventId };
 };
 
 /**

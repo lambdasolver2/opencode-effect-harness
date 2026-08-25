@@ -38,6 +38,12 @@ export interface VerifyDeps {
 	/** Absent reviewer => semantic review is explicitly `skipped`. */
 	readonly reviewer?: Reviewer.Interface | undefined;
 	/**
+	 * When true, an absent reviewer is an ERROR state — configured semantic
+	 * review silently degrading to `skipped` (and overall `passed`) is exactly
+	 * the false-green AUDIT-032 forbids.
+	 */
+	readonly semanticRequired?: boolean | undefined;
+	/**
 	 * File reader for deterministic pattern scans over touched files.
 	 * Absent => pattern findings are empty for this run (recorded as such).
 	 */
@@ -127,6 +133,8 @@ export namespace Orchestrator {
 				} => module.patterns !== undefined
 			);
 
+			let patternScanStatus: 'ok' | 'error' | 'skipped' = 'skipped';
+			let patternScanError: string | undefined;
 			const nestedFindings = yield* Effect.forEach(
 				patternModules,
 				(module) =>
@@ -138,8 +146,13 @@ export namespace Orchestrator {
 							)
 						);
 						if (!catalog.ok) {
+							patternScanStatus = 'error';
+							patternScanError =
+								patternScanError ?? `${module.id}: pattern catalog unavailable`;
 							return [[]] as ReadonlyArray<ReadonlyArray<LocatedFinding>>;
 						}
+						patternScanStatus =
+							patternScanStatus === 'error' ? 'error' : 'ok';
 						return yield* Effect.forEach(
 							request.touchedFiles.filter((file) => module.appliesTo(file)),
 							(file) => {
@@ -202,7 +215,11 @@ export namespace Orchestrator {
 
 			const semantic =
 				deps.reviewer === undefined
-					? skippedSemanticReview()
+					? deps.semanticRequired === true
+						? errorSemanticReview(
+								'semanticReview is enabled but no reviewer is wired in this host context'
+						  )
+						: skippedSemanticReview()
 					: yield* deps.reviewer
 						.review({
 							sessionID: request.sessionID,
@@ -237,6 +254,9 @@ export namespace Orchestrator {
 					diagnostics: [...c.diagnostics]
 				})),
 				patternFindings,
+				...(patternModules.length > 0
+					? { patternScanStatus, ...(patternScanError !== undefined ? { patternScanError } : {}) }
+					: {}),
 				skillEvidence,
 				semantic,
 				overall: overall({ checks, skillEvidence, semantic })

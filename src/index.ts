@@ -43,7 +43,11 @@ import { VerifierReport, VerifyRequest } from 'opencode-verify-kit/Report.ts';
 
 import { Journal } from 'opencode-harness-shared/Journal.ts';
 import { projectKeyOf } from 'opencode-harness-shared/Refs.ts';
-import { partitionWithinRoot } from 'opencode-harness-shared/PathGuard.ts';
+import {
+	partitionWithinRoot,
+	withinRoot
+} from 'opencode-harness-shared/PathGuard.ts';
+import { realpath } from './RealPath.ts';
 
 import {
 	computeChangedSpans,
@@ -151,6 +155,31 @@ export default Plugin.define({
 			const providePlatform = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 				Effect.provide(effect, platform);
 
+			// Symlink-hardened containment (AUDIT-035): compare REAL paths and
+			// read the REAL target. Unresolvable or escaping paths yield undefined.
+			const realRootCache = new Map<string, string | undefined>();
+			const realRoot = (directory: string): Effect.Effect<string | undefined> =>
+				Effect.suspend(() => {
+					if (realRootCache.has(directory)) {
+						return Effect.succeed(realRootCache.get(directory));
+					}
+					return Effect.map(realpath(directory), (value) => {
+						realRootCache.set(directory, value);
+						return value;
+					});
+				});
+			const containedTarget = (
+				rootDirectory: string,
+				absolutePath: string
+			): Effect.Effect<string | undefined> =>
+				Effect.gen(function* () {
+					const rootReal = yield* realRoot(rootDirectory);
+					if (rootReal === undefined) return undefined;
+					const targetReal = yield* realpath(absolutePath);
+					if (targetReal === undefined) return undefined;
+					return withinRoot(rootReal, targetReal);
+				});
+
 			// ---- host-adjacent services ----
 			const sessions = Sessions.make(
 				ctx.session as unknown as Parameters<typeof Sessions.make>[0],
@@ -158,6 +187,7 @@ export default Plugin.define({
 			);
 			const origins = Origins.make();
 			const mode = ModeState.make(ctx.storage as HostStorage);
+			const runsStorage = ctx.storage as HostStorage;
 			const ledger = Ledger.make(ctx.storage as HostStorage);
 			const pending = PendingReads.make();
 			const changes = ChangeLedger.make();
@@ -359,13 +389,22 @@ export default Plugin.define({
 								{
 									registry,
 									exec,
-									readFile: (absPath: string) => readText(absPath)
+									semanticRequired: config.verify.semanticReview,
+									readFile: (absPath: string) =>
+										Effect.flatMap(
+											containedTarget(location.directory, absPath),
+											(real) =>
+												real === undefined
+													? Effect.succeed(undefined)
+													: readText(real)
+										),
 								},
 								request
 							);
 
 							const now = yield* Clock.currentTimeMillis;
-							const reportPath = yield* persistReport(location.directory, report, now).pipe(
+							const baseName = `${now.toString(36)}-${execCtx.sessionID.slice(-8)}`;
+							const reportPath = yield* persistReport(location.directory, report, baseName).pipe(
 								Effect.mapError(
 									(e) =>
 										new Tool.Error({
@@ -841,7 +880,27 @@ let stageFailed: string | undefined;
 						return;
 					}
 
-					const intent = intentFromInput(event.input);
+					let intent = intentFromInput(event.input);
+					// Patch text IS new code: route it through the same pre-write gate
+					// instead of silently bypassing policy (AUDIT-029).
+					if (
+						intent === undefined &&
+						(event.tool === 'apply_patch' || event.tool === 'patch')
+					) {
+						const patchText = String(
+							property(event.input, 'patchText') ??
+								property(event.input, 'patch') ??
+								''
+						);
+						if (patchText.length > 0) {
+							intent = new Intent.WriteFile({
+								phase: 'before',
+								filePath:
+									extractAffectedPaths(event.tool, event.input)[0] ?? '',
+								content: patchText.slice(0, 200_000)
+							});
+						}
+					}
 					if (intent !== undefined) {
 
 					const decisions = yield* evaluateGate({
@@ -871,15 +930,28 @@ let stageFailed: string | undefined;
 							})
 						);
 					}
-					const files = yield* Effect.forEach(
+					const nestedFiles = yield* Effect.forEach(
 						snapshots,
 						(snap) =>
-							Effect.map(readText(snap.absolutePath), (beforeContent) => ({
-								filePath: snap.filePath,
-								absolutePath: snap.absolutePath,
-								beforeContent
-							}))
+							Effect.gen(function* () {
+								const real = yield* containedTarget(
+									location.directory,
+									snap.absolutePath
+								);
+								if (real === undefined) return [];
+								const beforeContent = yield* readText(real);
+								return [
+									{
+										filePath: snap.filePath,
+											absolutePath: real,
+											beforeContent
+										}
+									];
+							}),
+						{ concurrency: 4 }
 					);
+					const files = nestedFiles.flat();
+					if (files.length === 0) return;
 					pendingSnapshots.set(String(event.id), {
 						directory: location.directory,
 						files
@@ -1111,6 +1183,16 @@ let stageFailed: string | undefined;
 						if (inFlight.has(idempotencyKey)) return;
 						inFlight.add(idempotencyKey);
 
+						// Durable dedupe (AUDIT-033): last SUCCESSFULLY processed host
+						// event id survives restarts; replays never re-verify.
+						const runsKey = `opencode-effect-harness/runs/${location.projectKey}/${ended.sessionID}`;
+						const lastRunId = yield* runsStorage.get(runsKey).pipe(
+							Effect.orElseSucceed(() => undefined)
+						);
+						if (ended.eventId !== undefined && lastRunId === ended.eventId) {
+							return;
+						}
+
 						yield* Effect.gen(function* () {
 							// peek -> verify -> persist -> drain-on-success (AUDIT-033).
 							const files = yield* changes.peek({
@@ -1135,12 +1217,22 @@ let stageFailed: string | undefined;
 								{
 									registry,
 									exec,
-									readFile: (absPath: string) => readText(absPath)
+									semanticRequired: config.verify.semanticReview,
+									readFile: (absPath: string) =>
+										Effect.flatMap(
+											containedTarget(location.directory, absPath),
+											(real) =>
+												real === undefined
+													? Effect.succeed(undefined)
+													: readText(real)
+										),
 								},
 								request
 							);
-							const now = yield* Clock.currentTimeMillis;
-							const reportPath = yield* persistReport(location.directory, report, now);
+							const baseName =
+								ended.eventId ??
+								(yield* Clock.currentTimeMillis).toString(36);
+							const reportPath = yield* persistReport(location.directory, report, baseName);
 							console.error(
 								`[opencode-effect-harness] auto-verify ${report.overall}: ${reportPath}`
 							);
@@ -1148,6 +1240,11 @@ let stageFailed: string | undefined;
 								projectKey: location.projectKey,
 								sessionID: ended.sessionID
 							});
+							if (ended.eventId !== undefined) {
+								yield* runsStorage.set(runsKey, ended.eventId).pipe(
+									Effect.ignore
+								);
+							}
 						}).pipe(
 							// Failures KEEP the change ledger so the next trigger retries.
 							Effect.catchCause((cause) =>
@@ -1227,7 +1324,7 @@ const matchSkill = (
 const persistReport = (
 	projectRoot: string,
 	report: VerifierReport,
-	now: number
+	baseName: string
 ): Effect.Effect<string, ReportPersistError> =>
 	Effect.gen(function* () {
 		const fs = yield* FileSystem.FileSystem;
@@ -1241,7 +1338,8 @@ const persistReport = (
 					)
 			)
 		);
-		const target = `${dir}/${now.toString(36)}-verify.json`;
+		const safeBase = baseName.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80) || 'run';
+		const target = `${dir}/${safeBase}-verify.json`;
 		const tmp = `${target}.tmp`;
 		const encoded = Schema.encodeSync(VerifierReport)(report);
 		yield* fs.writeFileString(tmp, JSON.stringify(encoded, null, 2)).pipe(

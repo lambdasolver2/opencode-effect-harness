@@ -1,15 +1,16 @@
 /**
  * TypeScript verification module — carries the migrated Effect skill/pattern
- * catalog (53 skills / 46 patterns) as its knowledge base, loaded from the
- * SAME immutable asset tree the enforcement gate reads. Paths resolve from the
- * caller-supplied assets root, never process-cwd-relative guesses.
+ * catalog as its knowledge base, loaded from the SAME immutable asset tree
+ * the enforcement gate reads. Paths resolve from the caller-supplied assets
+ * root, never process-cwd-relative guesses.
  *
- * Construction requires FileSystem/Path so catalogs are validated eagerly at
- * plugin startup instead of failing silently on first use.
+ * Construction requires FileSystem/Path so the authoritative asset manifest
+ * is verified EAGERLY at plugin startup: any drift (missing/replaced/
+ * truncated assets) fails loudly instead of shrinking enforcement silently.
  */
-import { Effect, FileSystem, Path } from 'effect';
+import { Effect, FileSystem, Option, Path } from 'effect';
 
-import { type CatalogError, loadPatterns } from 'opencode-harness-kit/Catalog.ts';
+import { CatalogError, loadPatterns } from 'opencode-harness-kit/Catalog.ts';
 import { CommandSpec } from 'opencode-harness-shared';
 import { CheckerSpec, Diagnostic } from 'opencode-verify-kit/Checker.ts';
 import {
@@ -20,11 +21,113 @@ import {
 const TSC_DIAGNOSTIC_RE =
 	/(.+?)\((\d+),(\d+)\): error (TS\d+): (.+)/g;
 
-export const DEFAULT_ASSETS_ROOT = new URL('../assets/', import.meta.url).pathname.replace(/\/$/, '');
+export const DEFAULT_ASSETS_ROOT = new URL('../assets/', import.meta.url)
+	.pathname
+	.replace(/\/$/, '');
 
 export interface CreateOptions {
 	readonly assetsRoot?: string | undefined;
 }
+
+// ---------------------------------------------------------------------------
+// Authoritative asset manifest (AUDIT-002/023/028)
+//
+// manifest.tsv rows are `<relative-path>\t<byte-size>`. The EXACT inventory is
+// part of the contract: any missing, extra, replaced or truncated asset fails
+// module construction loudly instead of silently shrinking enforcement.
+// ---------------------------------------------------------------------------
+
+const EXPECTED_COUNTS = {
+	patterns: 47,
+	skills: 53,
+	guidance: 4
+} as const;
+
+interface ManifestRow {
+	readonly rel: string;
+	readonly size: number;
+}
+
+const parseManifestTsv = (
+	raw: string
+): ReadonlyArray<ManifestRow> =>
+	raw
+		.split('\n')
+		.filter((line) => line.length > 0)
+		.flatMap((line) => {
+			const tabIndex = line.lastIndexOf('\t');
+			if (tabIndex <= 0) return [];
+			const rel = line.slice(0, tabIndex);
+			const size = Number(line.slice(tabIndex + 1));
+			return Number.isInteger(size) && size >= 0 ? [{ rel, size }] : [];
+		});
+
+/** Verify every shipped asset against manifest.tsv (sizes + exact counts). */
+export const verifyAssetsManifest = (
+	assetsRoot: string
+): Effect.Effect<
+	{ readonly ok: true } | { readonly ok: false; readonly reason: string },
+	never,
+	FileSystem.FileSystem | Path.Path
+> =>
+	Effect.gen(function*() {
+		const fs = yield* FileSystem.FileSystem;
+		const path = yield* Path.Path;
+		const manifestPath = path.join(assetsRoot, 'manifest.tsv');
+		const rawOpt = yield* fs.readFileString(manifestPath).pipe(Effect.option);
+		if (Option.isNone(rawOpt)) {
+			return {
+				ok: false as const,
+				reason: `manifest missing: ${manifestPath}`
+			};
+		}
+		const rows = parseManifestTsv(rawOpt.value);
+		const byKind = (prefix: string): number =>
+			rows.filter((row) => row.rel.startsWith(`${prefix}/`)).length;
+
+		const countMismatches = (
+			[
+				['patterns', byKind('patterns'), EXPECTED_COUNTS.patterns],
+				['skills', byKind('skills'), EXPECTED_COUNTS.skills],
+				['guidance', byKind('guidance'), EXPECTED_COUNTS.guidance]
+			] as const
+		).flatMap(([kind, actual, expected]) =>
+			actual === expected
+				? []
+				: [`count ${kind}: manifest ${String(actual)} != required ${String(expected)}`]
+		);
+
+		const checked = yield* Effect.forEach(
+			rows,
+			(row) =>
+				Effect.gen(function*() {
+					const statOpt = yield* fs.stat(path.join(assetsRoot, row.rel)).pipe(
+						Effect.option
+					);
+					if (Option.isNone(statOpt)) {
+						return Option.some(`missing ${row.rel}`);
+					}
+					return Number(statOpt.value.size) === row.size
+						? Option.none()
+						: Option.some(`size-drift ${row.rel}`);
+				}),
+			{ concurrency: 8 }
+		);
+		const sizeMismatches = checked.flatMap((o) => (Option.isSome(o) ? [o.value] : []));
+
+		const allMismatches = [...countMismatches, ...sizeMismatches];
+		if (allMismatches.length > 0) {
+			return {
+				ok: false as const,
+				reason: `asset drift (${String(allMismatches.length)}): ${allMismatches.slice(0, 6).join('; ')}`
+			};
+		}
+		return { ok: true as const };
+	});
+
+// ---------------------------------------------------------------------------
+// Module factory
+// ---------------------------------------------------------------------------
 
 export const createModule = (
 	options: CreateOptions = {}
@@ -34,11 +137,19 @@ export const createModule = (
 	FileSystem.FileSystem | Path.Path
 > =>
 	Effect.gen(function*() {
-		const assetsRoot = options.assetsRoot ?? DEFAULT_ASSETS_ROOT;
 		const fs = yield* FileSystem.FileSystem;
 		const path = yield* Path.Path;
+		const assetsRoot = options.assetsRoot ?? DEFAULT_ASSETS_ROOT;
 		const patternsDir = path.join(assetsRoot, 'patterns');
 		const skillsDir = path.join(assetsRoot, 'skills');
+
+		// Fail LOUDLY on any asset drift before exposing catalogs (AUDIT-002).
+		const manifestCheck = yield* verifyAssetsManifest(assetsRoot);
+		if (!manifestCheck.ok) {
+			return yield* Effect.fail(
+				new CatalogError({ path: assetsRoot, reason: manifestCheck.reason })
+			);
+		}
 
 		const detectorList = yield* loadPatterns(patternsDir);
 
@@ -124,4 +235,3 @@ export const createModule = (
 			}
 		} satisfies VerificationModule;
 	});
-
