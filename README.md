@@ -10,7 +10,8 @@ packages/
   harness-kit/         enforcement kernel (Intent, Projection, Matcher, Rules, Controller)
   verify-kit/          verification engine (Checker, Orchestrator, Critic, Evidence)
   compound-kit/        compound domain (Blueprint, Distill, Benchmark, Evolution, Store)
-  module-typescript/   TS verification module (53 skills / 47 patterns / 4 guidance)
+  module-typescript/   TS verification module (53 skills / 47 patterns / 4 guidance,
+                       assets pinned by assets/manifest.tsv)
   module-bend/         Bend verification module (own catalogs)
 
 src/                   plugin composition root + OpenCode adapter
@@ -51,8 +52,29 @@ agents — fork bombs, `mkfs`, `dd if=`, `git reset --hard`, `git clean -fd`,
 `chmod -R 777`, relative-path `rm`/`mv` escapes, and any flagged `rm`
 targeting filesystem root. Other `bash`/`shell` writes remain post-write-only
 by design (detection, not prevention).
-`write`/`edit` are fully gated pre-write; `patch`-style tools rely on post-write
-feedback plus ledger recording.
+
+Pre-write gating: `write`/`edit`/`multiedit` are fully gated. Patch-style tools
+(`apply_patch`/`patch`) route their patch text through the same gate; today
+only the FIRST extracted target path is gated and an unparseable patch is not
+yet fail-closed (tracked as F-04 in `AUDIT-EVENT-2026-08-26-01`). EVERY
+extracted path — including patch-embedded ones — is snapshot-captured with
+symlink-realpath containment and recorded in the change ledger.
+
+### Honest verification semantics
+
+- Reports carry `patternScanStatus` (`ok` / `error` / `skipped`) and optional
+  `patternScanError`. Today these are VISIBILITY ONLY — they do not yet affect
+  the `overall` verdict (F-01/F-02 in `AUDIT-EVENT-2026-08-26-01`).
+- Semantic review enabled-but-unavailable ⇒ explicit report `error`, never a
+  silent skipped→passed fold.
+- Auto-run dedupe persists the LAST processed host event id per
+  project/session; replay of an OLDER id can still re-verify (at-least-once)
+  until the bounded processed-set lands (F-09).
+- Module load failures fail visibly at startup (logged); representing them
+  inside the VerifierReport is pending (F-07).
+- Asset integrity: `manifest.tsv` pins file counts + byte sizes per kind at
+  module construction; content fingerprints + extra-file detection are
+  pending (F-06).
 
 ## Development
 

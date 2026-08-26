@@ -1978,3 +1978,65 @@ growing the baseline (shrink-only debt policy held).
    (AUDIT-038/039 remainder) — required only if compound is product scope.
 4. Packaging decision: publishable artifact or documented source-only scope
    (AUDIT-009/043).
+
+## Appendix Entry AUDIT-EVENT-2026-08-26-01
+
+- Recorded at: 2026-08-26
+- Repository snapshot: worktree at `2cc6817` (recovered onto `main`)
+- Actor: implementation agent (adversarial checker role)
+- Related findings: AUDIT-002, AUDIT-008, AUDIT-010, AUDIT-023, AUDIT-027,
+  AUDIT-029, AUDIT-030, AUDIT-032, AUDIT-033, AUDIT-035, AUDIT-036, AUDIT-038,
+  AUDIT-039, AUDIT-044
+- Event: fifth pass — adversarial re-audit of the fourth-pass closures recorded
+  in AUDIT-EVENT-2026-08-25-01
+- Decision: record overclaimed closures with evidence; remediation follows in a
+  subsequent entry. This entry is written BEFORE any fix (docs-first).
+
+### Repository-state incident (recovered)
+
+The fourth-pass commit `2cc6817` was created on a detached HEAD and never
+referenced by any branch; the reflog had expired, leaving it an unreachable
+object. It was verified to be a direct child of `1310e66` and recovered by
+fast-forwarding `main`. All mandatory gates were re-run on the recovered tree:
+tsgo clean, tsc clean, vitest 20 files / 53 tests green. Lesson: land remediation
+commits onto a branch in the same breath as committing them.
+
+### Findings against AUDIT-EVENT-2026-08-25-01 claims
+
+| ID | Claim audited | Verified status | Evidence | Disposition |
+|---|---|---|---|---|
+| F-01 | "catalog unavailability can no longer masquerade as no findings" | HALF-TRUE: visible via `patternScanStatus`, but `overall()` ignores it — report can be `patternScanStatus:'error'` + empty findings + `overall:'passed'` | `packages/verify-kit/src/Report.ts:95-103` (`overall` input has no scan field), `Orchestrator.ts:148-155` | FIX NOW: scan health flips overall |
+| F-02 | VerifyDeps doc: absent readFile "(recorded as such)" | FALSE: absent readFile returns empty findings while catalog loaded ⇒ `patternScanStatus:'ok'` — full masquerade restored | `Orchestrator.ts:159-161` | FIX NOW: absent reader is an explicit degraded/error state |
+| F-03 | Semantic review receives real bounded ChangeSet (older A28 claim) | FALSE: orchestrator still sends `{files: [], truncated: true}`; `ChangeSetProvider` exists but is unwired | `Orchestrator.ts:232-236`, `ChangeSet.ts` | FIX NOW: wire provider through deps, hardened reader |
+| F-04 | "no more silent bypass" for patch inputs (AUDIT-029) | PARTIAL: only `extractAffectedPaths(...)[0]` is gated; multi-file patches gate one path; unparseable patch yields `filePath:''` intent instead of fail-closed rejection | `src/index.ts` execute.before patch branch (~lines 884-903) | FIX NOW: gate every path; unparseable ⇒ block strict agents |
+| F-05 | snapshot lifecycle safe (AUDIT-027 closure) | GAP: `pendingSnapshots` keyed by bare call id — cross-session overwrite/cleanup possible; not project/session scoped (AUDIT-030 class) | `src/index.ts:809`, `:955`, `:983-984` | FIX NOW: session-scoped keys |
+| F-06 | manifest pins inventory: "missing, extra, replaced or truncated asset fails" | OVERCLAIM: sizes+counts only — same-size replacement passes; duplicate rows uncaught; extra unlisted files undetected; no content hashes | `module-typescript/src/index.ts` `verifyAssetsManifest`/`parseManifestTsv` | FIX NOW: fnv1a fingerprints, dup-row rejection, actual-vs-manifest inventory diff |
+| F-07 | module loading errors visible (AUDIT-032 required change) | GAP: import/construction failures collapse to empty registry; console-only; never represented in VerifierReport | `src/index.ts:243-273` | FIX NOW: report carries moduleLoadFailures |
+| F-08 | symlink-hardened containment everywhere (AUDIT-035) | PARTIAL: manual/auto verify reads are hardened, but ChangeSetProvider reads lexically-guarded paths directly — naive wiring reintroduces the hole; Sessions accepts host directory without canonicalization (mitigated: containment re-realpaths at use) | `ChangeSet.ts:49-66`, `Sessions.ts:38-44` | FIX NOW for provider; Sessions documented as mitigated-by-use |
+| F-09 | "replays never re-verify" (AUDIT-033) | OVERCLAIM: storage keeps ONE last event id per project/session — replay of an older id re-verifies; non-string host ids silently disable dedupe; ordering is at-least-once (safe direction, but claim wrong) | `src/index.ts:1186-1194`, `Events.ts:91` | FIX NOW: bounded processed-id set (last N persisted) |
+| F-10 | critic durability (AUDIT-010/036 remainder) | PARTIAL: review.completed journal payload holds counts only, not the decoded CriticReport itself | `src/index.ts:565-571` | IMPROVE NOW: persist full decoded verdict/findings/references; standalone artifact stays open |
+
+### Compound-domain findings (re-confirmed, scoped)
+
+- `Env.create` uses recursive mkdir on the leaf — collision silently REUSES an
+  existing workspace (AUDIT-039 residue). FIX NOW: exclusive leaf create.
+- `Scorecard.aggregate`: no score range/finiteness validation; per-model task
+  completeness unchecked when every task appears under SOME model (AUDIT-012
+  residue). FIX NOW.
+- `Store.appendVersion` treats an existing-but-unreadable blueprint file as
+  empty (`PlatformError → ''`) — AUDIT-038 residue. `setPointer` does not check
+  version existence. FIX NOW both.
+- Cross-process locks (Journal/Store/Runner), Evolution→Store persistence,
+  Env cross-process name uniqueness: remain OPEN — product-scope decision
+  recorded, unchanged.
+
+### Still open after this pass (unchanged scope)
+
+1. Fake-context adapter contract suite + live-server smoke (AUDIT-044 core).
+2. Packed-artifact publish/installability decision (AUDIT-009/043).
+3. Critic durable standalone artifact + truly independent model proof
+   (AUDIT-010/036 remainder beyond F-10).
+4. Compound cross-process safety (above) if compound becomes product scope.
+
+Baseline policy note: remediation commits must introduce ZERO new self-scan
+hits; the shrink-only ledger may not grow.
