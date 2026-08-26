@@ -11,4 +11,13 @@ describe('overall', () => {
   it('never reports passed when nothing ran', () => {
     expect(overall({ checks: [], skillEvidence: { status: 'skipped' }, semantic: { status: 'skipped' } })).toBe('error')
   })
+
+  it('never reports passed when pattern scanning errored', () => {
+    expect(overall({
+      checks: [{ verdict: 'passed' }],
+      skillEvidence: { status: 'sufficient' },
+      semantic: { status: 'skipped' },
+      patternScanStatus: 'error'
+    })).toBe('error')
+  })
 })

@@ -20,6 +20,7 @@ import { findPatternMatches } from 'opencode-harness-kit/Matcher.ts';
 import type { Pattern } from 'opencode-harness-kit/Pattern.ts';
 import { assessEvidence } from './Evidence.ts';
 import { CheckerResult, Runner } from './Checker.ts';
+import { ChangeSet, ChangeSetProvider } from './ChangeSet.ts';
 import type { VerificationModule } from './Module.ts';
 import { Registry } from './Module.ts';
 import {
@@ -45,10 +46,20 @@ export interface VerifyDeps {
 	readonly semanticRequired?: boolean | undefined;
 	/**
 	 * File reader for deterministic pattern scans over touched files.
-	 * Absent => pattern findings are empty for this run (recorded as such).
+	 * Absent WITH touched files => the scan could not run: this is recorded as
+	 * `patternScanStatus:'error'`, never as a silent pass (F-02).
 	 */
 	readonly readFile?:
 		| ((absolutePath: string) => Effect.Effect<string | undefined>)
+		| undefined;
+	/**
+	 * Bounded before/after content provider for semantic review (A28/F-03).
+	 * Absent => reviewer receives an explicitly-empty, truncated ChangeSet.
+	 */
+	readonly changeSetProvider?: ChangeSetProvider.Interface | undefined;
+	/** Host-reported modules that failed to construct; surfaced verbatim (F-07). */
+	readonly moduleLoadFailures?:
+		| ReadonlyArray<{ readonly moduleId: string; readonly reason: string }>
 		| undefined;
 }
 
@@ -135,6 +146,16 @@ export namespace Orchestrator {
 
 			let patternScanStatus: 'ok' | 'error' | 'skipped' = 'skipped';
 			let patternScanError: string | undefined;
+			// F-02: a configured-but-unexecutable scan is an ERROR, never `ok`.
+			if (
+				patternModules.length > 0 &&
+				deps.readFile === undefined &&
+				request.touchedFiles.length > 0
+			) {
+				patternScanStatus = 'error';
+				patternScanError =
+					'readFile dependency not wired — deterministic pattern scan could not run';
+			}
 			const nestedFindings = yield* Effect.forEach(
 				patternModules,
 				(module) =>
@@ -213,6 +234,20 @@ export namespace Orchestrator {
 				minRequired: request.minSkillEvidence
 			});
 
+			// F-03: the reviewer reviews REAL bounded content when a provider is
+			// wired; otherwise the emptiness is explicit in the ChangeSet itself.
+			const changeSet =
+				deps.changeSetProvider !== undefined
+					? yield* deps.changeSetProvider.fromPaths({
+							projectRoot: request.projectRoot,
+							paths: request.touchedFiles
+						})
+					: new ChangeSet({
+							projectRoot: request.projectRoot,
+							files: [],
+							truncated: true
+						});
+
 			const semantic =
 				deps.reviewer === undefined
 					? deps.semanticRequired === true
@@ -229,11 +264,7 @@ export namespace Orchestrator {
 								verdict: c.verdict,
 								diagnostics: [...c.diagnostics]
 							})),
-							changeSet: {
-								projectRoot: request.projectRoot,
-								files: [],
-								truncated: true
-							},
+							changeSet,
 							loadedSkills: request.loadedSkills
 						})
 						.pipe(
@@ -257,9 +288,19 @@ export namespace Orchestrator {
 				...(patternModules.length > 0
 					? { patternScanStatus, ...(patternScanError !== undefined ? { patternScanError } : {}) }
 					: {}),
+				...(deps.moduleLoadFailures !== undefined && deps.moduleLoadFailures.length > 0
+					? {
+							moduleLoadFailures: [...deps.moduleLoadFailures]
+						}
+					: {}),
 				skillEvidence,
 				semantic,
-				overall: overall({ checks, skillEvidence, semantic })
+				overall: overall({
+					checks,
+					skillEvidence,
+					semantic,
+					...(patternModules.length > 0 ? { patternScanStatus } : {})
+				})
 			});
 		});
 

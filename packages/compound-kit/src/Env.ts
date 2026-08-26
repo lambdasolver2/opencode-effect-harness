@@ -112,7 +112,7 @@ export namespace Env {
 								parent,
 								`${prefix}${createdAt.toString(36)}`
 							);
-							yield* fs.makeDirectory(workspace, { recursive: true }).pipe(
+							yield* fs.makeDirectory(workspace).pipe(
 								Effect.catchTag('PlatformError', () =>
 									Effect.fail(new InvalidInput({ reason: 'workspace create failed' }))
 								)

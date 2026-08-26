@@ -36,6 +36,10 @@ import type { VerificationModule } from 'opencode-verify-kit/Module.ts';
 import { Registry, skillEntriesFromAssets } from 'opencode-verify-kit/Module.ts';
 import { Orchestrator } from 'opencode-verify-kit/Orchestrator.ts';
 import {
+	boundedFromReader,
+	ChangeSetProvider
+} from 'opencode-verify-kit/ChangeSet.ts';
+import {
 	decodeWorkerOutput,
 	filterUnverifiedFindings
 } from 'opencode-verify-kit/Critic.ts';
@@ -179,6 +183,20 @@ export default Plugin.define({
 					if (targetReal === undefined) return undefined;
 					return withinRoot(rootReal, targetReal);
 				});
+			const changeSetProviderFor = (
+				location: SessionLocation
+			): ChangeSetProvider.Interface => ({
+				fromPaths: (input) =>
+					boundedFromReader(input, (absolutePath) =>
+						Effect.flatMap(
+							containedTarget(location.directory, absolutePath),
+							(real) =>
+								real === undefined
+									? Effect.succeed(Option.none<string>())
+									: Effect.map(readText(real), Option.fromUndefinedOr)
+						)
+					)
+			});
 
 			// ---- host-adjacent services ----
 			const sessions = Sessions.make(
@@ -231,12 +249,14 @@ export default Plugin.define({
 				bend: (): Promise<unknown> => import('@opencode-effect-harness/module-bend')
 			};
 			const requestedIds = config.verify.moduleIds ?? ['typescript'];
+			const moduleLoadFailures: Array<{ readonly moduleId: string; readonly reason: string }> = [];
 			const loadedModules = yield* Effect.forEach(
 				requestedIds,
 				(id) =>
 					Effect.gen(function* () {
 						const loader = loaders[id];
 						if (loader === undefined) {
+							moduleLoadFailures.push({ moduleId: id, reason: 'unknown verification module' });
 							console.error(`[opencode-effect-harness] unknown verification module: ${String(id)}`);
 							return [] as ReadonlyArray<VerificationModule>;
 						}
@@ -245,11 +265,13 @@ export default Plugin.define({
 							() => undefined
 						);
 						if (raw === undefined) {
+							moduleLoadFailures.push({ moduleId: id, reason: 'module import failed' });
 							console.error(`[opencode-effect-harness] module not installed: ${String(id)}`);
 							return [] as ReadonlyArray<VerificationModule>;
 						}
 						const factory = (raw as Partial<ModuleFactory>).createModule;
 						if (typeof factory !== 'function') {
+							moduleLoadFailures.push({ moduleId: id, reason: 'missing createModule factory' });
 							console.error(
 								`[opencode-effect-harness] module '${String(id)}' exposes no createModule(options) factory`
 							);
@@ -265,6 +287,7 @@ export default Plugin.define({
 							Effect.orElseSucceed(() => undefined)
 						);
 						if (created === undefined) {
+							moduleLoadFailures.push({ moduleId: id, reason: 'module construction failed' });
 							console.error(
 								`[opencode-effect-harness] module '${String(id)}' failed to construct (catalog error?)`
 							);
@@ -390,6 +413,8 @@ export default Plugin.define({
 									registry,
 									exec,
 									semanticRequired: config.verify.semanticReview,
+									moduleLoadFailures,
+									changeSetProvider: changeSetProviderFor(location),
 									readFile: (absPath: string) =>
 										Effect.flatMap(
 											containedTarget(location.directory, absPath),
@@ -565,7 +590,8 @@ let stageFailed: string | undefined;
 								yield* appendCriticEvent(stream, 'review.completed', {
 									childSessionID: childId,
 									verdict: worker.verdict,
-									findings: findings.length,
+									findings,
+									checkedReferences: worker.checkedReferences,
 									droppedUnverified,
 									independenceProvable
 								});
@@ -807,6 +833,8 @@ let stageFailed: string | undefined;
 				}>;
 			}
 			const pendingSnapshots = new Map<string, PendingWriteSnapshot>();
+			const snapshotKey = (sessionID: string, callID: string): string =>
+				`${sessionID}:${callID}`;
 
 			yield* ctx.tool.hook('execute.before', (event) =>
 				Effect.gen(function* () {
@@ -880,47 +908,60 @@ let stageFailed: string | undefined;
 						return;
 					}
 
-					let intent = intentFromInput(event.input);
-					// Patch text IS new code: route it through the same pre-write gate
-					// instead of silently bypassing policy (AUDIT-029).
-					if (
-						intent === undefined &&
-						(event.tool === 'apply_patch' || event.tool === 'patch')
-					) {
-						const patchText = String(
-							property(event.input, 'patchText') ??
-								property(event.input, 'patch') ??
-								''
-						);
-						if (patchText.length > 0) {
-							intent = new Intent.WriteFile({
-								phase: 'before',
-								filePath:
-									extractAffectedPaths(event.tool, event.input)[0] ?? '',
-								content: patchText.slice(0, 200_000)
-							});
-						}
-					}
-					if (intent !== undefined) {
-
-					const decisions = yield* evaluateGate({
-						agent: String(event.agent),
-						sessionId,
-						location,
-						writeIntent: intent
-					});
-					const blocked = decisions.find(
-						(d): d is Extract<typeof d, { _tag: 'BlockToolCall' }> =>
-							d._tag === 'BlockToolCall'
+					const patchTool = event.tool === 'apply_patch' || event.tool === 'patch';
+					const patchText = String(
+						property(event.input, 'patchText') ?? property(event.input, 'patch') ?? ''
 					);
-					if (blocked !== undefined) {
-						return yield* Effect.fail(new Tool.Error({ message: blocked.reason }));
+					const affected = extractAffectedPaths(event.tool, event.input);
+					const enabledForPatch = yield* effectiveEnabled(location);
+					if (
+						patchTool &&
+						(affected.length === 0 || patchText.length === 0) &&
+						config.harness.strictAgents.includes(String(event.agent)) &&
+						enabledForPatch
+					) {
+						return yield* Effect.fail(
+							new Tool.Error({
+								message: 'harness: unparseable patch blocked for strict agent'
+							})
+						);
 					}
-					}
+					const regularIntent = intentFromInput(event.input);
+					const intents = patchTool
+						? affected.map(
+								(filePath) =>
+									new Intent.WriteFile({
+										phase: 'before',
+										filePath,
+										content: patchText.slice(0, 200_000)
+									})
+							)
+						: regularIntent === undefined
+							? []
+							: [regularIntent];
+					yield* Effect.forEach(
+						intents,
+						(intent) =>
+							Effect.gen(function* () {
+								const decisions = yield* evaluateGate({
+									agent: String(event.agent),
+									sessionId,
+									location,
+									writeIntent: intent
+								});
+								const blocked = decisions.find(
+									(d): d is Extract<typeof d, { _tag: 'BlockToolCall' }> =>
+										d._tag === 'BlockToolCall'
+								);
+								if (blocked !== undefined) {
+									return yield* Effect.fail(new Tool.Error({ message: blocked.reason }));
+								}
+							}),
+						{ concurrency: 1, discard: true }
+					);
 
 
 					// Pre-write snapshot capture with containment enforcement.
-					const affected = extractAffectedPaths(event.tool, event.input);
 					if (affected.length === 0) return;
 					const { snapshots, escaped } = resolveAffected(location.directory, affected);
 					if (escaped.length > 0) {
@@ -952,7 +993,7 @@ let stageFailed: string | undefined;
 					);
 					const files = nestedFiles.flat();
 					if (files.length === 0) return;
-					pendingSnapshots.set(String(event.id), {
+			pendingSnapshots.set(snapshotKey(sessionId, String(event.id)), {
 						directory: location.directory,
 						files
 					});
@@ -977,13 +1018,12 @@ let stageFailed: string | undefined;
 			yield* ctx.tool.hook('execute.after', (event) =>
 				Effect.gen(function* () {
 					const callId = String(event.id);
+					const sessionId = String(event.sessionID);
 
 					// Terminal cleanup FIRST: failed/interrupted calls release their
 					// snapshot too — full file contents are never retained (AUDIT-027).
-					const snapshot = pendingSnapshots.get(callId);
-					pendingSnapshots.delete(callId);
-
-					const sessionId = String(event.sessionID);
+					const snapshot = pendingSnapshots.get(snapshotKey(sessionId, callId));
+					pendingSnapshots.delete(snapshotKey(sessionId, callId));
 
 					if (event.tool === 'read') {
 						const location = yield* sessions.resolve(sessionId).pipe(
@@ -1186,10 +1226,15 @@ let stageFailed: string | undefined;
 						// Durable dedupe (AUDIT-033): last SUCCESSFULLY processed host
 						// event id survives restarts; replays never re-verify.
 						const runsKey = `opencode-effect-harness/runs/${location.projectKey}/${ended.sessionID}`;
-						const lastRunId = yield* runsStorage.get(runsKey).pipe(
+						const storedRunIds = yield* runsStorage.get(runsKey).pipe(
 							Effect.orElseSucceed(() => undefined)
 						);
-						if (ended.eventId !== undefined && lastRunId === ended.eventId) {
+						const processedRunIds = Array.isArray(storedRunIds)
+							? storedRunIds.filter((value): value is string => typeof value === 'string')
+							: typeof storedRunIds === 'string'
+								? [storedRunIds]
+								: [];
+						if (ended.eventId !== undefined && processedRunIds.includes(ended.eventId)) {
 							return;
 						}
 
@@ -1218,6 +1263,8 @@ let stageFailed: string | undefined;
 									registry,
 									exec,
 									semanticRequired: config.verify.semanticReview,
+									moduleLoadFailures,
+									changeSetProvider: changeSetProviderFor(location),
 									readFile: (absPath: string) =>
 										Effect.flatMap(
 											containedTarget(location.directory, absPath),
@@ -1241,7 +1288,7 @@ let stageFailed: string | undefined;
 								sessionID: ended.sessionID
 							});
 							if (ended.eventId !== undefined) {
-								yield* runsStorage.set(runsKey, ended.eventId).pipe(
+								yield* runsStorage.set(runsKey, [ended.eventId, ...processedRunIds].slice(0, 64)).pipe(
 									Effect.ignore
 								);
 							}

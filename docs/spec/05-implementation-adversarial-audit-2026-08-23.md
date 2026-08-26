@@ -2040,3 +2040,37 @@ commits onto a branch in the same breath as committing them.
 
 Baseline policy note: remediation commits must introduce ZERO new self-scan
 hits; the shrink-only ledger may not grow.
+
+## Appendix Entry AUDIT-EVENT-2026-08-26-02
+
+- Recorded at: 2026-08-26
+- Repository snapshot: remediation worktree after `d3d449a` plus current fix pass
+- Event: remediation of F-01 through F-10 from AUDIT-EVENT-2026-08-26-01
+
+### Remediated
+
+- `overall()` now returns `error` for pattern-scan failure; an absent reader
+  with scan targets is recorded as an error.
+- The orchestrator now accepts a bounded `ChangeSetProvider`; the composition
+  root supplies a realpath-hardened reader to semantic review.
+- Patch targets are each evaluated; unparseable patches fail closed for strict
+  agents. Snapshot keys include the session and call identifiers.
+- Module-load failures are carried into `VerifierReport.moduleLoadFailures`.
+- Auto-run dedupe retains a bounded set of processed event IDs per session,
+  suppressing out-of-order replays within that window.
+- The TypeScript manifest now fingerprints content, rejects duplicate rows, and
+  compares the complete on-disk asset inventory, including support documents.
+- Store rejects unreadable existing blueprints and pointers to unknown versions;
+  workspace leaf creation is exclusive; scorecards reject invalid scores and
+  incomplete per-model task coverage.
+- Critic journal completion entries now retain decoded findings and references,
+  while a standalone CriticReport artifact remains open.
+- Added regression tests for scan health, ChangeSet bounds, manifest integrity,
+  and scorecard validation. The shrink-only self-scan baseline lost the stale
+  ChangeSet exception; no new detector debt was added.
+
+### Still open
+
+Cross-process locking, Evolution-to-Store persistence, standalone critic
+artifacts, packed-artifact installation, fake-context/live-server validation,
+and the documented shell pre-write limitation remain release-scope work.

@@ -81,6 +81,15 @@ export class VerifierReport extends Schema.Class<VerifierReport>('VerifierReport
 		Schema.Literals(['ok', 'error', 'skipped'])
 	),
 	patternScanError: Schema.optionalKey(Schema.String),
+	/** Modules the host failed to construct — failure is never silent (F-07). */
+	moduleLoadFailures: Schema.optionalKey(
+		Schema.Array(
+			Schema.Struct({
+				moduleId: Schema.String,
+				reason: Schema.String
+			})
+		)
+	),
 	skillEvidence: SkillEvidence,
 	semantic: SemanticReview,
 	overall: Schema.Literals(['passed', 'failed', 'error'])
@@ -90,6 +99,12 @@ export interface OverallInput {
 	readonly checks: ReadonlyArray<Pick<CheckerResult, 'verdict'>>;
 	readonly skillEvidence: Pick<SkillEvidence, 'status'>;
 	readonly semantic: Pick<SemanticReview, 'status'>;
+	/**
+	 * Health of the deterministic pattern scan (F-01): `error` means the
+	 * catalog was unavailable and findings are UNRELIABLE — the run can never
+	 * be reported green while enforcement silently shrank.
+	 */
+	readonly patternScanStatus?: 'ok' | 'error' | 'skipped';
 }
 
 export const overall = (input: OverallInput): 'passed' | 'failed' | 'error' => {
@@ -100,5 +115,6 @@ export const overall = (input: OverallInput): 'passed' | 'failed' | 'error' => {
 	if (input.skillEvidence.status === 'insufficient') return 'failed';
 	if (input.semantic.status === 'failed') return 'failed';
 	if (input.semantic.status === 'error') return 'error';
+	if (input.patternScanStatus === 'error') return 'error';
 	return 'passed';
 };

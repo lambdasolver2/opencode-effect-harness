@@ -1,104 +1,105 @@
-guidance/effect-first-development.md	43710
-guidance/post__effect-and-the-near-inexpressible-majesty-of-layers.md	23313
-guidance/post__parse-dont-validate.md	5513
-guidance/progressive-disclosure-guidance.md	2054
-patterns/avoid-any.md	1031
-patterns/avoid-data-tagged-error.md	1013
-patterns/avoid-direct-json.md	1452
-patterns/avoid-direct-tag-checks.md	1422
-patterns/avoid-expect-in-if.md	1341
-patterns/avoid-mutable-state.md	2323
-patterns/avoid-native-fetch.md	1736
-patterns/avoid-node-imports.md	3782
-patterns/avoid-non-null-assertion.md	1173
-patterns/avoid-object-type.md	1265
-patterns/avoid-option-getorthrow.md	964
-patterns/avoid-platform-coupling.md	1652
-patterns/avoid-process-env.md	1219
-patterns/avoid-react-hooks.md	2010
-patterns/avoid-schema-suffix.md	1438
-patterns/avoid-sync-fs.md	1753
-patterns/avoid-try-catch.md	1324
-patterns/avoid-ts-ignore.md	968
-patterns/avoid-untagged-errors.md	1779
-patterns/avoid-yield-ref.md	1364
-patterns/casting-awareness.md	1657
-patterns/context-tag-extends.md	3283
-patterns/effect-catchall-default.md	1861
-patterns/effect-promise-vs-trypromise.md	1479
-patterns/effect-run-in-body.md	1897
-patterns/imperative-loops.md	3846
-patterns/prefer-arr-sort.md	1380
-patterns/prefer-duration-values.md	1603
-patterns/prefer-effect-fn.md	4148
-patterns/prefer-match-over-switch.md	1417
-patterns/prefer-option-over-null.md	1837
-patterns/prefer-recursion-over-while.md	2015
-patterns/prefer-redacted-config.md	2088
-patterns/prefer-schema-class.md	1515
-patterns/require-effect-concurrency.md	2600
-patterns/stream-large-files.md	1782
-patterns/throw-in-effect-gen.md	2286
-patterns/use-clock-service.md	1093
-patterns/use-command-executor-service.md	2236
-patterns/use-console-service.md	1412
-patterns/use-filesystem-service.md	1970
-patterns/use-http-client-service.md	2479
-patterns/use-path-service.md	1362
-patterns/use-random-service.md	1120
-patterns/use-temp-file-scoped.md	1896
-patterns/vm-in-wrong-file.md	1566
-patterns/yield-in-for-loop.md	2021
-skills/effect-ai-chat/SKILL.md	14734
-skills/effect-ai-language-model/SKILL.md	19135
-skills/effect-ai-prompt/SKILL.md	17728
-skills/effect-ai-provider/SKILL.md	20233
-skills/effect-ai-streaming/SKILL.md	12084
-skills/effect-ai-tool/SKILL.md	29545
-skills/effect-atom-rpc/SKILL.md	19672
-skills/effect-atom-state/SKILL.md	17274
-skills/effect-batching/SKILL.md	16069
-skills/effect-cache/SKILL.md	26656
-skills/effect-cli/SKILL.md	14518
-skills/effect-command-executor/SKILL.md	19883
-skills/effect-concurrency-testing/SKILL.md	16460
-skills/effect-config/SKILL.md	14877
-skills/effect-context-witness/SKILL.md	7448
-skills/effect-domain-modeling/SKILL.md	30574
-skills/effect-domain-predicates/SKILL.md	23767
-skills/effect-error-handling/SKILL.md	47108
-skills/effect-fiber/SKILL.md	33614
-skills/effect-filesystem/SKILL.md	14845
-skills/effect-graph/SKILL.md	24041
-skills/effect-http-api/SKILL.md	58917
-skills/effect-http-client/SKILL.md	36818
-skills/effect-http-server/SKILL.md	43713
-skills/effect-incremental-migration/SKILL.md	12518
-skills/effect-layer-design/SKILL.md	17785
-skills/effect-managed-runtime/SKILL.md	12503
-skills/effect-mcp-server/SKILL.md	14520
-skills/effect-observability/SKILL.md	20478
-skills/effect-optics/SKILL.md	14757
-skills/effect-parallelization/SKILL.md	28972
-skills/effect-path/SKILL.md	6709
-skills/effect-pattern-matching/SKILL.md	22351
-skills/effect-platform-abstraction/SKILL.md	32783
-skills/effect-platform-layers/SKILL.md	14258
-skills/effect-pubsub-event-bus/SKILL.md	11681
-skills/effect-react-composition/SKILL.md	22495
-skills/effect-react-vm/SKILL.md	19232
-skills/effect-rpc-api/SKILL.md	31634
-skills/effect-rpc-client/SKILL.md	37108
-skills/effect-rpc-cluster/SKILL.md	67233
-skills/effect-rpc-server/SKILL.md	38934
-skills/effect-schema-composition/SKILL.md	26540
-skills/effect-schema-v4/SKILL.md	23779
-skills/effect-scope/SKILL.md	31596
-skills/effect-service-implementation/SKILL.md	17584
-skills/effect-socket/SKILL.md	34252
-skills/effect-sql/SKILL.md	25516
-skills/effect-stream/SKILL.md	19454
-skills/effect-testing/SKILL.md	34401
-skills/effect-typeclass-design/SKILL.md	4283
-skills/effect-wide-events/SKILL.md	2738
-skills/effect-workflow/SKILL.md	25796
+guidance/effect-first-development.md	43710	83161089
+guidance/post__effect-and-the-near-inexpressible-majesty-of-layers.md	23313	8e990082
+guidance/post__parse-dont-validate.md	5513	c9690123
+guidance/progressive-disclosure-guidance.md	2054	f546c828
+patterns/avoid-any.md	1031	684abf94
+patterns/avoid-data-tagged-error.md	1013	c382d1e3
+patterns/avoid-direct-json.md	1452	bfeb552f
+patterns/avoid-direct-tag-checks.md	1422	a0c0d398
+patterns/avoid-expect-in-if.md	1341	05d78988
+patterns/avoid-mutable-state.md	2323	db8d1522
+patterns/avoid-native-fetch.md	1736	f2d579ea
+patterns/avoid-node-imports.md	3782	0f8277d8
+patterns/avoid-non-null-assertion.md	1173	ee8e7c70
+patterns/avoid-object-type.md	1265	b018f53b
+patterns/avoid-option-getorthrow.md	964	4837a11f
+patterns/avoid-platform-coupling.md	1652	d38b32c4
+patterns/avoid-process-env.md	1219	b980f649
+patterns/avoid-react-hooks.md	2010	54ba933b
+patterns/avoid-schema-suffix.md	1438	c18c8298
+patterns/avoid-sync-fs.md	1753	7464be17
+patterns/avoid-try-catch.md	1324	9c14e5b7
+patterns/avoid-ts-ignore.md	968	9fc4c8a1
+patterns/avoid-untagged-errors.md	1779	7c7c0a69
+patterns/avoid-yield-ref.md	1364	dd8a703c
+patterns/casting-awareness.md	1657	ecd16c15
+patterns/context-tag-extends.md	3283	49d912ec
+patterns/effect-catchall-default.md	1861	2650df72
+patterns/effect-promise-vs-trypromise.md	1479	f14c4fef
+patterns/effect-run-in-body.md	1897	3c03e752
+patterns/imperative-loops.md	3846	c4575e4f
+patterns/prefer-arr-sort.md	1380	49ee9aeb
+patterns/prefer-duration-values.md	1603	f8b28e83
+patterns/prefer-effect-fn.md	4148	6b2ca0c3
+patterns/prefer-match-over-switch.md	1417	9bb25a0c
+patterns/prefer-option-over-null.md	1837	622345fe
+patterns/prefer-recursion-over-while.md	2015	c72cc1fe
+patterns/prefer-redacted-config.md	2088	ac5cd170
+patterns/prefer-schema-class.md	1515	5b3e446f
+patterns/require-effect-concurrency.md	2600	3999e028
+patterns/stream-large-files.md	1782	9be05cbf
+patterns/throw-in-effect-gen.md	2286	55ef3651
+patterns/use-clock-service.md	1093	c9dc905c
+patterns/use-command-executor-service.md	2236	24aef1e0
+patterns/use-console-service.md	1412	7237aa3e
+patterns/use-filesystem-service.md	1970	938956e0
+patterns/use-http-client-service.md	2479	c7443260
+patterns/use-path-service.md	1362	8def1561
+patterns/use-random-service.md	1120	5369335e
+patterns/use-temp-file-scoped.md	1896	da5ccbd1
+patterns/vm-in-wrong-file.md	1566	d68e008d
+patterns/yield-in-for-loop.md	2021	9a4a9e46
+skills/effect-ai-chat/SKILL.md	14734	b68b75d8
+skills/effect-ai-language-model/SKILL.md	19135	9b4455e3
+skills/effect-ai-prompt/SKILL.md	17728	5412cf53
+skills/effect-ai-provider/SKILL.md	20233	b30f7801
+skills/effect-ai-streaming/SKILL.md	12084	8bb27f41
+skills/effect-ai-tool/SKILL.md	29545	0af55da8
+skills/effect-atom-rpc/SKILL.md	19672	a19645cf
+skills/effect-atom-state/SKILL.md	17274	f5fc1029
+skills/effect-batching/SKILL.md	16069	a2ec6f19
+skills/effect-cache/SKILL.md	26656	013c2cc1
+skills/effect-cli/SKILL.md	14518	ad8f6016
+skills/effect-command-executor/SKILL.md	19883	29babc9b
+skills/effect-concurrency-testing/SKILL.md	16460	c8cade78
+skills/effect-config/SKILL.md	14877	b013ca69
+skills/effect-context-witness/SKILL.md	7448	e0c0853c
+skills/effect-domain-modeling/SKILL.md	30574	d8a6abe4
+skills/effect-domain-predicates/SKILL.md	23767	1a30c660
+skills/effect-error-handling/SKILL.md	47108	0388f9fb
+skills/effect-fiber/SKILL.md	33614	599f9dd4
+skills/effect-filesystem/SKILL.md	14845	ba84fce7
+skills/effect-graph/SKILL.md	24041	7eae6684
+skills/effect-http-api/SKILL.md	58917	641feba8
+skills/effect-http-client/SKILL.md	36818	a61901e1
+skills/effect-http-server/SKILL.md	43713	15354fe7
+skills/effect-incremental-migration/SKILL.md	12518	95f26f79
+skills/effect-layer-design/SKILL.md	17785	0ea76eb1
+skills/effect-managed-runtime/SKILL.md	12503	640e1b8c
+skills/effect-mcp-server/SKILL.md	14520	3bc2fac2
+skills/effect-observability/SKILL.md	20478	61a11d56
+skills/effect-optics/SKILL.md	14757	e135be56
+skills/effect-parallelization/SKILL.md	28972	a6a3c9e6
+skills/effect-path/SKILL.md	6709	fe97cdd4
+skills/effect-pattern-matching/SKILL.md	22351	344dd489
+skills/effect-platform-abstraction/SKILL.md	32783	575b5c9f
+skills/effect-platform-layers/SKILL.md	14258	56a1ac3b
+skills/effect-pubsub-event-bus/SKILL.md	11681	d70d30c3
+skills/effect-react-composition/SKILL.md	22495	02aebbbb
+skills/effect-react-vm/SKILL.md	19232	b2ae1afd
+skills/effect-rpc-api/SKILL.md	31634	38244f03
+skills/effect-rpc-client/SKILL.md	37108	3af882dd
+skills/effect-rpc-cluster/SKILL.md	67233	9e8e78b9
+skills/effect-rpc-server/SKILL.md	38934	231202c6
+skills/effect-schema-composition/SKILL.md	26540	4539dab3
+skills/effect-schema-v4/SKILL.md	23779	7a6a1a65
+skills/effect-scope/SKILL.md	31596	51f1d16b
+skills/effect-service-implementation/SKILL.md	17584	a57376ae
+skills/effect-socket/SKILL.md	34252	ea6691c2
+skills/effect-sql/SKILL.md	25516	53e65911
+skills/effect-stream/SKILL.md	19454	1e750bcf
+skills/effect-testing/SKILL.md	34401	9efdd72c
+skills/effect-typeclass-design/SKILL.md	4283	cbd04716
+skills/effect-wide-events/Article.md	3033	1b217cd9
+skills/effect-wide-events/SKILL.md	2738	069b7cf6
+skills/effect-workflow/SKILL.md	25796	8e6fd87d

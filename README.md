@@ -54,27 +54,24 @@ targeting filesystem root. Other `bash`/`shell` writes remain post-write-only
 by design (detection, not prevention).
 
 Pre-write gating: `write`/`edit`/`multiedit` are fully gated. Patch-style tools
-(`apply_patch`/`patch`) route their patch text through the same gate; today
-only the FIRST extracted target path is gated and an unparseable patch is not
-yet fail-closed (tracked as F-04 in `AUDIT-EVENT-2026-08-26-01`). EVERY
-extracted path — including patch-embedded ones — is snapshot-captured with
-symlink-realpath containment and recorded in the change ledger.
+(`apply_patch`/`patch`) route their patch text through the same gate for every
+extracted target path; unparseable patches are fail-closed for strict agents.
+Every extracted path — including patch-embedded ones — is snapshot-captured
+with symlink-realpath containment and recorded in the change ledger.
 
 ### Honest verification semantics
 
 - Reports carry `patternScanStatus` (`ok` / `error` / `skipped`) and optional
-  `patternScanError`. Today these are VISIBILITY ONLY — they do not yet affect
-  the `overall` verdict (F-01/F-02 in `AUDIT-EVENT-2026-08-26-01`).
+  `patternScanError`; an errored deterministic scan makes `overall: "error"`.
 - Semantic review enabled-but-unavailable ⇒ explicit report `error`, never a
   silent skipped→passed fold.
-- Auto-run dedupe persists the LAST processed host event id per
-  project/session; replay of an OLDER id can still re-verify (at-least-once)
-  until the bounded processed-set lands (F-09).
-- Module load failures fail visibly at startup (logged); representing them
-  inside the VerifierReport is pending (F-07).
-- Asset integrity: `manifest.tsv` pins file counts + byte sizes per kind at
-  module construction; content fingerprints + extra-file detection are
-  pending (F-06).
+- Auto-run dedupe persists a bounded processed-event-id set per project/session;
+  successful events are at-least-once and out-of-order replays within the
+  retained window are suppressed.
+- Module construction failures are logged and represented in
+  `VerifierReport.moduleLoadFailures`.
+- Asset integrity: `manifest.tsv` pins every shipped file, semantic counts,
+  byte sizes, and content fingerprints; unlisted files fail construction.
 
 ## Development
 

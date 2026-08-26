@@ -11,10 +11,10 @@ Normative implementation audit (append-only): `docs/spec/05-implementation-adver
 |---|---|---|
 | shared (Journal, Command, Errors, Refs, PathGuard) | done | `packages/shared/src/` |
 | harness-kit (enforcement kernel) | done | `packages/harness-kit/src/` |
-| verify-kit (verification engine) | done — known honesty gaps tracked | `packages/verify-kit/src/` |
+| verify-kit (verification engine) | done — bounded ChangeSet and scan-health errors wired | `packages/verify-kit/src/` |
 | compound-kit (compound domain) | pure domain done; execution NOT wired (tool returns explicit REM-4 error) | `packages/compound-kit/src/` |
 | effect-harness plugin composition root | done | `src/index.ts` |
-| module-typescript (53 skills / 47 patterns / 4 guidance) | done — assets pinned by `assets/manifest.tsv` (counts + byte sizes; content hashes landing) | `packages/module-typescript/` |
+| module-typescript (53 skills / 47 patterns / 4 guidance) | done — complete manifest with counts, sizes, fingerprints, and inventory | `packages/module-typescript/` |
 | module-bend (own catalogs) | done | `packages/module-bend/` |
 | Companion collector/CLI | done | `src/companion/` |
 | LiveSessions adapter | done | `src/LiveSessions.ts` |
@@ -37,14 +37,11 @@ coverage grows; the gates above are the source of truth, not this number.
 
 Open remediation items are listed with evidence in
 `docs/spec/05-implementation-adversarial-audit-2026-08-23.md`,
-appendix `AUDIT-EVENT-2026-08-26-01` (fifth pass):
+appendices `AUDIT-EVENT-2026-08-26-01` and `AUDIT-EVENT-2026-08-26-02`
+(fifth-pass findings and remediation):
 
-- verification truthfulness: pattern-scan health and absent-reader states must
-  influence `overall`; bounded ChangeSet must reach the semantic reviewer;
-  module-load failures must appear in reports
-- enforcement completeness: multi-file patch gating; session-scoped snapshots
-- asset integrity: content fingerprints + extra-file detection in the manifest
-- durable auto-run dedupe window (out-of-order replays)
+- enforcement completeness: shell writes remain post-write-only by documented
+  design; fake-context tests are still required for complete hook proof
 - compound remainders (cross-process locks, Evolution→Store persistence),
   required only if compound becomes product scope
 - adapter/release proof: fake-context contract suite, live-server smoke,

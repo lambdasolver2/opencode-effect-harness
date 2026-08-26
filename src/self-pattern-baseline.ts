@@ -43,7 +43,6 @@ export const baseline: Readonly<Record<string, ReadonlyArray<string>>> = {
 	'packages/module-typescript/src/index.ts': ['casting-awareness', 'prefer-option-over-null', 'stream-large-files', 'require-effect-concurrency'],
 	'packages/shared/src/Journal.ts': ['avoid-any', 'avoid-direct-json', 'avoid-try-catch', 'casting-awareness', 'prefer-arr-sort', 'prefer-option-over-null', 'use-clock-service', 'use-random-service'],
 	'packages/shared/src/PathGuard.ts': ['prefer-option-over-null'],
-	'packages/verify-kit/src/ChangeSet.ts': ['prefer-effect-fn'],
 	'packages/verify-kit/src/Checker.ts': ['prefer-option-over-null', 'use-clock-service'],
 	'packages/verify-kit/src/Critic.ts': ['avoid-direct-json', 'avoid-untagged-errors', 'casting-awareness', 'prefer-option-over-null'],
 	'packages/verify-kit/src/Module.ts': ['casting-awareness', 'prefer-option-over-null'],

@@ -154,9 +154,16 @@ export namespace Store {
 					}
 					return guarded(input.blueprintId, Effect.gen(function*() {
 						const target = mdPath(input.blueprintId);
-						const existing = yield* fs.readFileString(target).pipe(
-							Effect.catchTag('PlatformError', () => Effect.succeed(''))
+						const exists = yield* fs.exists(target).pipe(
+							Effect.catchTag('PlatformError', () => Effect.succeed(false))
 						);
+						const existing = exists
+							? yield* fs.readFileString(target).pipe(
+									Effect.catchTag('PlatformError', () =>
+										Effect.fail(fail('appendVersion', 'existing blueprint is unreadable'))
+									)
+								)
+							: '';
 						if (existing.length > 0 && !existing.startsWith('---\n')) {
 							return yield* Effect.fail(
 								fail(
@@ -240,7 +247,19 @@ export namespace Store {
 					if (!SLUG_RE.test(id)) {
 						return Effect.fail(fail('setPointer', `invalid blueprint id ${id}`));
 					}
-					return guarded(id, writePointer({ id, version, now }));
+					return guarded(id, Effect.gen(function*() {
+						const markdown = yield* fs.readFileString(mdPath(id)).pipe(
+							Effect.catchTag('PlatformError', () =>
+								Effect.fail(fail('setPointer', `blueprint not found: ${id}`))
+							)
+						);
+						if (!markdown.includes(`## Version v${String(version)}`)) {
+							return yield* Effect.fail(
+								fail('setPointer', `unknown version ${String(version)} for ${id}`)
+							);
+						}
+						return yield* writePointer({ id, version, now });
+					}));
 				},
 
 				pointer: (id) => {

@@ -67,6 +67,9 @@ export const aggregate = (
 						error: `stale evaluator ${run.evaluatorVersion} != ${input.evaluatorVersion}`
 					};
 				}
+				if (!Number.isFinite(run.score) || run.score < 0) {
+					return { ...acc, error: `invalid score ${String(run.score)}` };
+				}
 				const key = `${run.modelProvider}/${run.modelName}|${run.taskId}`;
 				if (acc.seen.has(key)) {
 					return { ...acc, error: `duplicate trial ${key}` };
@@ -87,6 +90,16 @@ export const aggregate = (
 			map.set(model, [...bucket, run]);
 			return map;
 		}, new Map<string, Array<Run>>());
+		const incompleteModel = [...byModel.entries()].find(([, bucket]) =>
+			input.expectedTasks.some(
+				(task) => !bucket.some((run) => run.taskId === task)
+			)
+		);
+		if (incompleteModel !== undefined) {
+			return yield* Effect.fail(
+				new AggregateError({ reason: `missing results for model ${incompleteModel[0]}` })
+			);
+		}
 
 		const rows = [...byModel.entries()].map(([model, bucket]) => {
 			const slash = model.indexOf('/');

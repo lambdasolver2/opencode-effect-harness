@@ -30,6 +30,8 @@ import {
 } from 'effect';
 import { Semaphore } from 'effect';
 
+import { fnv1aHex } from './Hash.ts';
+
 export class JournalEntry extends Schema.Class<JournalEntry>('JournalEntry')({
 	sequence: Schema.Number,
 	recordedAt: Schema.Number,
@@ -85,14 +87,6 @@ const stableStringify = (value: unknown): string => {
 	return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(record[k])}`).join(',')}}`;
 };
 
-const fnv1a = (input: string): string => {
-	const hash = [...input].reduce(
-		(state, ch) => Math.imul(state ^ (ch.codePointAt(0) ?? 0), 0x01000193),
-		0x811c9dc5
-	);
-	return (hash >>> 0).toString(16).padStart(8, '0');
-};
-
 const seal = (
 	sequence: number,
 	previousHash: string,
@@ -101,8 +95,8 @@ const seal = (
 	recordedAt: number,
 	actor: string
 ): string =>
-	fnv1a(
-		`${sequence}|${previousHash}|${kind}|${fnv1a(stableStringify(payload))}|${recordedAt}|${actor}`
+	fnv1aHex(
+		`${sequence}|${previousHash}|${kind}|${fnv1aHex(stableStringify(payload))}|${recordedAt}|${actor}`
 	);
 
 const toIdIndex = (value: unknown): IdIndex => {
