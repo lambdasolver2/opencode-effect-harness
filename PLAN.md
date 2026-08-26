@@ -44,8 +44,8 @@ appendices `AUDIT-EVENT-2026-08-26-01` and `AUDIT-EVENT-2026-08-26-02`
   design; fake-context tests are still required for complete hook proof
 - compound release proof: lock-abandonment recovery and end-to-end Store/Evolution
   execution through the currently unwired REM-4 tool
-- adapter/release proof: fake-context contract suite, live-server smoke,
-  packed-artifact install probe
+- adapter/release proof: authenticated live-server behavior and packed-artifact
+  external install probe
 
 External-dependency items: mine-evolve execution (needs a running server with
 real sessions) and companion TUI (declared reduced scope; CLI shipped).

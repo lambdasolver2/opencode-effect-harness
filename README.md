@@ -75,9 +75,10 @@ with symlink-realpath containment and recorded in the change ledger.
 
 Release limitations: the compound tool intentionally returns an explicit
 REM-4 not-wired error; the root package is a private workspace and is not yet
-validated as a packed external artifact. Cross-process lock contention fails
-closed, while abandoned locks require operator inspection. A fake OpenCode
-context suite and live-server smoke test are still required for release proof.
+validated as an externally installable artifact. Cross-process lock contention
+fails closed, while abandoned locks require operator inspection. The fake
+OpenCode composition-root contract is covered; an authenticated live-server
+smoke test remains partial because the server exposes no custom tool-list API.
 
 ## Development
 

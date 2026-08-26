@@ -2114,3 +2114,32 @@ and the documented shell pre-write limitation remain release-scope work.
 
 The mandatory gates pass after this pass: `tsgo`, fallback `tsc`, and the full
 Vitest suite including the shrink-only self-pattern scan and catalog integrity.
+
+## Appendix Entry AUDIT-EVENT-2026-08-26-04
+
+- Recorded at: 2026-08-26
+- Event: adapter and release validation pass
+- Related findings: AUDIT-009, AUDIT-037, AUDIT-044
+
+### Validation completed
+
+- Added `src/PluginContract.test.ts`, which invokes the actual composition-root
+  Effect with a fake V2 context and asserts all five tools, the skill transform,
+  `execute.before`, `execute.after`, and the session context hook are registered.
+- Started the installed `opencode2 v0.0.0-beta-18286` server with a temporary
+  V2 `plugins` object pointing at `src/index.ts`. The server loaded the source
+  plugin and the authenticated `/api/health` endpoint returned healthy. The
+  public plugin endpoint does not expose custom tool registrations, so this is
+  a server-load smoke, not proof of end-to-end tool execution.
+- `bun pm pack --destination /tmp/opencode` succeeds and includes the plugin,
+  all workspace source packages, and the TypeScript asset manifest. External
+  installation remains unproven because the packed package is private and its
+  workspace packages are not published independently.
+
+### Remaining product boundary
+
+`effect_harness_compound` remains an explicit REM-4 error because the current
+input contract has no blueprint source, task suite, model resolver, approval
+workflow, or execution service to invoke. Replacing it with a fake benchmark
+would recreate AUDIT-037; the next legitimate change is a complete durable
+compound request/execution contract, not a cosmetic queue response.
