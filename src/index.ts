@@ -41,7 +41,10 @@ import {
 } from 'opencode-verify-kit/ChangeSet.ts';
 import {
 	decodeWorkerOutput,
-	filterUnverifiedFindings
+	filterUnverifiedFindings,
+	CriticFinding,
+	CriticReport,
+	CriticRequest
 } from 'opencode-verify-kit/Critic.ts';
 import { VerifierReport, VerifyRequest } from 'opencode-verify-kit/Report.ts';
 
@@ -497,6 +500,14 @@ export default Plugin.define({
 							}
 
 							const focus = parsed.focus ?? 'full';
+							const builderLocation = yield* sessions.resolve(execCtx.sessionID).pipe(
+								Effect.orElseSucceed(() => undefined)
+							);
+							if (builderLocation === undefined) {
+								return yield* Effect.fail(
+									new Tool.Error({ message: 'critic: builder session location unavailable' })
+								);
+							}
 							const createSession = ctx.session.create as unknown as (
 								i: object
 							) => Effect.Effect<{ id?: unknown }>;
@@ -583,6 +594,48 @@ let stageFailed: string | undefined;
 									{ checkReferences: config.critic.checkReferences }
 								);
 								const droppedUnverified = worker.findings.length - findings.length;
+								const criticReport = new CriticReport({
+									request: new CriticRequest({
+										builderSessionID: execCtx.sessionID,
+										summary,
+										focus:
+											focus === 'feature' ||
+											focus === 'plan' ||
+											focus === 'architecture' ||
+											focus === 'drift' ||
+											focus === 'full'
+												? focus
+												: 'full',
+										explicit: true,
+										traceRefs: []
+									}),
+									verdict: worker.verdict,
+									findings: findings.map(
+										(finding, index) =>
+											new CriticFinding({
+												id: `${childId}-${String(index + 1)}`,
+												severity: finding.severity,
+												kind: finding.kind,
+												claim: finding.claim,
+												evidence: finding.evidence,
+												...(finding.suggestion !== undefined
+													? { suggestion: finding.suggestion }
+													: {})
+											})
+									),
+									checkedReferences: worker.checkedReferences,
+									workerSessionID: childId,
+									completedAt: yield* Clock.currentTimeMillis
+								});
+								const criticReportPath = yield* persistCriticReport(
+									builderLocation.directory,
+									criticReport,
+									childId
+								).pipe(
+									Effect.mapError(
+										(e) => new Tool.Error({ message: `critic report persistence failed: ${e.reason}` })
+									)
+								);
 								// Builder model is unknowable in the restricted plugin context,
 								// so model independence can never be PROVEN here (honest note).
 								const independenceProvable = !config.critic.requireIndependentModel;
@@ -592,6 +645,7 @@ let stageFailed: string | undefined;
 									verdict: worker.verdict,
 									findings,
 									checkedReferences: worker.checkedReferences,
+									artifact: criticReportPath,
 									droppedUnverified,
 									independenceProvable
 								});
@@ -626,7 +680,8 @@ let stageFailed: string | undefined;
 										header +
 										(sections.length > 0
 											? `\n\n${sections.join('\n\n')}\n\nreferences opened: ${String(worker.checkedReferences.length)}`
-											: '')
+											: '') +
+										`\nreport: ${criticReportPath}`
 								} as never;
 							}
 
@@ -1401,6 +1456,37 @@ const persistReport = (
 				'PlatformError',
 				() =>
 					Effect.fail(new ReportPersistError({ reason: `cannot finalize ${target}` }))
+			)
+		);
+		return target;
+	}).pipe(Effect.provide(platformLayer));
+
+/** Persist the complete critic result as a separate auditable artifact. */
+const persistCriticReport = (
+	projectRoot: string,
+	report: CriticReport,
+	baseName: string
+): Effect.Effect<string, ReportPersistError> =>
+	Effect.gen(function* () {
+		const fs = yield* FileSystem.FileSystem;
+		const dir = `${projectRoot}/.effect-harness/critic-reports`;
+		yield* fs.makeDirectory(dir, { recursive: true }).pipe(
+			Effect.catchTag('PlatformError', () =>
+				Effect.fail(new ReportPersistError({ reason: `cannot create ${dir}` }))
+			)
+		);
+		const safeBase = baseName.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80) || 'critic';
+		const target = `${dir}/${safeBase}-critic.json`;
+		const tmp = `${target}.tmp`;
+		const encoded = Schema.encodeSync(CriticReport)(report);
+		yield* fs.writeFileString(tmp, JSON.stringify(encoded, null, 2)).pipe(
+			Effect.catchTag('PlatformError', () =>
+				Effect.fail(new ReportPersistError({ reason: `cannot write ${tmp}` }))
+			)
+		);
+		yield* fs.rename(tmp, target).pipe(
+			Effect.catchTag('PlatformError', () =>
+				Effect.fail(new ReportPersistError({ reason: `cannot finalize ${target}` }))
 			)
 		);
 		return target;

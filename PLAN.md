@@ -12,7 +12,7 @@ Normative implementation audit (append-only): `docs/spec/05-implementation-adver
 | shared (Journal, Command, Errors, Refs, PathGuard) | done | `packages/shared/src/` |
 | harness-kit (enforcement kernel) | done | `packages/harness-kit/src/` |
 | verify-kit (verification engine) | done — bounded ChangeSet and scan-health errors wired | `packages/verify-kit/src/` |
-| compound-kit (compound domain) | pure domain done; execution NOT wired (tool returns explicit REM-4 error) | `packages/compound-kit/src/` |
+| compound-kit (compound domain) | pure domain + explicit persistent Evolution adapter done; execution NOT wired (tool returns explicit REM-4 error) | `packages/compound-kit/src/` |
 | effect-harness plugin composition root | done | `src/index.ts` |
 | module-typescript (53 skills / 47 patterns / 4 guidance) | done — complete manifest with counts, sizes, fingerprints, and inventory | `packages/module-typescript/` |
 | module-bend (own catalogs) | done | `packages/module-bend/` |
@@ -42,8 +42,8 @@ appendices `AUDIT-EVENT-2026-08-26-01` and `AUDIT-EVENT-2026-08-26-02`
 
 - enforcement completeness: shell writes remain post-write-only by documented
   design; fake-context tests are still required for complete hook proof
-- compound remainders (cross-process locks, Evolution→Store persistence),
-  required only if compound becomes product scope
+- compound release proof: lock-abandonment recovery and end-to-end Store/Evolution
+  execution through the currently unwired REM-4 tool
 - adapter/release proof: fake-context contract suite, live-server smoke,
   packed-artifact install probe
 

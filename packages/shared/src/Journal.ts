@@ -31,6 +31,7 @@ import {
 import { Semaphore } from 'effect';
 
 import { fnv1aHex } from './Hash.ts';
+import { withExclusiveDirectoryLock } from './ExclusiveLock.ts';
 
 export class JournalEntry extends Schema.Class<JournalEntry>('JournalEntry')({
 	sequence: Schema.Number,
@@ -151,6 +152,8 @@ export namespace Journal {
 					path: yield* Path.Path
 				};
 				yield* Effect.ignore(deps.fs.makeDirectory(baseDir, { recursive: true }));
+				const locksDir = deps.path.join(baseDir, '.locks');
+				yield* Effect.ignore(deps.fs.makeDirectory(locksDir, { recursive: true }));
 
 				const locks = yield* Ref.make(new Map<string, Semaphore.Semaphore>());
 				const lockFor = (stream: string) =>
@@ -171,7 +174,16 @@ export namespace Journal {
 					effect: Effect.Effect<A, JournalError>
 				): Effect.Effect<A, JournalError> =>
 					Effect.flatMap(lockFor(stream), (semaphore) =>
-						semaphore.withPermits(1)(effect)
+						semaphore.withPermits(1)(
+							safeSegment(stream)
+								? withExclusiveDirectoryLock(
+										deps.fs,
+										deps.path.join(locksDir, `${stream}.lock`),
+										effect,
+										() => toError(stream, 'append', 'another process owns the stream lock')
+								  )
+								: effect
+						)
 					);
 
 				const toError = (

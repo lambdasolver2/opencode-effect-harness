@@ -73,6 +73,12 @@ with symlink-realpath containment and recorded in the change ledger.
 - Asset integrity: `manifest.tsv` pins every shipped file, semantic counts,
   byte sizes, and content fingerprints; unlisted files fail construction.
 
+Release limitations: the compound tool intentionally returns an explicit
+REM-4 not-wired error; the root package is a private workspace and is not yet
+validated as a packed external artifact. Cross-process lock contention fails
+closed, while abandoned locks require operator inspection. A fake OpenCode
+context suite and live-server smoke test are still required for release proof.
+
 ## Development
 
 ```sh

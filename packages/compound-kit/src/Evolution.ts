@@ -83,13 +83,18 @@ export interface ScoredCandidate {
 }
 
 export namespace Evolution {
+	export interface Persistence {
+		/** Durable lineage sink, normally `Store.saveLineage`. */
+		readonly save: (lineage: Lineage) => Effect.Effect<void, unknown>;
+	}
+
 	export interface Service {
 		establishBaseline(input: {
 			readonly blueprint: Blueprint;
 			readonly set: EvaluationSet;
 			readonly scores: { readonly train: number; readonly holdout: number };
 			readonly now: number;
-		}): Effect.Effect<Lineage>;
+		}): Effect.Effect<Lineage, Error>;
 		commit(input: {
 			readonly lineage: Lineage;
 			readonly candidate: ScoredCandidate;
@@ -101,7 +106,7 @@ export namespace Evolution {
 		journalAttempt(input: {
 			readonly lineage: Lineage;
 			readonly attempt: VariationAttempt;
-		}): Effect.Effect<Lineage>;
+		}): Effect.Effect<Lineage, Error>;
 		stagnant(lineage: Lineage, limit: number): boolean;
 	}
 
@@ -111,10 +116,19 @@ export namespace Evolution {
 
 	const fail = (blueprintId: string, reason: string) => new Error({ blueprintId, reason });
 
-	export const make = (): Service => ({
+	export const make = (persistence?: Persistence): Service => {
+		const persist = (lineage: Lineage): Effect.Effect<Lineage, Error> =>
+			(persistence === undefined
+				? Effect.succeed(lineage)
+				: persistence.save(lineage).pipe(
+					Effect.mapError(() => fail(lineage.blueprintId, 'lineage persistence failed')),
+					Effect.as(lineage)
+				));
+
+		return {
 		establishBaseline: ({ blueprint, set, scores, now }) =>
-			Effect.succeed(
-				new Lineage({
+			Effect.gen(function*() {
+				const lineage = new Lineage({
 					blueprintId: blueprint.id,
 					baseline: new Baseline({
 						train: scores.train,
@@ -128,8 +142,9 @@ export namespace Evolution {
 					attempts: [],
 					attemptsSinceLastCommit: 0,
 					lessons: []
-				})
-			),
+				});
+				return yield* persist(lineage);
+			}),
 
 		commit: ({ lineage, candidate, now }) =>
 			Effect.gen(function*() {
@@ -174,20 +189,26 @@ export namespace Evolution {
 						})
 					]
 				});
+				yield* persist(next);
 				return { lineage: next, committed: true };
 			}),
 
 		journalAttempt: ({ lineage, attempt }) =>
-			Effect.succeed(
-				new Lineage({
+				Effect.gen(function*() {
+					const next = new Lineage({
 					...lineage,
 					attempts: [...lineage.attempts, attempt],
 					attemptsSinceLastCommit: lineage.attemptsSinceLastCommit + 1
-				})
-			),
+					});
+					return yield* persist(next);
+				}),
 
 		stagnant: (lineage, limit) => limit >= 1 && lineage.attemptsSinceLastCommit >= limit
-	});
+		};
+};
+
+	export const layerWithPersistence = (persistence: Persistence): Layer.Layer<Tag> =>
+		Layer.succeed(Tag, Tag.of(make(persistence)));
 
 	export const layer: Layer.Layer<Tag> = Layer.succeed(Tag, Tag.of(make()));
 }

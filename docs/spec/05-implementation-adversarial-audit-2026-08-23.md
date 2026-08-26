@@ -2074,3 +2074,43 @@ hits; the shrink-only ledger may not grow.
 Cross-process locking, Evolution-to-Store persistence, standalone critic
 artifacts, packed-artifact installation, fake-context/live-server validation,
 and the documented shell pre-write limitation remain release-scope work.
+
+## Appendix Entry AUDIT-EVENT-2026-08-26-03
+
+- Recorded at: 2026-08-26
+- Event: remediation of the remaining repository-addressable durability gaps
+- Related findings: AUDIT-009, AUDIT-010, AUDIT-012, AUDIT-013, AUDIT-033,
+  AUDIT-036, AUDIT-038, AUDIT-039, AUDIT-044
+
+### Closed or materially reduced
+
+- Journal and Store mutations now take an atomic cross-process directory lock in
+  addition to their in-process semaphore. Contention fails closed rather than
+  allowing two writers to overwrite state.
+- `Evolution.make` accepts an explicit persistence sink, and
+  `Evolution.layerWithPersistence` exposes the Store-compatible wiring point;
+  baseline, attempt, and commit transitions persist before success is returned.
+- Successful plugin critic reviews now emit a standalone schema-encoded,
+  atomic `.effect-harness/critic-reports/*-critic.json` artifact as well as the
+  audit journal entry.
+- Added Evolution persistence regression coverage.
+
+### Explicit limitations still not falsely closed
+
+- An abandoned directory lock is intentionally not auto-deleted: automatic
+  stale-lock removal cannot distinguish a crashed writer from a slow writer.
+  Operational recovery must inspect and remove the lock after verifying no
+  writer owns it.
+- The compound tool remains an explicit REM-4 not-wired boundary, so the
+  persistence adapter is available but not exercised by a live compound run.
+- The root package remains a private workspace with `workspace:*` dependencies;
+  packed external installation is still not proven.
+- OpenCode fake-context and live-server suites remain necessary to validate
+  actual hook registration, result mutation, and event lifecycle behavior.
+- Critic model independence cannot be proven inside the restricted plugin
+  context; the configured strict policy still rejects that mode.
+
+### Validation
+
+The mandatory gates pass after this pass: `tsgo`, fallback `tsc`, and the full
+Vitest suite including the shrink-only self-pattern scan and catalog integrity.

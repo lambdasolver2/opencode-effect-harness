@@ -13,6 +13,7 @@ import { Context, Effect, FileSystem, Layer, Path, Ref, Schema } from 'effect';
 import { Semaphore } from 'effect';
 
 import { Lineage } from './Evolution.ts';
+import { withExclusiveDirectoryLock } from 'opencode-harness-shared/ExclusiveLock.ts';
 
 export class Error extends Schema.TaggedError<Error>()('StoreError', {
 	operation: Schema.String,
@@ -94,8 +95,9 @@ export namespace Store {
 
 			const blueprintsDir = path.join(baseDir, 'blueprints');
 			const stateDir = path.join(blueprintsDir, 'state');
+			const locksDir = path.join(baseDir, '.locks');
 			yield* Effect.forEach(
-				[baseDir, blueprintsDir, stateDir],
+				[baseDir, blueprintsDir, stateDir, locksDir],
 				(dir) =>
 					fs.makeDirectory(dir, { recursive: true }).pipe(
 						Effect.catchTag('PlatformError', () =>
@@ -119,12 +121,19 @@ export namespace Store {
 					const created = Semaphore.makeUnsafe(1);
 					return [created, new Map(map).set(id, created)] as const;
 				});
-			const guarded = <A, E>(
+			const guarded = <A>(
 				id: string,
-				effect: Effect.Effect<A, E>
-			): Effect.Effect<A, E> =>
+				effect: Effect.Effect<A, Error>
+			): Effect.Effect<A, Error> =>
 				Effect.flatMap(lockFor(id), (semaphore) =>
-					semaphore.withPermits(1)(effect)
+					semaphore.withPermits(1)(
+						withExclusiveDirectoryLock(
+							fs,
+							path.join(locksDir, `${id}.lock`),
+							effect,
+							() => fail('lock', `another process owns the lock for ${id}`)
+						)
+					)
 				);
 
 			const writePointer = (input: {

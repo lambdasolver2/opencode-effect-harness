@@ -16,7 +16,7 @@ import * as NodePath from '@effect/platform-node/NodePath';
 import { CommandSpec, Exec, ExecError, CommandResult } from 'opencode-harness-shared';
 import { Journal } from 'opencode-harness-shared';
 import { AcceptanceCriterion, ModelExecutionSpec } from './Blueprint.ts';
-import { EvaluationSet, Evolution } from './Evolution.ts';
+import { EvaluationSet, Evolution, VariationAttempt } from './Evolution.ts';
 import { Store } from './Store.ts';
 import { Env } from './Env.ts';
 import { Llm, Outcome as LlmOutcome } from './Llm.ts';
@@ -74,6 +74,36 @@ const blueprintStub = () =>
 
 
 describe('Evolution baseline discipline', () => {
+	it('persists each lineage transition when a sink is supplied', async () => {
+		const saved: Array<string> = [];
+		const evo = Evolution.make({
+			save: (lineage) => Effect.sync(() => {
+				saved.push(`${lineage.blueprintId}:${String(lineage.attempts.length)}`);
+			})
+		});
+		const set = new EvaluationSet({
+			trainTaskIds: ['t1'],
+			holdoutTaskIds: ['h1'],
+			evaluatorVersion: 'eval-v1'
+		});
+		const lineage = await Effect.runPromise(evo.establishBaseline({
+			blueprint: blueprintStub(),
+			set,
+			scores: { train: 0.4, holdout: 0.4 },
+			now: 1
+		}));
+		await Effect.runPromise(evo.journalAttempt({
+			lineage,
+			attempt: new VariationAttempt({
+				id: 'attempt-1',
+				proposedChange: 'change',
+				outcome: 'abandoned',
+				lessonLearned: 'lesson'
+			})
+		}));
+		expect(saved).toEqual(['bp-1:0', 'bp-1:1']);
+	});
+
 	it('rejects holdout regression even when train improves (vs running best)', async () => {
 		const program = Effect.gen(function* () {
 			const evo = yield* Evolution.Tag;
@@ -169,4 +199,3 @@ const fakeLlm = (text: string): Llm.Service => ({
 	complete: () =>
 		Effect.succeed(new LlmOutcome({ text, durationMs: 5 }))
 });
-
