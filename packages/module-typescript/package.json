@@ -2,7 +2,7 @@
   "$schema": "https://www.schemastore.org/package.json",
   "name": "@opencode-effect-harness/module-typescript",
   "version": "0.2.0-alpha.1",
-  "description": "TypeScript verification module: full Effect v4 catalog (53 skills / 47 patterns / 4 guidance) + tsc checker.",
+  "description": "TypeScript verification module: full Effect v4 catalog (54 skills / 47 patterns / 4 guidance) + tsc checker.",
   "license": "MIT",
   "type": "module",
   "exports": {

@@ -14,10 +14,10 @@ Key source files:
 
 - `packages/effect/src/unstable/workflow/Workflow.ts` — Workflow definition, compensation, annotations
 - `packages/effect/src/unstable/workflow/Activity.ts` — Activity definition, retry, idempotency
-- `packages/effect/src/unstable/workflow/WorkflowEngine.ts` — Engine service, in-memory layer, encoded interface
+- `packages/effect/src/unstable/workflow/Workflowengine.ts` — Engine service, in-memory layer, encoded interface
 - `packages/effect/src/unstable/workflow/DurableClock.ts` — Durable sleep/timers
 - `packages/effect/src/unstable/workflow/DurableDeferred.ts` — Durable signal/wait, tokens, done/succeed/fail
-- `packages/effect/src/unstable/workflow/DurableQueue.ts` — Durable queue handing work to persisted background workers
+- `packages/effect/src/unstable/workflow/Durablequeue.ts` — Durable queue handing work to persisted background workers
 
 ## IMPORTANT: Unstable API
 

@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 import { describe, expect, it } from 'vitest'
-import { ChangeLedger } from './ChangeLedger.ts'
+import { ChangeLedger } from './Ledger.ts'
 
 describe('ChangeLedger', () => {
   it('records and drains per session', async () => {

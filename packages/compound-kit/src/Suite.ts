@@ -10,7 +10,7 @@
  */
 import { Context, Effect, Layer, Ref, Schema } from 'effect';
 
-import { CommandSpec, CommandResult, Exec } from 'opencode-harness-shared';
+import { CommandSpec, CommandResult, Exec, modelKey } from 'opencode-harness-shared';
 import type { InvalidInput } from 'opencode-harness-shared';
 import type { AcceptanceCriterion, Blueprint } from './Blueprint.ts';
 import { Env } from './Env.ts';
@@ -36,8 +36,7 @@ export class Judge extends Context.Service<Judge, JudgeInterface>()(
 ) {}
 
 
-const modelLabel = (model: ModelReference): string =>
-	`${model.provider}/${model.model}`;
+const modelLabel = modelKey;
 
 export namespace Runner {
 	export interface RunTaskInput {
@@ -161,6 +160,7 @@ export namespace Runner {
 						blueprintId: input.blueprint.id,
 						modelProvider: input.model.provider,
 						modelName: input.model.model,
+						...(input.model.variant !== undefined ? { modelVariant: input.model.variant } : {}),
 						taskId: input.taskId,
 						evaluatorVersion: input.evaluatorVersion,
 						score: total === 0 ? 0 : passedCount / total,

@@ -2,7 +2,7 @@ import { Schema } from 'effect';
 
 /**
  * Declarative policy metadata (introspection/reporting surface). The actual
- * evaluate logic lives in executable rules (`enforcement/Rule.ts`) — this
+ * evaluate logic lives in executable rules (`enforcement/rule.ts`) — this
  * schema describes what a policy IS, never how it runs.
  */
 export namespace RuleDefinition {

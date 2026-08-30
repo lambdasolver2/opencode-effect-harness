@@ -18,7 +18,7 @@ Key files:
 - `packages/effect/src/unstable/rpc/RpcSerialization.ts` — `json`, `ndjson`, `jsonRpc`, `ndJsonRpc`, `msgPack` codecs, their layers, the `Parser` interface and `includesFraming`
 - `packages/effect/src/unstable/rpc/RpcTest.ts` — `makeClient` in-process test client
 - `packages/effect/src/unstable/rpc/RpcWorker.ts` — `InitialMessage`, `layerInitialMessage`, `initialMessage`
-- `packages/effect/src/unstable/rpc/RpcMessage.ts` — wire vocabulary: `Request`, `Ack`, `Interrupt`, `Chunk`, `Exit`, `Defect`, `Ping`/`Pong`, `ClientProtocolError`, `RequestId`
+- `packages/effect/src/unstable/rpc/Rpcmessage.ts` — wire vocabulary: `Request`, `Ack`, `Interrupt`, `Chunk`, `Exit`, `Defect`, `Ping`/`Pong`, `ClientProtocolError`, `RequestId`
 - `packages/effect/src/unstable/socket/Socket.ts` — `Socket` service, `layerWebSocket`, `WebSocketConstructor`
 - `packages/platform-node/test/RpcServer.test.ts` + `test/fixtures/rpc-e2e.ts` + `test/fixtures/rpc-schemas.ts` — the best end-to-end reference: every transport × serialization combination, headers, streams, interrupts, defects
 - `packages/platform-browser/test/RpcWorker.test.ts` + `test/fixtures/rpc-worker.ts` — worker transport end to end
@@ -381,7 +381,7 @@ On the server, a client-initiated interrupt carries the `RpcSchema.ClientAbort` 
 
 ## 8. Error Handling — the `RpcClientError` Taxonomy
 
-`RpcClientError` is a `Schema.ErrorClass` with `_tag: 'RpcClientError'` and a `reason` union. Its `message` is `` `${reason._tag}: ${reason.message}` ``.
+`RpcClientError` is a `Schema.Error` with `_tag: 'RpcClientError'` and a `reason` union. Its `message` is `` `${reason._tag}: ${reason.message}` ``.
 
 | `reason._tag` | Transport | Meaning |
 |---|---|---|

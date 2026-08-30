@@ -38,8 +38,44 @@ const CriticOptions = Schema.Struct({
 	autoEveryNBuildExecutions: Schema.optionalKey(Schema.Number)
 });
 
+const BenchmarkModelOption = Schema.Struct({
+	id: Schema.String,
+	provider: Schema.String,
+	model: Schema.String,
+	variant: Schema.optionalKey(Schema.String)
+});
+
+const RelativeDatabasePath = Schema.String.check(
+	Schema.makeFilter<string>((value) =>
+		value.length > 0 &&
+		!value.startsWith('/') &&
+		!value.split('/').some((segment) => segment === '..')
+			? undefined
+			: 'database path must be non-empty and stay within the project'
+	)
+);
+
+const OtelOptions = Schema.Struct({
+	/** OTLP/HTTP base URL, e.g. motel at http://127.0.0.1:27686 */
+	endpoint: Schema.String,
+	serviceName: Schema.optionalKey(Schema.String),
+	/** Content (prompts/outputs) is NEVER exported; reserved for future opt-in. */
+	includeContent: Schema.optionalKey(Schema.Literals([false]))
+});
+
+const BenchmarkOptions = Schema.Struct({
+	dbPath: Schema.optionalKey(RelativeDatabasePath),
+	concurrency: Schema.optionalKey(Schema.Number),
+	workerAgent: Schema.optionalKey(Schema.String),
+	judgeProfileId: Schema.optionalKey(Schema.String),
+	timeoutMs: Schema.optionalKey(Schema.Number),
+	models: Schema.optionalKey(Schema.Array(BenchmarkModelOption)),
+	otel: Schema.optionalKey(OtelOptions)
+});
+
 const CompoundOptions = Schema.Struct({
-	enabled: Schema.optionalKey(Schema.Boolean)
+	enabled: Schema.optionalKey(Schema.Boolean),
+	benchmark: Schema.optionalKey(BenchmarkOptions)
 });
 
 const RawOptions = Schema.Struct({
@@ -75,6 +111,24 @@ export interface ValidOptions {
 	};
 	readonly compound: {
 		readonly enabled: boolean;
+		readonly benchmark: {
+			readonly dbPath: string;
+			readonly concurrency: number;
+			readonly workerAgent: string;
+			readonly judgeProfileId?: string | undefined;
+			readonly timeoutMs: number;
+			readonly models: ReadonlyArray<{
+				readonly id: string;
+				readonly provider: string;
+				readonly model: string;
+				readonly variant?: string | undefined;
+			}>;
+			readonly otel?: {
+				readonly endpoint: string;
+				readonly serviceName?: string | undefined;
+				readonly includeContent?: false | undefined;
+			} | undefined;
+		};
 	};
 }
 
@@ -101,7 +155,17 @@ export const defaults = (): ValidOptions => ({
 		autoAfterExplicitCheckpoint: false,
 		autoEveryNBuildExecutions: 0
 	},
-	compound: { enabled: false }
+	compound: {
+		enabled: false,
+		benchmark: {
+			dbPath: '.effect-harness/benchmark.sqlite',
+			concurrency: 2,
+			workerAgent: 'explore',
+			judgeProfileId: undefined,
+			timeoutMs: 240_000,
+			models: []
+		}
+	}
 });
 
 /** Decode raw `ctx.options` into validated config; unknown fields ignored. */
@@ -172,7 +236,22 @@ export const decode = (raw: unknown): Effect.Effect<ValidOptions, InvalidInput> 
 			compound: {
 				...(parsed.compound?.enabled !== undefined
 					? { enabled: parsed.compound.enabled }
-					: base.compound)
+					: { enabled: base.compound.enabled }),
+				benchmark: {
+					dbPath: parsed.compound?.benchmark?.dbPath ?? base.compound.benchmark.dbPath,
+					concurrency:
+						parsed.compound?.benchmark?.concurrency ?? base.compound.benchmark.concurrency,
+					workerAgent:
+						parsed.compound?.benchmark?.workerAgent ?? base.compound.benchmark.workerAgent,
+					...(parsed.compound?.benchmark?.judgeProfileId !== undefined
+						? { judgeProfileId: parsed.compound.benchmark.judgeProfileId }
+						: {}),
+				 timeoutMs: parsed.compound?.benchmark?.timeoutMs ?? base.compound.benchmark.timeoutMs,
+				 models: [...(parsed.compound?.benchmark?.models ?? base.compound.benchmark.models)],
+				 ...(parsed.compound?.benchmark?.otel !== undefined
+					? { otel: parsed.compound.benchmark.otel }
+					: {})
+				}
 			}
 		};
 
@@ -200,6 +279,15 @@ const validate = (config: ValidOptions): Effect.Effect<ValidOptions, InvalidInpu
 		}
 		if (config.critic.enabled && config.critic.autoEveryNBuildExecutions < 0) {
 			problems.push('critic.autoEveryNBuildExecutions must be >= 0');
+		}
+
+		if (config.compound.benchmark.concurrency < 1 || config.compound.benchmark.concurrency > 16) {
+			problems.push('compound.benchmark.concurrency must be between 1 and 16');
+		}
+		const duplicateProfileIds = config.compound.benchmark.models.length -
+			new Set(config.compound.benchmark.models.map((m) => m.id)).size;
+		if (duplicateProfileIds > 0) {
+			problems.push('compound.benchmark.models has duplicate ids');
 		}
 
 		if (problems.length > 0) {

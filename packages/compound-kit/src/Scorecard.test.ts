@@ -46,4 +46,32 @@ describe('Scorecard.aggregate', () => {
 		)
 		expect(exit._tag).toBe('Failure')
 	})
+
+	it('treats model variants as DISTINCT identities (no collision)', async () => {
+		const withVariant = (variant: string): Run =>
+			new Run({
+				blueprintId: 'bp-1', modelProvider: 'a', modelName: 'm', modelVariant: variant,
+				taskId: 't1', score: 0.9, passed: true, durationMs: 10, evaluatorVersion: 'v1'
+			})
+		const card = await Effect.runPromise(
+			aggregate([withVariant('fast'), withVariant('deep')], input)
+		)
+		expect(card.rows).toHaveLength(2)
+		expect(card.rows.map((r) => r.modelVariant).sort()).toEqual(['deep', 'fast'])
+	})
+
+	it('keeps the same model without variant distinct from its variants', async () => {
+		const exit = await Effect.runPromiseExit(
+			aggregate(
+				[
+					new Run({ blueprintId: 'bp-1', modelProvider: 'a', modelName: 'm', taskId: 't1', score: 0.9, passed: true, durationMs: 10, evaluatorVersion: 'v1' }),
+					new Run({ blueprintId: 'bp-1', modelProvider: 'a', modelName: 'm', modelVariant: 'deep', taskId: 't1', score: 0.8, passed: true, durationMs: 10, evaluatorVersion: 'v1' })
+				],
+				input
+			)
+		)
+		expect(exit._tag).toBe('Success')
+		const card = exit._tag === 'Success' ? exit.value : undefined
+		expect(card?.rows).toHaveLength(2)
+	})
 })

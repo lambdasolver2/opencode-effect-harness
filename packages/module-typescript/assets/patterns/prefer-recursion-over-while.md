@@ -5,8 +5,9 @@ event: after
 name: prefer-recursion-over-while
 description: Use recursive helpers or Effect.iterate instead of while loops for pagination and state machines
 glob: '**/*.{ts,tsx}'
-detector: regex
-pattern: '\bwhile[[:space:]]*\('
+detector: ast
+rule:
+  kind: while_statement
 level: warning
 ---
 

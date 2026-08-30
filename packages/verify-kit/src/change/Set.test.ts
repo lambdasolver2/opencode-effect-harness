@@ -1,7 +1,7 @@
 import { Effect, Option } from 'effect'
 import { describe, expect, it } from 'vitest'
 
-import { boundedFromReader } from './ChangeSet.ts'
+import { boundedFromReader } from './Set.ts'
 
 describe('boundedFromReader', () => {
   it('drops escapes and caps file content', async () => {

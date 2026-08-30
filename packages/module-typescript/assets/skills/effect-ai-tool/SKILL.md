@@ -171,14 +171,14 @@ type Success = Tool.Success<typeof GetWeather>;
 import * as Tool from 'effect/unstable/ai/Tool';
 import { Schema } from 'effect';
 
-class UserNotFound extends Schema.TaggedErrorClass<UserNotFound>()(
+class UserNotFound extends Schema.TaggedError<UserNotFound>()(
 	'UserNotFound',
 	{
 		userId: Schema.String
 	}
 ) {}
 
-class DatabaseError extends Schema.TaggedErrorClass<DatabaseError>()(
+class DatabaseError extends Schema.TaggedError<DatabaseError>()(
 	'DatabaseError',
 	{
 		message: Schema.String
@@ -809,7 +809,7 @@ import * as Tool from 'effect/unstable/ai/Tool';
 import * as Toolkit from 'effect/unstable/ai/Toolkit';
 import { Effect, Schema, Layer, Stream } from 'effect';
 
-class UserNotFound extends Schema.TaggedErrorClass<UserNotFound>()(
+class UserNotFound extends Schema.TaggedError<UserNotFound>()(
 	'UserNotFound',
 	{
 		userId: Schema.String

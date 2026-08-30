@@ -13,7 +13,7 @@ Browse and read files there directly to look up APIs, types, and implementations
 Reference this for:
 
 - `packages/effect/src/unstable/sql/` — Core SQL modules (SqlClient, SqlSchema, SqlModel, SqlResolver, Migrator, Statement)
-- `packages/effect/src/unstable/schema/Model.ts` — Model class with variant schemas
+- `packages/effect/src/unstable/schema/model.ts` — Model class with variant schemas
 - `packages/sql/pg/src/PgClient.ts` — PostgreSQL driver example
 
 ## Core Imports

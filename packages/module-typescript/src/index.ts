@@ -44,7 +44,7 @@ export interface CreateOptions {
 
 const EXPECTED_COUNTS = {
 	patterns: 47,
-	skills: 53,
+	skills: 54,
 	guidance: 4
 } as const;
 
@@ -312,7 +312,6 @@ export const createModule = (
 						);
 					}
 					return fs.readFileString(entry.path).pipe(
-						Effect.map((body) => body.slice(0, 16_000)),
 						Effect.catchTag('PlatformError', () =>
 							Effect.fail(
 								new ModuleError({ moduleId: 'typescript', reason: `unreadable ${name}` })

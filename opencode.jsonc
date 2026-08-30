@@ -1,0 +1,19 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": [
+    {
+      "package": "./src/index.ts",
+      "options": {
+        "compound": {
+          "enabled": true,
+          "benchmark": {
+            "dbPath": ".effect-harness/benchmark.sqlite",
+            "concurrency": 2,
+            "workerAgent": "explore",
+            "models": []
+          }
+        }
+      }
+    }
+  ]
+}

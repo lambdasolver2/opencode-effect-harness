@@ -34,7 +34,7 @@ Use three layers:
 ### EF-1: Errors are data, not side effects
 
 - If logic can fail, return `Effect.Effect<A, E, R>` with a typed error `E`.
-- Use `Schema.TaggedErrorClass` for public or cross-module failures.
+- Use `Schema.TaggedError` for public or cross-module failures.
 - Do not `throw` or use `new Error(...)` in production domain logic.
 - Do not use `try { } catch` blocks in Effect code; use `Effect.try` or `Effect.tryPromise` to capture throwable operations into the typed error channel.
 
@@ -45,7 +45,7 @@ import { Effect } from 'effect';
 import * as Option from 'effect/Option';
 import * as Schema from 'effect/Schema';
 
-class MissingConfigError extends Schema.TaggedErrorClass<MissingConfigError>(
+class MissingConfigError extends Schema.TaggedError<MissingConfigError>(
 	'MissingConfigError'
 )(
 	'MissingConfigError',
@@ -990,7 +990,7 @@ const [cachedConfig, invalidate] =
 ```ts
 import * as Schema from 'effect/Schema';
 
-class DomainError extends Schema.TaggedErrorClass<DomainError>('DomainError')(
+class DomainError extends Schema.TaggedError<DomainError>('DomainError')(
 	'DomainError',
 	{
 		message: Schema.String

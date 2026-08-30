@@ -5,6 +5,7 @@ event: after
 name: avoid-schema-suffix
 description: Schema constants should be named after the domain type, not suffixed with Schema
 glob: '**/*.{ts,tsx}'
+detector: regex
 pattern: \b(const|let)\s+\w+Schema\s*=\s*Schema\.
 level: info
 ---

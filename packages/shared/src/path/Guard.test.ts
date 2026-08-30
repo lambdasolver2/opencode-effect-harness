@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { partitionWithinRoot, withinRoot } from './PathGuard.ts';
+import { partitionWithinRoot, withinRoot } from './Guard.ts';
 
 describe('withinRoot', () => {
 	const root = '/workspaces/proj';

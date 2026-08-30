@@ -4,7 +4,7 @@ tool: (edit|write)
 event: after
 name: avoid-mutable-state
 description: Prefer Ref over let bindings for mutable state in Effect services
-glob: '**/*.ts'
+glob: '**/*.{ts,tsx}'
 detector: ast
 rule:
     pattern: let $$$DECLS

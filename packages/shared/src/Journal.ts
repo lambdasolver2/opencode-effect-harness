@@ -31,7 +31,7 @@ import {
 import { Semaphore } from 'effect';
 
 import { fnv1aHex } from './Hash.ts';
-import { withExclusiveDirectoryLock } from './ExclusiveLock.ts';
+import { withExclusiveDirectoryLock } from './lock/Lock.ts';
 
 export class JournalEntry extends Schema.Class<JournalEntry>('JournalEntry')({
 	sequence: Schema.Number,

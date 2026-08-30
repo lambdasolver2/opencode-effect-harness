@@ -384,7 +384,7 @@ import {
 } from 'effect';
 import { ChildProcess, ChildProcessSpawner } from 'effect/unstable/process';
 
-class DevToolsError extends Schema.TaggedErrorClass<DevToolsError>()(
+class DevToolsError extends Schema.TaggedError<DevToolsError>()(
 	'DevToolsError',
 	{
 		cause: Schema.Defect()
@@ -538,7 +538,7 @@ const chunks = yield* Stream.runCollect(handle.stdout);
 ### DO: Use `Effect.mapError` to wrap `PlatformError` in domain errors
 
 ```typescript
-class MyError extends Schema.TaggedErrorClass<MyError>()('MyError', {
+class MyError extends Schema.TaggedError<MyError>()('MyError', {
 	cause: Schema.Defect()
 }) {}
 

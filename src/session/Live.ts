@@ -1,8 +1,8 @@
 /**
- * LiveSessionSource adapter — implements compound/Source.ts Live port over
+ * LiveSessionSource adapter — implements compound/source.ts Live port over
  * the OpenCode event stream.
  */
-import { Context, Effect, Layer, Ref, Stream } from 'effect'
+import { Context, Effect, Layer, Option, Ref, Stream } from 'effect'
 
 import { SourceError, Summary } from 'opencode-compound-kit/Source.ts'
 import type { SessionEvent } from 'opencode-compound-kit/Source.ts'
@@ -49,6 +49,29 @@ export namespace LiveSessions {
 			Effect.gen(function* () {
 				const sessions = yield* Ref.make(new Map<string, MutableSession>())
 
+				// Keep an in-memory index for explicit() lookups; run as scoped fiber.
+				yield* Stream.runForEach(hostStream, (event) =>
+					Effect.gen(function* () {
+						const sid = deepSessionId(event)
+						if (sid === undefined) return
+						const title = typeof event.properties?.title === 'string' ? event.properties.title : undefined
+						yield* Ref.update(sessions, (map) => {
+							const existing = map.get(sid)
+							const next = new Map(map)
+							next.set(sid, {
+								id: sid,
+								...(title !== undefined
+									? { title }
+									: existing?.title !== undefined
+										? { title: existing.title }
+										: {}),
+								events: existing?.events ?? []
+							})
+							return next
+						})
+					})
+				).pipe(Effect.forkScoped, Effect.ignore)
+
 				return Tag.of({
 					explicit: (sessionID) =>
 						Effect.map(Ref.get(sessions), (map) => {
@@ -59,11 +82,20 @@ export namespace LiveSessions {
 								updatedAt: new Date().toISOString()
 							})
 						}),
-					follow: () => {
-						void sessions
-						return Stream.empty
-					}
+					follow: () =>
+						hostStream.pipe(
+							Stream.filter((event) => deepSessionId(event) !== undefined),
+							Stream.map((event) => {
+								const sessionID = deepSessionId(event) as string
+								const type = event.type
+								const kind: SessionEvent['kind'] =
+									type.includes('execution') ? 'execution' : type.includes('compaction') ? 'compaction' : type.includes('skill') ? 'text' : 'text'
+								const timestamp = Date.now()
+								const payload = event.properties ?? {}
+								return { sessionID, sequence: undefined, kind, timestamp, payload } as SessionEvent
+							})
+						)
 				})
 			})
-	)
+		)
 }

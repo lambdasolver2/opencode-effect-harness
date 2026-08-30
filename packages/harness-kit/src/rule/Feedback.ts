@@ -7,7 +7,7 @@ import type { Schema } from 'effect';
 import { Effect, Option } from 'effect';
 
 import { Intent } from '../Intent.ts';
-import type * as Rule from '../rule/Rule.ts';
+import type * as Rule from './Rule.ts';
 import { Decision } from '../Decision.ts';
 import { Input } from '../Input.ts';
 import { findPatternMatches } from '../Matcher.ts';

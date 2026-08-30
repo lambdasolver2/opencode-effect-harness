@@ -6,7 +6,7 @@
  */
 import { Context, Effect, Layer, Schema } from 'effect';
 
-import type { ChangeSet } from './ChangeSet.ts';
+import type { ChangeSet } from './change/Set.ts';
 import type { CheckerResult, Diagnostic } from './Checker.ts';
 import { ReviewFinding, SemanticReview } from './Report.ts';
 
@@ -42,42 +42,14 @@ export namespace Reviewer {
 
 	export const layerSkipped = Layer.succeed(Service, Service.of(makeSkipped()));
 
-	/** Parse untrusted worker output into findings; malformed output is an error. */
+	/** Parse untrusted worker output into findings; malformed output is an error — any invalid entry fails the whole decode (strict, not silent drop). */
 	export const decodeFindings = (
 		raw: string
 	): Effect.Effect<ReadonlyArray<ReviewFinding>, ReviewerError> =>
 		Effect.try({
 			try: () => {
-				const parsed: unknown = JSON.parse(raw);
-				if (!Array.isArray(parsed)) {
-					throw new Error('expected JSON array of findings');
-				}
-				return parsed.flatMap((entry) => {
-					const record = entry as Record<string, unknown> | null;
-					if (record === null || typeof record !== 'object') return [];
-					const severity = String(record.severity ?? '');
-					const kind = String(record.kind ?? '');
-					const claim = String(record.claim ?? '');
-					const evidence = String(record.evidence ?? '');
-					if (
-						!['critical', 'major', 'minor', 'note'].includes(severity) ||
-						kind.length === 0
-					) {
-						return [];
-					}
-					return [
-						new ReviewFinding({
-							// validated above; cast documents the literal narrowing
-							severity: severity as 'critical' | 'major' | 'minor' | 'note',
-							kind,
-							claim,
-							evidence,
-							...(typeof record.suggestion === 'string'
-								? { suggestion: record.suggestion }
-								: {})
-						})
-					];
-				});
+				const jsonCodec = Schema.fromJsonString(Schema.Array(ReviewFinding));
+				return Schema.decodeSync(jsonCodec)(raw);
 			},
 			catch: (cause) =>
 				new ReviewerError({ reason: `unparseable review output: ${String(cause)}` })

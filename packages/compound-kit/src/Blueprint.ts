@@ -178,10 +178,10 @@ export class PromptDraft extends Schema.Class<PromptDraft>('PromptDraft')({
 }) {}
 
 export const Change = Schema.Union([
-	Schema.TaggedStruct('set-system-prompt', { value: Schema.String }),
-	Schema.TaggedStruct('add-procedure-step', { value: Schema.String }),
-	Schema.TaggedStruct('remove-procedure-step', { value: Schema.String }),
-	Schema.TaggedStruct('add-pitfall', { value: Schema.String }),
+	Schema.TaggedStruct('set-system-prompt', { value: Schema.NonEmptyString }),
+	Schema.TaggedStruct('add-procedure-step', { value: Schema.NonEmptyString }),
+	Schema.TaggedStruct('remove-procedure-step', { value: Schema.NonEmptyString }),
+	Schema.TaggedStruct('add-pitfall', { value: Schema.NonEmptyString }),
 	Schema.TaggedStruct('set-execution', {
 		maxTurns: Schema.optionalKey(Schema.Number),
 		timeoutMs: Schema.optionalKey(Schema.Number)

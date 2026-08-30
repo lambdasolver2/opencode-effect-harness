@@ -3,3 +3,7 @@ export * from './Command.ts';
 export * from './Errors.ts';
 export * from './Refs.ts';
 export * from './Journal.ts';
+export * from './Slug.ts';
+export * from './path/Guard.ts';
+export * from './lock/Lock.ts';
+export * from './Hash.ts';

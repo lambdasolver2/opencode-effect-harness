@@ -2,7 +2,7 @@ import { Context, Effect, Layer } from 'effect';
 
 import { Decision } from './Decision.ts';
 import type * as Rule from './rule/Rule.ts';
-import { RuleSet } from './rule/RuleSet.ts';
+import { RuleSet } from './rule/Set.ts';
 
 type DecisionValue = Schema.Schema.Type<typeof Decision.Value>;
 import type { Schema } from 'effect';
@@ -27,9 +27,11 @@ const runRules = <Input>(
 	}>,
 	input: Input
 ): Effect.Effect<ReadonlyArray<DecisionValue>> =>
-	Effect.forEach(rules, (rule) => rule.evaluate(input), { concurrency: 1 }).pipe(
-		Effect.map((decisionsPerRule) => decisionsPerRule.flatMap((decisions) => [...decisions]))
-	);
+	Effect.forEach(
+		rules,
+		(rule) => rule.evaluate(input).pipe(Effect.catchCause(() => Effect.succeed([] as ReadonlyArray<DecisionValue>))),
+		{ concurrency: 1 }
+	).pipe(Effect.map((decisionsPerRule) => decisionsPerRule.flatMap((decisions) => [...decisions])));
 
 export namespace Engine {
 	export interface Interface {

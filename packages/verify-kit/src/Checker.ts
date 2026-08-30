@@ -3,7 +3,7 @@
  * (`shared/Command`) and results preserve raw status alongside parsed
  * diagnostics so a parser bug can never fabricate a pass.
  */
-import { Effect, Schema } from 'effect';
+import { Clock, Effect, Schema } from 'effect';
 
 import { CommandResult, CommandSpec } from 'opencode-harness-shared';
 
@@ -64,7 +64,7 @@ export namespace Runner {
 		spec: CheckerSpec,
 		options: Options = {}
 	) {
-		const startedAt = Date.now();
+		const startedAt = yield* Clock.currentTimeMillis;
 		const commandResult = yield* exec.run(spec.command).pipe(
 			Effect.catchTag('ExecError', () =>
 				Effect.succeed(
@@ -84,6 +84,7 @@ export namespace Runner {
 				: commandResult.exitCode === 0 && !commandResult.timedOut
 					? ('passed' as const)
 					: ('failed' as const);
+		const endedAt = yield* Clock.currentTimeMillis;
 		return new CheckerResult({
 			specId: spec.id,
 			kind: spec.kind,
@@ -96,7 +97,7 @@ export namespace Runner {
 			stdout: commandResult.stdout.slice(0, 8_000),
 			stderr: commandResult.stderr.slice(0, 8_000),
 			diagnostics: [...diagnostics],
-			durationMs: Date.now() - startedAt
+			durationMs: endedAt - startedAt
 		});
 	});
 }

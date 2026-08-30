@@ -5,6 +5,7 @@ event: after
 name: avoid-ts-ignore
 description: Avoid using @ts-ignore or @ts-expect-error to silence type errors
 glob: '**/*.{ts,tsx}'
+detector: regex
 pattern: @ts-(ignore|expect-error)
 level: warning
 matchInComments: true

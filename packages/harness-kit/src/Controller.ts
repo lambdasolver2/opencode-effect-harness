@@ -3,7 +3,7 @@ import { Context, Effect, Layer } from 'effect';
 
 import { Decision } from './Decision.ts';
 import * as Hook from './hook/Hook.ts';
-import { HookSet } from './hook/HookSet.ts';
+import { HookSet } from './hook/Set.ts';
 import type { Intent } from './Intent.ts';
 import { Engine } from './Engine.ts';
 
@@ -19,9 +19,12 @@ const runHooks = <Input>(
 	}>,
 	input: Input
 ): Effect.Effect<ReadonlyArray<DecisionValue>> =>
-	Effect.forEach(hooks, (hook) => hook.run(input), { concurrency: 1 }).pipe(
-		Effect.map((perHook) => perHook.flatMap((decisions) => [...decisions]))
-	);
+	Effect.forEach(
+		hooks,
+		(hook) =>
+			hook.run(input).pipe(Effect.catchCause(() => Effect.succeed([] as ReadonlyArray<DecisionValue>))),
+		{ concurrency: 1 }
+	).pipe(Effect.map((perHook) => perHook.flatMap((decisions) => [...decisions])));
 
 export interface ToolCallDispatch {
 	readonly activeBranch: import('./Branch.ts').Branch.Value;
@@ -137,7 +140,7 @@ export namespace Controller {
 						: yield* dependencies.engine.evaluateToolResult({
 							activeBranch: input.activeBranch,
 							cwd: input.cwd,
-							toolName: input.toolName === 'edit' ? 'edit' : 'write',
+							toolName: input.toolName as 'write' | 'edit',
 							writeIntent: input.writeIntent
 						});
 				return [...hookDecisions, ...ruleDecisions];

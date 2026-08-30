@@ -2,7 +2,7 @@ import type { Rule as AstGrepRuleDefinition } from '@ast-grep/napi';
 import picomatch from 'picomatch';
 import { Schema } from 'effect';
 
-import { RuleDefinition } from './rule/RuleDefinition.ts';
+import { RuleDefinition } from './rule/Definition.ts';
 
 export namespace Pattern {
 	export const Event = Schema.Literals(['before', 'after'] as const);

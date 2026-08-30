@@ -425,7 +425,7 @@ class User extends Schema.Class<User>('User')({
 	name: Schema.String
 }) {}
 
-class UserNotFound extends Schema.TaggedErrorClass<UserNotFound>()('UserNotFound', {
+class UserNotFound extends Schema.TaggedError<UserNotFound>()('UserNotFound', {
 	id: Schema.Number
 }) {}
 

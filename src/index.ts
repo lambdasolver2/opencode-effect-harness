@@ -13,7 +13,9 @@
  *    a failed run RETAINS the change ledger for retry
  *  - gate/header honor BOTH static config AND persisted per-project mode
  */
-import { Clock, Effect, FileSystem, Layer, Option, Schema } from 'effect';
+import { Clock, Effect, FileSystem, Layer, Option, Path, Ref, Result, Schema } from 'effect';
+import { FetchHttpClient } from 'effect/unstable/http';
+import { OtlpLogger, OtlpSerialization, OtlpTracer } from 'effect/unstable/observability';
 import { Plugin } from '@opencode-ai/plugin/effect';
 import { Tool } from '@opencode-ai/schema/tool';
 import * as NodeFileSystem from '@effect/platform-node/NodeFileSystem';
@@ -38,7 +40,7 @@ import { Orchestrator } from 'opencode-verify-kit/Orchestrator.ts';
 import {
 	boundedFromReader,
 	ChangeSetProvider
-} from 'opencode-verify-kit/ChangeSet.ts';
+} from 'opencode-verify-kit/change/Set.ts';
 import {
 	decodeWorkerOutput,
 	filterUnverifiedFindings,
@@ -48,13 +50,14 @@ import {
 } from 'opencode-verify-kit/Critic.ts';
 import { VerifierReport, VerifyRequest } from 'opencode-verify-kit/Report.ts';
 
+import { CommandSpec } from 'opencode-harness-shared';
 import { Journal } from 'opencode-harness-shared/Journal.ts';
 import { projectKeyOf } from 'opencode-harness-shared/Refs.ts';
 import {
 	partitionWithinRoot,
 	withinRoot
-} from 'opencode-harness-shared/PathGuard.ts';
-import { realpath } from './RealPath.ts';
+} from 'opencode-harness-shared/path/Guard.ts';
+import { realpath } from './Path.ts';
 
 import {
 	computeChangedSpans,
@@ -62,15 +65,27 @@ import {
 	resolveAffected
 } from './Snapshots.ts';
 import { decode, defaults as defaultOptions } from './Options.ts';
-import { ExecNode } from './ExecNode.ts';
-import { Sessions } from './Sessions.ts';
-import { Origins } from './Origins.ts';
-import { ModeState } from './ModeState.ts';
+import { ExecNode } from './Exec.ts';
+import { Sessions } from './session/Session.ts';
+import { Origins } from './session/Origin.ts';
+import { ModeState } from './mode/State.ts';
 import { Ledger, PendingReads, type HostStorage } from './Ledger.ts';
-import { ChangeLedger } from './ChangeLedger.ts';
+import { ChangeLedger } from './change/Ledger.ts';
 import * as Events from './Events.ts';
 import { LiveTraceSink } from './Events.ts';
+import { AgentPolicy } from './agent/Policy.ts';
 import * as CapabilityModule from './Capability.ts';
+import { Executor, ExecutorError, type HostDeps } from './session/Executor.ts';
+import {
+	BenchmarkTool,
+	type BenchmarkToolDeps,
+	benchmarkStoreLayer
+} from './benchmark/Tool.ts';
+import { Model } from '@opencode-ai/schema/model';
+import { Provider } from '@opencode-ai/schema/provider';
+import { TaskError } from 'opencode-compound-kit/Task.ts';
+import { TaskStore } from 'opencode-compound-kit/task/Store.ts';
+import { fnv1aHex } from 'opencode-harness-shared/Hash.ts';
 
 type DecisionValue = Schema.Schema.Type<typeof Decision.Value>;
 type IntentValue = Schema.Schema.Type<typeof Intent.Value>;
@@ -149,6 +164,7 @@ const brand = <T>(): ((value: string) => T & string) =>
 
 export default Plugin.define({
 	id: 'opencode.effect-harness',
+	tui: true,
 	effect: (ctx) =>
 		Effect.gen(function* () {
 			const config = yield* Effect.orElseSucceed(decode(ctx.options), () => {
@@ -158,6 +174,24 @@ export default Plugin.define({
 
 			const assetsRoot =
 				config.harness.assetsRoot ?? TS_MODULE_ASSETS.replace(/\/$/, '');
+
+			// Per-agent opt-out (request.body["opencode-effect-harness"] === false):
+			// consumed once at registration; opted-out agents receive no guidance
+			// header, no gate, and no pattern feedback. Origin-based child-session
+			// restrictions are unaffected (security boundary, not policy).
+			const disabledAgents = yield* Ref.make(new Set<string>());
+			const agentsOptingOut = new Set<string>();
+			yield* ctx.agent.transform((draft) => {
+				agentsOptingOut.clear();
+				draft.list().forEach((agent) => {
+					const record = agent as unknown as AgentPolicy.AgentPolicyTarget;
+					if (AgentPolicy.consumeOptOut(record)) {
+						agentsOptingOut.add(String(agent.id));
+					}
+				});
+			});
+			yield* Ref.set(disabledAgents, agentsOptingOut);
+
 
 			const providePlatform = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
 				Effect.provide(effect, platform);
@@ -759,30 +793,245 @@ let stageFailed: string | undefined;
 
 				tools.add({
 					name: 'effect_harness_compound',
-					description: 'Blueprint benchmark execution (REM-4): NOT wired yet.',
+					description:
+						'Benchmark store operations (spec 06): task.create/get/list, profile.add/list, ' +
+						'benchmark.start/status/leading/history/trial. mine-evolve is not wired (REM-4).',
 					input: {
 						type: 'object',
 						properties: {
-							blueprintId: { type: 'string' },
-							modelIds: { type: 'array', items: { type: 'string' } }
+							op: {
+								type: 'string',
+								enum: [
+									'task.create', 'task.get', 'task.list',
+									'profile.add', 'profile.list',
+									'benchmark.start', 'benchmark.status', 'benchmark.leading',
+									'benchmark.history', 'benchmark.trial', 'mine-evolve'
+								]
+							},
+							id: { type: 'string' },
+							title: { type: 'string' },
+							domain: { type: 'string' },
+							problem: { type: 'string' },
+							rubric: { type: 'string' },
+							referenceSolution: { type: 'string' },
+							modelProfileIds: { type: 'array', items: { type: 'string' } },
+							maxOutputChars: { type: 'number' },
+							maxSnippets: { type: 'number' },
+							cursor: { type: 'string' },
+							profileId: { type: 'string' },
+							provider: { type: 'string' },
+							model: { type: 'string' },
+							variant: { type: 'string' },
+							taskId: { type: 'string' },
+							trials: { type: 'number' },
+							concurrency: { type: 'number' },
+							judgeProfileId: { type: 'string' },
+							jobId: { type: 'string' },
+							trialId: { type: 'string' }
 						},
-						required: ['blueprintId'],
+						required: ['op'],
 						additionalProperties: false
 					},
-					execute: (rawInput: unknown) =>
+					output: { type: 'string' },
+					execute: (rawInput: unknown, execCtx: { readonly sessionID: string }) =>
 						Effect.gen(function* () {
 							if (!config.compound.enabled) {
 								return yield* Effect.fail(
 									new Tool.Error({ message: 'compound disabled by configuration. Set compound.enabled: true.' })
-								)
+								);
 							}
-							// Honest stub (AUDIT-037): no fake queueing until REM-4 lands.
-							return yield* Effect.fail(
-								new Tool.Error({
-									message:
-										'compound benchmark execution is not implemented yet (REM-4 pending). Nothing was queued or persisted.'
-								})
+							const location = yield* sessions.resolve(execCtx.sessionID).pipe(
+								Effect.orElseSucceed(() => undefined)
 							);
+							if (location === undefined) {
+								return yield* Effect.fail(
+									new Tool.Error({ message: 'compound: cannot resolve session location' })
+								);
+							}
+
+							const catalogModelList = ctx.catalog.model.list as unknown as (
+								i: object
+							) => Effect.Effect<{ readonly data: ReadonlyArray<{
+								readonly id: string;
+								readonly providerID: string;
+								readonly variants: ReadonlyArray<{ readonly id: string }>;
+							}> }>;
+							const sessionCreate = ctx.session.create as unknown as (
+								i: object
+							) => Effect.Effect<{ readonly id?: unknown }>;
+							const sessionGenerate = ctx.session.generate as unknown as (
+								i: object
+							) => Effect.Effect<{ readonly text: string }>;
+							const sessionInterrupt = ctx.session.interrupt as unknown as (
+								i: object
+							) => Effect.Effect<void>;
+
+							const execDeps: HostDeps = {
+								modelInfo: (provider, model) =>
+									Effect.map(
+										Effect.orElseSucceed(catalogModelList({}), () => ({ data: [] })),
+										(page) =>
+											Option.fromNullishOr(
+												page.data.find(
+													(entry) => entry.providerID === provider && entry.id === model
+												)
+											)
+									),
+								createSession: (input) => sessionCreate(input),
+								generate: (input) => sessionGenerate(input),
+								interrupt: (sessionID) =>
+									Effect.orElseSucceed(sessionInterrupt({ sessionID }), () => undefined),
+								registerOrigin: (sessionID, systemPrompt) =>
+									Effect.asVoid(
+										Effect.andThen(
+											origins.register({ sessionID, origin: 'benchmark' }),
+											origins.registerPrompt({ sessionID, systemPrompt })
+										)
+									),
+								unregisterOrigin: (sessionID) => origins.unregister(sessionID),
+								brandSessionId: brand<'sessionIdBrand'>(),
+								brandAgentId: brand<'agentIdBrand'>(),
+								buildModelRef: (provider, model, variant) =>
+									Effect.suspend(() =>
+										Effect.try({
+											try: () =>
+										Model.Ref.make({
+											providerID: Provider.ID.make(provider),
+											id: Model.ID.make(model),
+											...(variant === undefined
+												? {}
+												: { variant: Model.VariantID.make(variant) })
+										}),
+											catch: (): ExecutorError =>
+												new ExecutorError({
+													operation: 'model',
+													reason: `invalid model reference ${provider}/${model}`
+												})
+										})
+									)
+							};
+
+							const pathService = yield* Effect.provide(Path.Path, platform);
+							const dbPath = pathService.join(
+								location.directory,
+								config.compound.benchmark.dbPath
+							);
+							const withStore = <A>(
+								effect: Effect.Effect<A, TaskError, TaskStore.Tag>
+							): Effect.Effect<A, TaskError> =>
+								Effect.mapError(
+									Effect.provide(effect, benchmarkStoreLayer({ _tag: 'File', path: dbPath }, platform)),
+									(cause): TaskError =>
+										new TaskError({ operation: 'store', reason: String(cause) })
+								);
+
+							const deps: BenchmarkToolDeps = {
+								benchmark: config.compound.benchmark,
+								projectRoot: location.directory,
+								executor: Executor.make(execDeps),
+								workspaceDirFor: (label): Effect.Effect<string, TaskError> =>
+									Effect.gen(function* () {
+										const path = yield* Path.Path;
+										const fs = yield* FileSystem.FileSystem;
+										const exec = ExecNode.make();
+										const dir = path.join(
+											location.directory,
+											'.effect-harness',
+											'workspaces',
+											`job-${fnv1aHex(label)}`
+										);
+										// Try git worktree for true isolation (like motel's isolated workspaces + stack's worktree awareness)
+										// Fallback to plain directory if not a git repo or git not available — harness `withinRoot` + `bash` deny still protects
+										const isWorktree = yield* exec
+											.run(
+												new CommandSpec({
+													executable: "git",
+													args: ["worktree", "add", "--detach", dir, "HEAD"],
+													cwd: location.directory,
+													timeoutMs: 10_000,
+													maxOutputBytes: 4096
+												})
+											)
+											.pipe(Effect.map(() => true), Effect.catchCause(() => Effect.succeed(false)));
+										if (isWorktree) {
+											// Stamp ownership like Env.ts does
+											yield* fs
+												.writeFileString(
+													path.join(dir, ".harness-workspace-owner.json"),
+													JSON.stringify({ root: location.directory, label, kind: "worktree" })
+												)
+												.pipe(Effect.ignore);
+											return dir;
+										}
+										yield* fs.makeDirectory(dir, { recursive: true });
+										yield* fs
+											.writeFileString(
+												path.join(dir, ".harness-workspace-owner.json"),
+												JSON.stringify({ root: location.directory, label, kind: "dir" })
+											)
+											.pipe(Effect.ignore);
+										return dir;
+									}).pipe(
+										Effect.provide(platform),
+										Effect.mapError(
+											(cause) =>
+												new TaskError({ operation: "workspace", reason: String(cause) })
+										)
+									) as Effect.Effect<string, TaskError>,
+								cleanupWorkspace: (dir) =>
+									Effect.gen(function* () {
+										const fs = yield* FileSystem.FileSystem;
+										const exec = ExecNode.make();
+										// Best-effort worktree remove, then directory remove (covers both kinds)
+										yield* exec
+											.run(
+												new CommandSpec({
+													executable: "git",
+													args: ["worktree", "remove", "--force", dir],
+													cwd: location.directory,
+													timeoutMs: 10_000,
+													maxOutputBytes: 4096
+												})
+											)
+											.pipe(Effect.ignore);
+										yield* fs.remove(dir, { recursive: true }).pipe(Effect.ignore);
+									}).pipe(Effect.provide(platform), Effect.ignore),
+								withStore
+							};
+
+							// Motel/OTLP visibility: spans + logs exported when
+							// compound.benchmark.otel is configured (content is NEVER
+							// exported — only bounded metadata attributes).
+							const otelConfig = config.compound.benchmark.otel;
+							const otelLayer =
+								otelConfig === undefined
+									? undefined
+									: Layer.merge(
+											OtlpTracer.layer({
+												url: `${otelConfig.endpoint.replace(/\/$/, '')}/v1/traces`,
+												resource: {
+													serviceName: otelConfig.serviceName ?? 'opencode-effect-harness'
+												}
+											}),
+											OtlpLogger.layer({
+												url: `${otelConfig.endpoint.replace(/\/$/, '')}/v1/logs`,
+												resource: {
+													serviceName: otelConfig.serviceName ?? 'opencode-effect-harness'
+												}
+											})
+										).pipe(
+											Layer.provide(OtlpSerialization.layerJson),
+											Layer.provide(FetchHttpClient.layer)
+										);
+							const handled = otelLayer === undefined
+								? BenchmarkTool.handle(deps, rawInput)
+								: BenchmarkTool.handle(deps, rawInput).pipe(Effect.provide(otelLayer));
+							const result = yield* handled;
+							return {
+								output: result.content,
+								content: result.content,
+								metadata: { status: result.status }
+							} as never;
 						})
 				});
 			});
@@ -847,6 +1096,9 @@ let stageFailed: string | undefined;
 				readonly writeIntent: IntentValue;
 			}): Effect.Effect<ReadonlyArray<DecisionValue>> =>
 				Effect.gen(function* () {
+					if (AgentPolicy.isDisabled(yield* Ref.get(disabledAgents), input.agent)) {
+						return [];
+					}
 					const enabled = yield* effectiveEnabled(input.location);
 					if (!enabled) return [];
 					const strict = config.harness.strictAgents.includes(input.agent);
@@ -1077,8 +1329,14 @@ let stageFailed: string | undefined;
 
 					// Terminal cleanup FIRST: failed/interrupted calls release their
 					// snapshot too — full file contents are never retained (AUDIT-027).
+					// This runs even for opted-out agents so no state leaks.
 					const snapshot = pendingSnapshots.get(snapshotKey(sessionId, callId));
 					pendingSnapshots.delete(snapshotKey(sessionId, callId));
+
+					// Opted-out agents: state was cleaned above, no further processing.
+					if (AgentPolicy.isDisabled(yield* Ref.get(disabledAgents), event.agent)) {
+						return;
+					}
 
 					if (event.tool === 'read') {
 						const location = yield* sessions.resolve(sessionId).pipe(
@@ -1217,6 +1475,11 @@ let stageFailed: string | undefined;
 					);
 					const enabledNow = yield* effectiveEnabled(location);
 					if (!enabledNow) return;
+					// Opted-out agents: keep tool/origin restrictions (security), skip
+					// guidance header injection (policy).
+					if (AgentPolicy.isDisabled(yield* Ref.get(disabledAgents), sessionContext.agent)) {
+						return;
+					}
 
 					const decisions = yield* headerRule.evaluate({
 						activeBranch: { entries: [] } as never,

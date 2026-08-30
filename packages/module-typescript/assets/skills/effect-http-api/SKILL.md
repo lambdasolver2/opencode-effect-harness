@@ -256,7 +256,7 @@ SomeError.pipe(HttpApiSchema.status('UnprocessableEntity')); // 422
 RateLimitError.pipe(HttpApiSchema.status('TooManyRequests')); // 429
 
 // Or annotate an error class inline at definition
-class UserNotFound extends Schema.TaggedErrorClass<UserNotFound>()(
+class UserNotFound extends Schema.TaggedError<UserNotFound>()(
 	'UserNotFound',
 	{},
 	{ httpApiStatus: 404 }
@@ -620,16 +620,16 @@ export const { handler, dispose } = HttpRouter.toWebHandler(
 
 ### Custom Errors
 
-Define errors with `Schema.TaggedErrorClass` and either pipe through `HttpApiSchema.status` or set `httpApiStatus` in the class options:
+Define errors with `Schema.TaggedError` and either pipe through `HttpApiSchema.status` or set `httpApiStatus` in the class options:
 
 ```ts
-class UserNotFound extends Schema.TaggedErrorClass<UserNotFound>()(
+class UserNotFound extends Schema.TaggedError<UserNotFound>()(
 	'UserNotFound',
 	{ message: Schema.String },
 	{ httpApiStatus: 404 }
 ) {}
 
-class Unauthorized extends Schema.TaggedErrorClass<Unauthorized>()(
+class Unauthorized extends Schema.TaggedError<Unauthorized>()(
 	'Unauthorized',
 	{ message: Schema.String },
 	{ httpApiStatus: 401 }
@@ -644,7 +644,7 @@ const NotFound = Schema.Struct({
 
 ### Predefined Error Types
 
-`HttpApiError` provides ready-made error classes for common HTTP status codes. They are full `Schema.ErrorClass` instances and also implement `HttpServerRespondable`, so they can be returned directly from plain `HttpRouter` handlers (outside HttpApi) and produce the right status response without further configuration.
+`HttpApiError` provides ready-made error classes for common HTTP status codes. They are full `Schema.Error` instances and also implement `HttpServerRespondable`, so they can be returned directly from plain `HttpRouter` handlers (outside HttpApi) and produce the right status response without further configuration.
 
 | Class                 | Status | NoContent variant              |
 | --------------------- | ------ | ------------------------------ |
@@ -692,7 +692,7 @@ When a request fails decoding (bad params, invalid query, malformed body), the f
 By default these errors are treated as **defects** (per the v4 design) and respond with an empty `400 Bad Request` (`HttpApiError.BadRequestNoContent`). If you want to surface the validation details (or use a different status), install a schema-error transform middleware via `HttpApiMiddleware.layerSchemaErrorTransform`:
 
 ```ts
-class ValidationError extends Schema.TaggedErrorClass<ValidationError>()(
+class ValidationError extends Schema.TaggedError<ValidationError>()(
 	'ValidationError',
 	{ message: Schema.String, kind: Schema.String }
 ) {}
@@ -763,7 +763,7 @@ const digestAuth = HttpApiSecurity.http({ scheme: 'Digest' }).pipe(
 ```ts
 class CurrentUser extends Context.Service<CurrentUser, User>()('CurrentUser') {}
 
-class Unauthorized extends Schema.TaggedErrorClass<Unauthorized>()(
+class Unauthorized extends Schema.TaggedError<Unauthorized>()(
 	'Unauthorized',
 	{ message: Schema.String },
 	{ httpApiStatus: 401 }
@@ -1476,14 +1476,14 @@ export class User extends Schema.Class<User>('User')({
 	email: Schema.String
 }) {}
 
-// --- domain/UserErrors.ts ---
-export class UserNotFound extends Schema.TaggedErrorClass<UserNotFound>()(
+// --- domain/Usererrors.ts ---
+export class UserNotFound extends Schema.TaggedError<UserNotFound>()(
 	'UserNotFound',
 	{},
 	{ httpApiStatus: 404 }
 ) {}
 
-export class Unauthorized extends Schema.TaggedErrorClass<Unauthorized>()(
+export class Unauthorized extends Schema.TaggedError<Unauthorized>()(
 	'Unauthorized',
 	{ message: Schema.String },
 	{ httpApiStatus: 401 }

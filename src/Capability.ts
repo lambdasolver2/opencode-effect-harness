@@ -92,11 +92,12 @@ export const prepareAll = (
 					rejected += 1;
 					return [];
 				}
+				const info = decoded as Schema.Schema.Type<typeof SkillSchema.Info>;
 				return [
 					{
-						id: decoded,
-						name: decoded,
-						location: decoded,
+						id: info.id,
+						name: info.name,
+						location: info.location,
 						description: candidate.description,
 						content,
 						kernelName: entry.name

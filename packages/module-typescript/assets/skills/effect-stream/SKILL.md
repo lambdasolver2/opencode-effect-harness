@@ -95,7 +95,7 @@ const fetchAllPages = Stream.paginate(
 ### From async iterables
 
 ```ts
-class IterError extends Schema.TaggedErrorClass<IterError>()('IterError', {
+class IterError extends Schema.TaggedError<IterError>()('IterError', {
 	cause: Schema.Defect()
 }) {}
 
@@ -155,7 +155,7 @@ const webStream = Stream.fromReadableStream({
 import { NodeStream } from '@effect/platform-node';
 import { Readable } from 'node:stream';
 
-class NodeErr extends Schema.TaggedErrorClass<NodeErr>()('NodeErr', {
+class NodeErr extends Schema.TaggedError<NodeErr>()('NodeErr', {
 	cause: Schema.Defect()
 }) {}
 

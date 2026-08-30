@@ -5,10 +5,26 @@
  */
 import { Effect, Schema } from 'effect';
 
+import { ModelReference, modelKey } from 'opencode-harness-shared';
+
+const modelKeyOf = (run: {
+	readonly modelProvider: string;
+	readonly modelName: string;
+	readonly modelVariant?: string | undefined;
+}): string =>
+	modelKey(
+		new ModelReference({
+			provider: run.modelProvider,
+			model: run.modelName,
+			...(run.modelVariant !== undefined ? { variant: run.modelVariant } : {})
+		})
+	);
+
 export class Run extends Schema.Class<Run>('BenchmarkRun')({
 	blueprintId: Schema.String,
 	modelProvider: Schema.String,
 	modelName: Schema.String,
+	modelVariant: Schema.optionalKey(Schema.String),
 	taskId: Schema.String,
 	score: Schema.Number,
 	passed: Schema.Boolean,
@@ -22,6 +38,7 @@ export class Run extends Schema.Class<Run>('BenchmarkRun')({
 export class ModelScore extends Schema.Class<ModelScore>('ModelScore')({
 	modelProvider: Schema.String,
 	modelName: Schema.String,
+	modelVariant: Schema.optionalKey(Schema.String),
 	aggregateScore: Schema.Number,
 	tasksPassed: Schema.Number,
 	tasksTotal: Schema.Number
@@ -70,7 +87,7 @@ export const aggregate = (
 				if (!Number.isFinite(run.score) || run.score < 0) {
 					return { ...acc, error: `invalid score ${String(run.score)}` };
 				}
-				const key = `${run.modelProvider}/${run.modelName}|${run.taskId}`;
+				const key = `${modelKeyOf(run)}|${run.taskId}`;
 				if (acc.seen.has(key)) {
 					return { ...acc, error: `duplicate trial ${key}` };
 				}
@@ -85,9 +102,9 @@ export const aggregate = (
 		}
 
 		const byModel = runs.reduce<Map<string, Array<Run>>>((map, run) => {
-			const model = `${run.modelProvider}/${run.modelName}`;
-			const bucket = map.get(model) ?? [];
-			map.set(model, [...bucket, run]);
+			const key = modelKeyOf(run);
+			const bucket = map.get(key) ?? [];
+			map.set(key, [...bucket, run]);
 			return map;
 		}, new Map<string, Array<Run>>());
 		const incompleteModel = [...byModel.entries()].find(([, bucket]) =>
@@ -101,18 +118,20 @@ export const aggregate = (
 			);
 		}
 
-		const rows = [...byModel.entries()].map(([model, bucket]) => {
-			const slash = model.indexOf('/');
-			const provider = model.slice(0, slash);
-			const name = model.slice(slash + 1);
+		const rows = [...byModel.entries()].flatMap(([, bucket]) => {
+			const first = bucket[0];
+			if (first === undefined) return [];
 			const total = bucket.reduce((sum, r) => sum + r.score, 0);
-			return new ModelScore({
-				modelProvider: provider,
-				modelName: name,
-				aggregateScore: bucket.length > 0 ? total / bucket.length : 0,
-				tasksPassed: bucket.filter((r) => r.passed).length,
-				tasksTotal: bucket.length
-			});
+			return [
+				new ModelScore({
+					modelProvider: first.modelProvider,
+					modelName: first.modelName,
+					...(first.modelVariant !== undefined ? { modelVariant: first.modelVariant } : {}),
+					aggregateScore: total / bucket.length,
+					tasksPassed: bucket.filter((r) => r.passed).length,
+					tasksTotal: bucket.length
+				})
+			];
 		});
 
 		const missing = input.expectedTasks.filter(

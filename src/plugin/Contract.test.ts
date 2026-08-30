@@ -1,7 +1,7 @@
 import { Effect, Stream } from 'effect'
 import { describe, expect, it } from 'vitest'
 
-import plugin from './index.ts'
+import plugin from '../index.ts'
 
 describe('OpenCode plugin contract', () => {
   it('registers tools, skill transform, and lifecycle hooks', async () => {
@@ -45,7 +45,13 @@ describe('OpenCode plugin contract', () => {
         }
       },
       event: { subscribe: () => Stream.empty },
-      app: {}, agent: {}, aisdk: {}, catalog: {}, command: {}, integration: {},
+      agent: {
+        transform: (f: (draft: { list: () => ReadonlyArray<unknown> }) => void) => {
+          f({ list: () => [] })
+          return Effect.succeed(undefined)
+        }
+      },
+      app: {}, aisdk: {}, catalog: {}, command: {}, integration: {},
       mcp: {}, plugin: {}, reference: {}, shell: {}, websearch: {}
     }
 

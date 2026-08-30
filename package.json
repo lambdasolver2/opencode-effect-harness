@@ -7,11 +7,12 @@
   "private": true,
   "type": "module",
   "bin": {
-    "opencode-effect-harness": "./src/companion/cli.ts"
+    "opencode-effect-harness": "./src/companion/Cli.ts"
   },
   "exports": {
     ".": "./src/index.ts",
-    "./companion": "./src/companion/cli.ts"
+    "./tui": "./src/tui.tsx",
+    "./companion": "./src/companion/Cli.ts"
   },
   "workspaces": [
     "packages/*"
@@ -26,6 +27,7 @@
   "dependencies": {
     "@ast-grep/napi": "catalog:",
     "@effect/platform-node": "catalog:",
+    "@effect/sql-sqlite-node": "4.0.0-rc.110",
     "@opencode-ai/client": "0.0.0-beta-17898",
     "@opencode-ai/plugin": "0.0.0-beta-17898",
     "@opencode-ai/schema": "0.0.0-beta-17898",
@@ -39,7 +41,15 @@
     "opencode-harness-shared": "workspace:*",
     "opencode-verify-kit": "workspace:*",
     "picomatch": "^4.0.4",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.0",
+    "opencode-bench-store": "workspace:*",
+    "solid-js": "^1.9.0"
+  },
+  "peerDependencies": {
+    "@opencode-ai/theme": "0.0.0-beta-17898",
+    "@opentui/core": "^0.4.2",
+    "@opentui/solid": "^0.4.2",
+    "solid-js": "^1.9.0"
   },
   "devDependencies": {
     "@ast-grep/napi": "^0.42.3",

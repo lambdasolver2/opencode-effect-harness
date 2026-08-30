@@ -5,7 +5,7 @@ import YAML from 'yaml';
 
 import { SKIPPED_FILES } from './Constants.ts';
 import { Pattern } from './Pattern.ts';
-import { RuleDefinition } from './rule/RuleDefinition.ts';
+import { RuleDefinition } from './rule/Definition.ts';
 
 // ---------------------------------------------------------------------------
 // Frontmatter parsing
@@ -79,8 +79,15 @@ const stringOption = (value: unknown): Option.Option<string> =>
 
 const isAstGrepRuleDefinition = (
 	value: unknown
-): value is AstGrepRuleDefinition =>
-	typeof value === 'object' && value !== null && !Array.isArray(value);
+): value is AstGrepRuleDefinition => {
+	if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+	const record = value as Record<string, unknown>;
+	const keys = Object.keys(record);
+	if (keys.length === 0) return false;
+	return keys.some((k) =>
+		['pattern', 'regex', 'kind', 'any', 'all', 'not', 'inside', 'constraints'].includes(k)
+	);
+};
 
 const readAstRuleList = (
 	value: unknown
@@ -113,28 +120,30 @@ const readAstRuleRecord = (
 const isSkippedFile = (name: string): boolean =>
 	SKIPPED_FILES.some(
 		(prefix) =>
-			name.startsWith(prefix) ||
+			name.toLowerCase().startsWith(prefix.toLowerCase()) ||
 			name.toLowerCase() === `${prefix.toLowerCase()}.md`
 	);
 
-const patternLevel = (value: Option.Option<string>): PatternLevel =>
+const levelWithDefault = (value: Option.Option<string>): Option.Option<PatternLevel> =>
 	Option.match(value, {
-		onNone: () => 'info',
+		onNone: () => Option.some('info' as PatternLevel),
 		onSome: (current) =>
 			current === 'critical' ||
-				current === 'high' ||
-				current === 'medium' ||
-				current === 'warning' ||
-				current === 'info'
-				? current
-				: 'info'
+			current === 'high' ||
+			current === 'medium' ||
+			current === 'warning' ||
+			current === 'info'
+				? Option.some(current)
+				: Option.none()
 	});
 
-const patternEvent = (value: Option.Option<string>): 'before' | 'after' =>
+const eventWithDefault = (value: Option.Option<string>): Option.Option<'before' | 'after'> =>
 	Option.match(value, {
-		onNone: () => 'before',
-		onSome: (current) =>
-			current.toLowerCase() === 'after' ? 'after' : 'before'
+		onNone: () => Option.some('before' as const),
+		onSome: (current) => {
+			const lower = current.toLowerCase();
+			return lower === 'before' || lower === 'after' ? Option.some(lower) : Option.none();
+		}
 	});
 
 const readPatternList = (
@@ -147,10 +156,11 @@ const readPatternList = (
 export const toDetector = (
 	raw: Record<string, unknown>
 ): Option.Option<Pattern.RegexDetector | Pattern.AstDetector> => {
-	const detector = Option.match(stringOption(raw.detector), {
-		onNone: () => 'regex',
-		onSome: (value) => (value === 'ast' ? 'ast' : 'regex')
-	});
+	const detectorOpt = stringOption(raw.detector);
+	if (Option.isNone(detectorOpt)) return Option.none();
+	const rawDetector = detectorOpt.value;
+	if (rawDetector !== 'ast' && rawDetector !== 'regex') return Option.none();
+	const detector = rawDetector;
 
 	if (detector === 'ast') {
 		const rule = readAstRuleList(raw.rule);
@@ -205,9 +215,13 @@ const toPattern = (
 		onNone: () => '.*',
 		onSome: (value) => value
 	});
+	const levelOpt = levelWithDefault(stringOption(raw.level));
+	const eventOpt = eventWithDefault(stringOption(raw.event));
 	if (
 		Option.isNone(name) ||
 		Option.isNone(detector) ||
+		Option.isNone(levelOpt) ||
+		Option.isNone(eventOpt) ||
 		Option.isNone(regexOption(toolRegex))
 	) {
 		return Option.none();
@@ -224,9 +238,9 @@ const toPattern = (
 		new Pattern.Value({
 			name: name.value,
 			description,
-			event: patternEvent(stringOption(raw.event)),
+			event: eventOpt.value,
 			toolRegex,
-			level: patternLevel(stringOption(raw.level)),
+			level: levelOpt.value,
 			...(Option.isSome(glob) ? { glob: glob.value } : undefined),
 			...(Option.isSome(ignoreGlob)
 				? { ignoreGlob: [...ignoreGlob.value] }

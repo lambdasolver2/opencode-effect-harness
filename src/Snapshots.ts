@@ -11,7 +11,7 @@
  */
 import { diffLines } from 'diff';
 
-import { partitionWithinRoot } from 'opencode-harness-shared/PathGuard.ts';
+import { partitionWithinRoot, withinRoot } from 'opencode-harness-shared/path/Guard.ts';
 
 export interface FileSnapshot {
 	readonly absolutePath: string;
@@ -93,12 +93,10 @@ export const resolveAffected = (
 	readonly snapshots: ReadonlyArray<FileSnapshot>;
 	readonly escaped: ReadonlyArray<string>;
 } => {
-	const { contained, escaped } = partitionWithinRoot(root, paths);
-	return {
-		snapshots: contained.map((absolutePath, index) => ({
-			absolutePath,
-			filePath: paths[index] ?? absolutePath
-		})),
-		escaped
-	};
+	const { escaped } = partitionWithinRoot(root, paths);
+	const snapshots = paths.flatMap((filePath) => {
+		const absolutePath = withinRoot(root, filePath);
+		return absolutePath === undefined ? [] : [{ absolutePath, filePath }];
+	});
+	return { snapshots, escaped };
 };

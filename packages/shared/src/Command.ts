@@ -7,11 +7,12 @@
 import { Context, Effect, Schema } from 'effect';
 
 export class CommandSpec extends Schema.Class<CommandSpec>('CommandSpec')({
-	executable: Schema.String,
+	executable: Schema.NonEmptyString,
 	args: Schema.Array(Schema.String),
-	cwd: Schema.optionalKey(Schema.String),
-	timeoutMs: Schema.Number,
-	maxOutputBytes: Schema.Number
+	cwd: Schema.optionalKey(Schema.NonEmptyString),
+	timeoutMs: Schema.Finite.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(1)),
+	maxOutputBytes: Schema.Finite.check(Schema.isInt(), Schema.isGreaterThanOrEqualTo(1)),
+	env: Schema.optionalKey(Schema.Record(Schema.String, Schema.String))
 }) {}
 
 export class CommandResult extends Schema.Class<CommandResult>('CommandResult')({

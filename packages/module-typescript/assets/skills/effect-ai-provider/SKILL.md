@@ -387,7 +387,7 @@ Wrap `AiError` into domain-specific tagged errors:
 import { Schema } from 'effect';
 import { AiError } from 'effect/unstable/ai';
 
-export class MyAiError extends Schema.TaggedErrorClass<MyAiError>()(
+export class MyAiError extends Schema.TaggedError<MyAiError>()(
 	'MyAiError',
 	{
 		reason: AiError.AiErrorReason
@@ -464,7 +464,7 @@ const DraftPlan = ExecutionPlan.make(
 // Custom error type
 // ---------------------------------------------------------------------------
 
-export class WriterError extends Schema.TaggedErrorClass<WriterError>()(
+export class WriterError extends Schema.TaggedError<WriterError>()(
 	'WriterError',
 	{
 		reason: AiError.AiErrorReason
@@ -609,7 +609,7 @@ import { BedrockClient } from '@effect/ai-amazon-bedrock'; // Does NOT exist
 - [ ] Use `apiUrl` for OpenAI-compatible base URLs; reserve client transforms for middleware/proxy/tracing/headers
 - [ ] Use `OpenAiTool` for OpenAI provider-defined tools
 - [ ] Use `Chat.fromPrompt` / `Chat.empty` / `Chat.fromJson` (not `Chat.make`)
-- [ ] Wrap `AiError` into domain-specific `TaggedErrorClass`
+- [ ] Wrap `AiError` into domain-specific `TaggedError`
 - [ ] Use `Context.Service` with shape type parameter for service definitions
 
 ## Related Skills
@@ -622,8 +622,8 @@ import { BedrockClient } from '@effect/ai-amazon-bedrock'; // Does NOT exist
 
 ## References
 
-- `packages/ai/anthropic/src/AnthropicLanguageModel.ts`
-- `packages/ai/openai/src/OpenAiLanguageModel.ts`
-- `packages/ai/openrouter/src/OpenRouterLanguageModel.ts`
+- `packages/ai/anthropic/src/AnthropicLanguagemodel.ts`
+- `packages/ai/openai/src/OpenAiLanguagemodel.ts`
+- `packages/ai/openrouter/src/OpenRouterLanguagemodel.ts`
 - `ai-docs/src/71_ai/10_language-model.ts`
 - `ai-docs/src/71_ai/30_chat.ts`

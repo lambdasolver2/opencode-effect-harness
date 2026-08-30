@@ -11,16 +11,16 @@
  *     review failure is an explicit `error` state, never a silent pass
  *  7. derive `overall` by the pure report policy
  */
-import { Effect, Option, Result } from 'effect';
+import { Effect, Option, Ref, Result } from 'effect';
 
 import { Exec } from 'opencode-harness-shared';
-import { withinRoot } from 'opencode-harness-shared/PathGuard.ts';
+import { withinRoot } from 'opencode-harness-shared/path/Guard.ts';
 import { Input } from 'opencode-harness-kit/Input.ts';
 import { findPatternMatches } from 'opencode-harness-kit/Matcher.ts';
 import type { Pattern } from 'opencode-harness-kit/Pattern.ts';
 import { assessEvidence } from './Evidence.ts';
 import { CheckerResult, Runner } from './Checker.ts';
-import { ChangeSet, ChangeSetProvider } from './ChangeSet.ts';
+import { ChangeSet, ChangeSetProvider } from './change/Set.ts';
 import type { VerificationModule } from './Module.ts';
 import { Registry } from './Module.ts';
 import {
@@ -144,17 +144,19 @@ export namespace Orchestrator {
 				} => module.patterns !== undefined
 			);
 
-			let patternScanStatus: 'ok' | 'error' | 'skipped' = 'skipped';
-			let patternScanError: string | undefined;
+			const statusRef = yield* Ref.make<'ok' | 'error' | 'skipped'>('skipped');
+			const errorRef = yield* Ref.make<string | undefined>(undefined);
 			// F-02: a configured-but-unexecutable scan is an ERROR, never `ok`.
 			if (
 				patternModules.length > 0 &&
 				deps.readFile === undefined &&
 				request.touchedFiles.length > 0
 			) {
-				patternScanStatus = 'error';
-				patternScanError =
-					'readFile dependency not wired — deterministic pattern scan could not run';
+				yield* Ref.set(statusRef, 'error');
+				yield* Ref.set(
+					errorRef,
+					'readFile dependency not wired — deterministic pattern scan could not run'
+				);
 			}
 			const nestedFindings = yield* Effect.forEach(
 				patternModules,
@@ -167,13 +169,14 @@ export namespace Orchestrator {
 							)
 						);
 						if (!catalog.ok) {
-							patternScanStatus = 'error';
-							patternScanError =
-								patternScanError ?? `${module.id}: pattern catalog unavailable`;
+							yield* Ref.set(statusRef, 'error');
+							yield* Ref.update(errorRef, (prev) => prev ?? `${module.id}: pattern catalog unavailable`);
 							return [[]] as ReadonlyArray<ReadonlyArray<LocatedFinding>>;
 						}
-						patternScanStatus =
-							patternScanStatus === 'error' ? 'error' : 'ok';
+						const currentStatus = yield* Ref.get(statusRef);
+						if (currentStatus !== 'error') {
+							yield* Ref.set(statusRef, 'ok');
+						}
 						return yield* Effect.forEach(
 							request.touchedFiles.filter((file) => module.appliesTo(file)),
 							(file) => {
@@ -211,6 +214,8 @@ export namespace Orchestrator {
 					}),
 				{ concurrency: 4 }
 			);
+			const patternScanStatus = yield* Ref.get(statusRef);
+			const patternScanError = yield* Ref.get(errorRef);
 			const flat = nestedFindings.flat(2);
 			const patternFindings = flat.map(
 				(finding) =>
@@ -226,8 +231,9 @@ export namespace Orchestrator {
 			);
 
 			const codeDetected =
-				checks.some((c) => c.kind === 'typecheck') ||
-				request.touchedFiles.some((f) => f.endsWith('.ts') || f.endsWith('.tsx'));
+				checks.length > 0
+					? checks.some((c) => c.kind === 'typecheck' || c.kind === 'test' || c.kind === 'build')
+					: modules.some((m) => request.touchedFiles.some((f) => m.appliesTo(f)));
 			const skillEvidence = assessEvidence({
 				codeDetected,
 				loadedSkills: request.loadedSkills,

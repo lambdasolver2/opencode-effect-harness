@@ -617,7 +617,7 @@ const program = Effect.gen(function* () {
 
 ## References
 
-- Source: `packages/effect/src/unstable/ai/LanguageModel.ts`
+- Source: `packages/effect/src/unstable/ai/Languagemodel.ts`
 - Chat integration: `packages/effect/src/unstable/ai/Chat.ts`
 - Response types: `effect/unstable/ai/Response`
 - Tool system: `effect/unstable/ai/Tool`, `effect/unstable/ai/Toolkit`

@@ -4,6 +4,7 @@ Modular per-language verification packages + consolidated core for OpenCode v2.
 
 Architecture: `docs/spec/01-architecture.md`
 Normative implementation audit (append-only): `docs/spec/05-implementation-adversarial-audit-2026-08-23.md`
+Benchmark store spec (REM-4 benchmark mode, DB-first): `docs/spec/06-benchmark-store-spec.md`
 
 ## Status
 
@@ -12,12 +13,12 @@ Normative implementation audit (append-only): `docs/spec/05-implementation-adver
 | shared (Journal, Command, Errors, Refs, PathGuard) | done | `packages/shared/src/` |
 | harness-kit (enforcement kernel) | done | `packages/harness-kit/src/` |
 | verify-kit (verification engine) | done — bounded ChangeSet and scan-health errors wired | `packages/verify-kit/src/` |
-| compound-kit (compound domain) | pure domain + explicit persistent Evolution adapter done; execution NOT wired (tool returns explicit REM-4 error) | `packages/compound-kit/src/` |
+| compound-kit (compound domain) | pure domain + explicit persistent Evolution adapter done; benchmark mode wired DB-first (TaskStore port + SQLite adapter `packages/bench-store` + runner, spec 06); mine-evolve NOT wired (tool returns explicit REM-4 error) | `packages/compound-kit/src/`, `packages/bench-store/src/` |
 | effect-harness plugin composition root | done | `src/index.ts` |
-| module-typescript (53 skills / 47 patterns / 4 guidance) | done — complete manifest with counts, sizes, fingerprints, and inventory | `packages/module-typescript/` |
+| module-typescript (54 skills / 47 patterns / 4 guidance) | done — complete manifest with counts, sizes, fingerprints, and inventory | `packages/module-typescript/` |
 | module-bend (own catalogs) | done | `packages/module-bend/` |
 | Companion collector/CLI | done | `src/companion/` |
-| LiveSessions adapter | done | `src/LiveSessions.ts` |
+| Live session adapter | done | `src/session/Live.ts` |
 
 ## Validation
 

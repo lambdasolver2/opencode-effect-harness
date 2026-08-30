@@ -25,6 +25,8 @@
     "target": "ESNext",
     "useUnknownInCatchVariables": true,
     "verbatimModuleSyntax": true,
+    "jsx": "preserve",
+    "jsxImportSource": "@opentui/solid",
     "types": [
       "node"
     ]

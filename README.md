@@ -10,11 +10,13 @@ packages/
   harness-kit/         enforcement kernel (Intent, Projection, Matcher, Rules, Controller)
   verify-kit/          verification engine (Checker, Orchestrator, Critic, Evidence)
   compound-kit/        compound domain (Blueprint, Distill, Benchmark, Evolution, Store)
-  module-typescript/   TS verification module (53 skills / 47 patterns / 4 guidance,
+  module-typescript/   TS verification module (54 skills / 47 patterns / 4 guidance,
                        assets pinned by assets/manifest.tsv)
   module-bend/         Bend verification module (own catalogs)
 
 src/                   plugin composition root + OpenCode adapter
+  Session/             host session domain (location resolver, child origins, executor)
+  Benchmark/           DB-first benchmark domain (Runner, Tool) — spec 06
 src/companion/         headless CLI for session collection
 ```
 
@@ -35,7 +37,7 @@ local clone:
 |---|---|
 | `effect_harness_verify` | Deterministic checks + pattern findings + skill evidence |
 | `effect_harness_critic` | Independent read-only reasoning audit |
-| `effect_harness_compound` | Planned — returns an explicit not-wired error (REM-4) |
+| `effect_harness_compound` | Benchmark store ops (spec 06): tasks, model profiles, benchmark jobs with scored trials + leading solution. mine-evolve: honest REM-4 error |
 | `harness_skill_stats` | Show loaded effect-* skills for this session |
 | `harness_toggle` | Toggle harness mode per-project |
 

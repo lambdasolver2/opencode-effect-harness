@@ -5,32 +5,29 @@
  */
 import { Schema } from 'effect';
 
-/** Stable, path-safe project identity derived from the absolute root. */
-export const projectKeyOf = (absoluteRoot: string): string => {
-	const hash = [...absoluteRoot].reduce(
-		(state, ch) => ((state << 5) + state + (ch.codePointAt(0) ?? 0)) >>> 0,
-		5381
-	);
-	return hash.toString(16).padStart(8, '0');
-};
+import { fnv1aHex } from './Hash.ts';
+
+/** Stable, path-safe project identity derived from the absolute root — single hash (FNV-1a) per AUDIT-046. */
+export const projectKeyOf = (absoluteRoot: string): string => fnv1aHex(absoluteRoot);
+
+const ProjectKeyBrand = Schema.String.check(
+	Schema.isPattern(/^[0-9a-f]{8}$/, { message: 'projectKey must be 8-hex' })
+);
+const AbsolutePathBrand = Schema.NonEmptyString;
 
 export class ProjectScope extends Schema.Class<ProjectScope>('ProjectScope')({
-	projectKey: Schema.String,
-	root: Schema.String
+	projectKey: ProjectKeyBrand,
+	root: AbsolutePathBrand
 }) {}
 
-export type SessionOrigin =
-	| 'builder'
-	| 'verifier'
-	| 'critic'
-	| 'compound'
-	| 'benchmark';
+export const SessionOrigin = Schema.Literals(['builder', 'verifier', 'critic', 'compound', 'benchmark'] as const);
+export type SessionOrigin = Schema.Schema.Type<typeof SessionOrigin>;
 
-export interface SessionRef {
-	readonly sessionID: string;
-	readonly projectKey: string;
-	readonly origin: SessionOrigin;
-}
+export class SessionRef extends Schema.Class<SessionRef>('SessionRef')({
+	sessionID: Schema.NonEmptyString,
+	projectKey: ProjectKeyBrand,
+	origin: SessionOrigin
+}) {}
 
 /** Immutable pointer to a reviewed snapshot (source/spec/plan revision). */
 export class SnapshotRef extends Schema.Class<SnapshotRef>('SnapshotRef')({

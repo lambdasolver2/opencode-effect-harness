@@ -506,14 +506,14 @@ const readConfigWithFallback = pipe(
 import { FileSystem } from 'effect';
 import { Effect, Schema, pipe } from 'effect';
 
-class ConfigNotFound extends Schema.TaggedErrorClass<ConfigNotFound>()(
+class ConfigNotFound extends Schema.TaggedError<ConfigNotFound>()(
 	'ConfigNotFound',
 	{
 		path: Schema.String
 	}
 ) {}
 
-class ConfigInvalid extends Schema.TaggedErrorClass<ConfigInvalid>()(
+class ConfigInvalid extends Schema.TaggedError<ConfigInvalid>()(
 	'ConfigInvalid',
 	{
 		path: Schema.String,

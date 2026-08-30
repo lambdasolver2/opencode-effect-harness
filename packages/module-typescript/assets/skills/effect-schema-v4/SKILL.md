@@ -30,7 +30,7 @@ Reference this for:
 | `pretty()`                    | `toFormatter()`                     |                                           |
 | `parseJson()`                 | `UnknownFromJsonString`             | No-arg version is now a standalone schema |
 | `parseJson(schema)`           | `fromJsonString(schema)`            | With-schema version                       |
-| `TaggedError`                 | `TaggedErrorClass`                  | Class name change                         |
+| `TaggedErrorClass`            | `TaggedError`                       | Renamed back in beta.104                  |
 | `BigIntFromSelf`              | `BigInt`                            |                                           |
 | `SymbolFromSelf`              | `Symbol`                            |                                           |
 | `URLFromSelf`                 | `URL`                               |                                           |
@@ -563,14 +563,15 @@ class Cat extends Schema.TaggedClass<Cat>()('Cat', {
 // new Cat({ lives: 9 }) → { _tag: "Cat", lives: 9 }
 ```
 
-## 10. TaggedErrorClass
+## 10. TaggedError
 
-Renamed FROM `TaggedError` in v3. Pattern is unchanged:
+`Schema.TaggedErrorClass` was renamed back to `Schema.TaggedError` in beta.104.
+The constructor pattern is unchanged:
 
 ```ts
 import { Effect, Schema } from 'effect';
 
-class HttpError extends Schema.TaggedErrorClass<HttpError>()('HttpError', {
+class HttpError extends Schema.TaggedError<HttpError>()('HttpError', {
 	status: Schema.Number,
 	message: Schema.String
 }) {}
@@ -611,7 +612,7 @@ const recovered = program.pipe(
 | Extend a struct            | `struct.mapFields(Struct.assign({ newField: Schema.X }))`                                                |
 | Parse JSON string          | `Schema.UnknownFromJsonString` or `Schema.fromJsonString(schema)`                                        |
 | Add default value          | `Schema.withDecodingDefault(Effect.succeed(encoded))` or `Schema.withDecodingDefaultType(Effect.succeed(type))` |
-| Create tagged error        | `class E extends Schema.TaggedErrorClass<E>()("E", { ... }) {}`                                          |
+| Create tagged error        | `class E extends Schema.TaggedError<E>()("E", { ... }) {}`                                          |
 | Rename fields              | `struct.pipe(Schema.encodeKeys({ oldName: "newName" }))`                                                 |
 | Discriminated union        | `Schema.Union([TaggedClassA, TaggedClassB])`                                                             |
 | Decode unknown safely      | `Schema.decodeUnknownSync(schema)(input)` (sync) or `Schema.decodeUnknownEffect(schema)(input)` (Effect) |

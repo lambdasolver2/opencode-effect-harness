@@ -16,7 +16,7 @@ Key files:
 - `packages/effect/src/unstable/http/HttpClient.ts` — the `HttpClient` service, `make`/`makeWith`, every client combinator (`mapRequest`, `transform`, `filterStatus*`, `retry`, `retryTransient`, `withRateLimiter`, `withCookiesRef`, `withScope`, `followRedirects`, `catch*`, `tap*`), tracing references
 - `packages/effect/src/unstable/http/HttpClientRequest.ts` — immutable request model, method constructors, URL/param/header/body combinators, `toWeb`/`fromWeb`
 - `packages/effect/src/unstable/http/HttpClientResponse.ts` — response model, `schemaJson`/`schemaNoBody`, `matchStatus`, `filterStatus(Ok)`, `stream`
-- `packages/effect/src/unstable/http/HttpIncomingMessage.ts` — shared body accessors plus `schemaBodyJson`, `schemaBodyUrlParams`, `schemaHeaders` (re-exported by HttpClientResponse)
+- `packages/effect/src/unstable/http/HttpIncomingmessage.ts` — shared body accessors plus `schemaBodyJson`, `schemaBodyUrlParams`, `schemaHeaders` (re-exported by HttpClientResponse)
 - `packages/effect/src/unstable/http/HttpClientError.ts` — `HttpClientError` wrapper and its `reason` union
 - `packages/effect/src/unstable/http/HttpBody.ts` — body variants (`Empty`, `Raw`, `Uint8Array`, `FormData`, `Stream`) and constructors (`json`, `jsonSchema`, `text`, `urlParams`, `formDataRecord`, `stream`, `file`)
 - `packages/effect/src/unstable/http/FetchHttpClient.ts` — fetch transport: `layer`, `Fetch` reference, `RequestInit` service
@@ -707,7 +707,7 @@ class Todo extends Schema.Class<Todo>('Todo')({
 	completed: Schema.Boolean
 }) {}
 
-class TodosError extends Schema.TaggedErrorClass<TodosError>()('TodosError', {
+class TodosError extends Schema.TaggedError<TodosError>()('TodosError', {
 	cause: Schema.Defect()
 }) {}
 

@@ -30,10 +30,10 @@ Key patterns to watch for when writing code:
 - **No as any / as never** — validate at boundaries with Schema
 
 Whole-repository self-scan against ALL shipped detectors (new violations fail;
-the `src/self-pattern-baseline.ts` debt list must shrink, never grow):
+the `src/pattern/Baseline.ts` debt list must shrink, never grow):
 
 ```sh
-bunx vitest run src/SelfPatternScan.test.ts
+bunx vitest run src/pattern/Scan.test.ts
 ```
 
 Catalog integrity check (loads every shipped detector/skill and fails loudly

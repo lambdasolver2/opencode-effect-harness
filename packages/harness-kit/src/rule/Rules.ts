@@ -1,11 +1,11 @@
 import { Effect } from 'effect';
 
-import { RuleDefinition } from './RuleDefinition.ts';
+import { RuleDefinition } from './Definition.ts';
 
 /**
  * Declarative metadata for the three built-in policies. Purely descriptive —
  * consumed by status/reporting surfaces; executable behavior lives in
- * `rules/Gate.ts`, `rules/Header.ts`, and `rules/Feedback.ts`.
+ * `rules/gate.ts`, `rules/header.ts`, and `rules/feedback.ts`.
  */
 const definitions = [
 	new RuleDefinition.Definition({

@@ -445,7 +445,7 @@ Use `Effect.flip` to convert failures to successes:
 import { it, expect } from '@effect/vitest';
 import { Effect, Schema } from 'effect';
 
-class UserNotFoundError extends Schema.TaggedErrorClass<UserNotFoundError>()(
+class UserNotFoundError extends Schema.TaggedError<UserNotFoundError>()(
 	'UserNotFoundError',
 	{
 		userId: Schema.String
@@ -495,7 +495,7 @@ import { it, expect } from '@effect/vitest';
 import { Effect, Exit, Cause, Schema } from 'effect';
 import * as Option from 'effect/Option';
 
-class NotFoundError extends Schema.TaggedErrorClass<NotFoundError>()(
+class NotFoundError extends Schema.TaggedError<NotFoundError>()(
 	'NotFoundError',
 	{
 		id: Schema.String

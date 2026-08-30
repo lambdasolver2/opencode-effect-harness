@@ -13,14 +13,15 @@ import { Context, Effect, FileSystem, Layer, Path, Ref, Schema } from 'effect';
 import { Semaphore } from 'effect';
 
 import { Lineage } from './Evolution.ts';
-import { withExclusiveDirectoryLock } from 'opencode-harness-shared/ExclusiveLock.ts';
+import { withExclusiveDirectoryLock } from 'opencode-harness-shared/lock/Lock.ts';
+import { Slug } from 'opencode-harness-shared/Slug.ts';
 
 export class Error extends Schema.TaggedError<Error>()('StoreError', {
 	operation: Schema.String,
 	reason: Schema.String
 }) {}
 
-const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/;
+const isSlug = (value: string): boolean => Schema.is(Slug)(value);
 
 export interface VersionBlockInput {
 	readonly blueprintId: string;
@@ -156,10 +157,16 @@ export namespace Store {
 
 			const service: Service = {
 				appendVersion: (input) => {
-					if (!SLUG_RE.test(input.blueprintId)) {
+					if (!isSlug(input.blueprintId)) {
 						return Effect.fail(
 							fail('appendVersion', `invalid blueprint id ${input.blueprintId}`)
 						);
+					}
+					if (/^## Version v\d+/m.test(input.markdown)) {
+						return Effect.fail(fail('appendVersion', 'markdown must not contain version header'));
+					}
+					if (input.version <= 0 || !Number.isInteger(input.version)) {
+						return Effect.fail(fail('appendVersion', 'version must be positive integer'));
 					}
 					return guarded(input.blueprintId, Effect.gen(function*() {
 						const target = mdPath(input.blueprintId);
@@ -216,7 +223,7 @@ export namespace Store {
 				},
 
 				lineage: (blueprintId) => {
-					if (!SLUG_RE.test(blueprintId)) {
+					if (!isSlug(blueprintId)) {
 						return Effect.fail(fail('lineage', `invalid blueprint id ${blueprintId}`));
 					}
 					return Effect.gen(function*() {
@@ -237,7 +244,7 @@ export namespace Store {
 				},
 
 				saveLineage: (lineage) => {
-					if (!SLUG_RE.test(lineage.blueprintId)) {
+					if (!isSlug(lineage.blueprintId)) {
 						return Effect.fail(
 							fail('saveLineage', `invalid blueprint id ${lineage.blueprintId}`)
 						);
@@ -253,7 +260,7 @@ export namespace Store {
 				},
 
 				setPointer: ({ id, version, now }) => {
-					if (!SLUG_RE.test(id)) {
+					if (!isSlug(id)) {
 						return Effect.fail(fail('setPointer', `invalid blueprint id ${id}`));
 					}
 					return guarded(id, Effect.gen(function*() {
@@ -262,7 +269,8 @@ export namespace Store {
 								Effect.fail(fail('setPointer', `blueprint not found: ${id}`))
 							)
 						);
-						if (!markdown.includes(`## Version v${String(version)}`)) {
+						const versionHeader = new RegExp(`^## Version v${String(version)}(?:\\s|$)`, 'm');
+						if (!versionHeader.test(markdown)) {
 							return yield* Effect.fail(
 								fail('setPointer', `unknown version ${String(version)} for ${id}`)
 							);
@@ -272,7 +280,7 @@ export namespace Store {
 				},
 
 				pointer: (id) => {
-					if (!SLUG_RE.test(id)) {
+					if (!isSlug(id)) {
 						return Effect.fail(fail('pointer', `invalid blueprint id ${id}`));
 					}
 					return Effect.gen(function*() {

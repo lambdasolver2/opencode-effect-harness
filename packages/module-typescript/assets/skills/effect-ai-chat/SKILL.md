@@ -360,7 +360,7 @@ Prefer overriding registry handles or test layers in tests rather than spying on
 Use `Context.Service` to expose a clean domain API:
 
 ```ts
-class AiAssistantError extends Schema.TaggedErrorClass<AiAssistantError>()(
+class AiAssistantError extends Schema.TaggedError<AiAssistantError>()(
 	'AiAssistantError',
 	{
 		reason: AiError.AiErrorReason

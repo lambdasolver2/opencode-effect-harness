@@ -30,11 +30,11 @@ Key files:
 - `packages/effect/src/unstable/cluster/ShardingConfig.ts` — config schema + env loader
 - `packages/effect/src/unstable/cluster/Singleton.ts` — singleton-per-cluster effects
 - `packages/effect/src/unstable/cluster/ClusterCron.ts` — cron-driven singletons
-- `packages/effect/src/unstable/cluster/SingleRunner.ts` — single-node sql-backed bundle
-- `packages/effect/src/unstable/cluster/TestRunner.ts` — in-memory testing bundle
+- `packages/effect/src/unstable/cluster/Singlerunner.ts` — single-node sql-backed bundle
+- `packages/effect/src/unstable/cluster/Testrunner.ts` — in-memory testing bundle
 - `packages/effect/src/unstable/cluster/EntityProxy.ts` + `EntityProxyServer.ts` — entity ↔ RPC/HTTP bridge
 - `packages/effect/src/unstable/workflow/WorkflowProxy.ts` + `WorkflowProxyServer.ts` — workflow ↔ RPC/HTTP bridge
-- `packages/effect/src/unstable/cluster/ClusterWorkflowEngine.ts` — production workflow engine backed by sharding + storage
+- `packages/effect/src/unstable/cluster/ClusterWorkflowengine.ts` — production workflow engine backed by sharding + storage
 - `packages/effect/src/unstable/reactivity/AtomRpc.ts` — reactive RPC client for Atom UIs (see also `effect-atom-rpc` skill)
 - `packages/platform-node/src/NodeClusterHttp.ts` / `NodeClusterSocket.ts` — Node "all-in-one" cluster layers
 - `packages/platform-bun/src/BunClusterHttp.ts` / `BunClusterSocket.ts` — Bun equivalents
@@ -638,7 +638,7 @@ Rpc.Error<R>                    // your declared rpc error
 `RpcClientError` is a tagged union itself:
 
 ```ts
-class RpcClientError extends Schema.ErrorClass(...)({
+class RpcClientError extends Schema.Error(...)({
 	_tag: 'RpcClientError',
 	reason: Schema.Union([
 		WorkerErrorReason,
@@ -698,7 +698,7 @@ import { Context, Schema } from 'effect';
 
 class CurrentUser extends Context.Service<CurrentUser, User>()('CurrentUser') {}
 
-class Unauthorized extends Schema.ErrorClass<Unauthorized>('Unauthorized')({
+class Unauthorized extends Schema.Error<Unauthorized>('Unauthorized')({
 	_tag: Schema.tag('Unauthorized')
 }) {}
 
@@ -1411,12 +1411,12 @@ export class User extends Schema.Class<User>('User')({
 	name: Schema.String
 }) {}
 
-export class UserNotFound extends Schema.ErrorClass<UserNotFound>('UserNotFound')({
+export class UserNotFound extends Schema.Error<UserNotFound>('UserNotFound')({
 	_tag: Schema.tag('UserNotFound'),
 	id: Schema.String
 }) {}
 
-export class Unauthorized extends Schema.ErrorClass<Unauthorized>('Unauthorized')({
+export class Unauthorized extends Schema.Error<Unauthorized>('Unauthorized')({
 	_tag: Schema.tag('Unauthorized')
 }) {}
 
@@ -1570,7 +1570,7 @@ const usersByName = Effect.gen(function*() {
 - Define rpcs in shared modules so server, client, entity, proxy, and AtomRpc all consume the same definitions.
 - Pick `class extends Rpc.make(...)` for nominal types you import widely; pick `const` for ad-hoc ones.
 - Use `Schema.Class` for non-trivial payloads/successes/errors; let `Rpc.make` build a struct only for tiny inline payloads.
-- Use `Schema.TaggedErrorClass` (or `Schema.ErrorClass` with a `Schema.tag` field) for every rpc/middleware error.
+- Use `Schema.TaggedError` (or `Schema.Error` with a `Schema.tag` field) for every rpc/middleware error.
 - Set `defect: Schema.Defect({ includeStack: true })` on rpcs whose defects you want to debug across the wire.
 - Set `primaryKey` on every rpc that gets persisted or retried; cluster will dedupe based on it.
 - Annotate persistent entities with `ClusterSchema.Persisted` (via `entity.annotateRpcs`).

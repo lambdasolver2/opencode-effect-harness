@@ -296,7 +296,7 @@ interface Config {
 
 declare const ConfigSchema: Schema.Schema<Config>;
 
-class ConfigError extends Schema.TaggedErrorClass<ConfigError>()(
+class ConfigError extends Schema.TaggedError<ConfigError>()(
 	'ConfigError',
 	{
 		message: Schema.String

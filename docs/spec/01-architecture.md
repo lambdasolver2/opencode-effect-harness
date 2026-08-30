@@ -17,29 +17,29 @@ modules/                  additional verification modules (e.g. bend example)
 ### Naming convention (Effect-TS style)
 
 Files are short PascalCase domain nouns matching their primary exported type:
-`Gate.ts`, `Feedback.ts`, `Header.ts`, `Guidance.ts`, `Ledger.ts`,
-`Catalog.ts`, `Runtime.ts`, `Checker.ts`, `Module.ts`, `Report.ts`,
-`Evidence.ts`, `Reviewer.ts`, `Exec.ts`, `Orchestrator.ts`,
-`Trace.ts`, `Insight.ts`, `Blueprint.ts`, `Evolution.ts`,
-`Store.ts`, `Benchmark.ts`, `Log.ts`, `Llm.ts`, `Distill.ts`, `Source.ts`.
+`gate.ts`, `feedback.ts`, `header.ts`, `Guidance.ts`, `ledger.ts`,
+`catalog.ts`, `Runtime.ts`, `checker.ts`, `module.ts`, `report.ts`,
+`evidence.ts`, `reviewer.ts`, `Exec.ts`, `orchestrator.ts`,
+`trace.ts`, `insight.ts`, `blueprint.ts`, `evolution.ts`,
+`store.ts`, `Benchmark.ts`, `log.ts`, `llm.ts`, `distill.ts`, `source.ts`.
 
 Related types grouped in a domain folder with short file names:
-`Harness/Hook.ts` + `Harness/Rule.ts` (was HarnessHook/HarnessRule).
+`Harness/hook.ts` + `Harness/rule.ts` (was HarnessHook/HarnessRule).
 
 Shortened domain names (migration renames):
-- `ActiveBranch.ts` → `Branch.ts`
-- `WriteIntent.ts` → `Intent.ts`
-- `EditReplacement.ts` → `Edit.ts`
-- `SkillIndexEntry.ts` → `Skill.ts`
-- `UserMessage.ts` → `Message.ts`
+- `Activebranch.ts` → `branch.ts`
+- `Writeintent.ts` → `intent.ts`
+- `EditReplacement.ts` → `edit.ts`
+- `SkillIndexEntry.ts` → `skill.ts`
+- `Usermessage.ts` → `message.ts`
 
 Atoms folded into their domain modules (no separate atom files):
 `Pattern.globMatchesFilePath`, `Intent.contentRaw`,
 `Message.isEmpty/normalized`, `Edit.resolution/resolvedSpan/isApplicable`.
 
 
-Files are short domain nouns (`Gate.ts`, `Feedback.ts`, `Guidance.ts`,
-`Ledger.ts`, `Runtime.ts`, `Catalog.ts`, `Pending.ts`). Functions live inside
+Files are short domain nouns (`gate.ts`, `feedback.ts`, `Guidance.ts`,
+`ledger.ts`, `Runtime.ts`, `catalog.ts`, `Pending.ts`). Functions live inside
 their domain namespace so call sites read `Gate.rule(...)`,
 `Feedback.rule(...)`, `Header.rule(...)`, `Guidance.layer(dir)`,
 `Ledger.Service.use(...)`. Long names appear only as qualified paths, never
@@ -50,16 +50,16 @@ as standalone identifiers (no `sendPatternFeedbackAfterWriteRule`).
 ### From pi-effect-harness → `packages/harness-kit` (port, tags renamed `ox-effect-harness/*`)
 | Upstream file | Ours | Status |
 |---|---|---|
-| `src/Decision.ts` | same | ported |
-| `src/UserMessage.ts` → `src/Message.ts` | shortened domain name | ported+renamed |
-| `src/SkillIndexEntry.ts` → `src/Skill.ts` | broader domain | ported+renamed |
-| `src/EditReplacement.ts` → `src/Edit.ts` | shorter domain noun | ported+renamed |
-| `src/WriteIntent.ts` → `src/Intent.ts` | context implies "write" | ported+renamed |
-| `src/Rule.ts`, `src/Pattern.ts`, `src/Constants.ts` | same | ported |
-| `src/ActiveBranch.ts` → `src/Branch.ts` | shorter domain noun | ported+renamed |
+| `src/decision.ts` | same | ported |
+| `src/Usermessage.ts` → `src/message.ts` | shortened domain name | ported+renamed |
+| `src/SkillIndexEntry.ts` → `src/skill.ts` | broader domain | ported+renamed |
+| `src/EditReplacement.ts` → `src/edit.ts` | shorter domain noun | ported+renamed |
+| `src/Writeintent.ts` → `src/intent.ts` | context implies "write" | ported+renamed |
+| `src/rule.ts`, `src/pattern.ts`, `src/constants.ts` | same | ported |
+| `src/Activebranch.ts` → `src/branch.ts` | shorter domain noun | ported+renamed |
 | `src/constants.ts`, `src/frontmatter.ts` | same paths | ported |
-| `src/kernel/HarnessHook.ts` + `HarnessRule.ts` | grouped as `src/Harness/{Hook,Rule}.ts` (domain folder + short type files) with the filter helpers lifted into each module | ported+renamed |
-| `src/kernel/MatcherInput.ts`, path helper | `src/kernel/MatcherInput.ts`, `src/kernel/Normalize.ts` | ported |
+| `src/kernel/Harnesshook.ts` + `Harnessrule.ts` | grouped as `src/Harness/{Hook,Rule}.ts` (domain folder + short type files) with the filter helpers lifted into each module | ported+renamed |
+| `src/kernel/Matcherinput.ts`, path helper | `src/kernel/Matcherinput.ts`, `src/kernel/normalize.ts` | ported |
 | `src/kernel/services/{HookSet,RuleSet,RuleEngine,HarnessController,PatternCatalog,PatternMatcher,WriteProjection,RuleCatalog}.ts` | same paths | ported |
 | `src/kernel/layers/KernelLayer.ts` | same path | ported |
 | `src/atoms/**` (14 files) | folded into their domain modules (`Pattern.globMatchesFilePath`, `WriteIntent.contentRaw`, `UserMessage.isEmpty/normalized`, `EditReplacement.resolution/resolvedSpan/isApplicable`) — no separate atom files | ported+merged |
@@ -78,8 +78,8 @@ as standalone identifiers (no `sendPatternFeedbackAfterWriteRule`).
 | Upstream | Ours |
 |---|---|
 | `Atif.ts` (AtifTrajectory/AtifStep/FinalMetrics/StepBuilder) | `src/index.ts` ATIF schemas (wire-compatible) |
-| `AgentBlueprint.ts`, `BlueprintStore.ts`, `BlueprintPatch.ts` (pure fold) | blueprint domain + versioned store + rollback |
-| `AgentRunResult.ts`, `Metrics.ts`, `UsageMetrics.ts`, `ExperimentLog.ts` (TSV codecs) | benchmark run/report/experiment-log codecs |
+| `Agentblueprint.ts`, `Blueprintstore.ts`, `BlueprintPatch.ts` (pure fold) | blueprint domain + versioned store + rollback |
+| `AgentRunResult.ts`, `Metrics.ts`, `UsageMetrics.ts`, `Experimentlog.ts` (TSV codecs) | benchmark run/report/experiment-log codecs |
 | `MetaAgent.ts` diagnose→propose→benchmark→evaluate(keep/discard) loop | MetaLoop service |
 | AVO ([arXiv:2603.24517](https://arxiv.org/html/2603.24517v1)) as design analogy only: `Vary(P)=Agent(P,K,f)`, correctness-gated commits, scored lineage, stagnation redirect | `PromptEvolutionService` |
 
@@ -221,19 +221,19 @@ Naming convention mirrors upstream: namespace + `Value` schema type + `Context.S
 ### 2.1 kernel (ported, renamed tags only)
 
 ```ts
-// decision/Decision.ts — unchanged semantics
+// decision/decision.ts — unchanged semantics
 Decision.Value = BlockToolCall{reason} | InjectUserMessage{content, deliverAs?}
                | InjectSystemPrompt{content} | AppendCustomEntry{customType, data}
 
-// write/WriteIntent.ts
+// write/Writeintent.ts
 WriteIntent.Phase = 'before' | 'after'                    // was tool_call|tool_result
 WriteIntent.Value = WriteFile{phase, filePath?, content} | EditFile{phase, filePath?, replacements: EditReplacement.Value[]}
 
-// pattern/Pattern.ts — detector union preserved
+// pattern/pattern.ts — detector union preserved
 Pattern.Detector = AstDetector{patterns|rule|inside|constraints} | RegexDetector{pattern, matchInComments}
 Pattern.Value    = { name, description, level, glob?, ignoreGlobs?, suggestSkills[], detector, guidance }
 
-// branch/ActiveBranch.ts — neutral snapshot; CompactionEntry remains the reset marker.
+// branch/Activebranch.ts — neutral snapshot; CompactionEntry remains the reset marker.
 // In v2 we synthesize entries from durable events; shape kept for kernel compatibility.
 // skill/SkillIndexEntry.ts = {name, skillFilePath, skillDir}
 // rule/Rule.Definition action stays 'blockToolCall'|'injectUserMessage'|'injectSystemPrompt'|'appendCustomEntry'
@@ -780,3 +780,61 @@ consumer with `Effect.catchAllCause`, so unload interrupts it. No core service
 starts a daemon, calls `Effect.runPromise`, or stores mutable module-global
 state. TUI Promise calls are allowed only in `tui.tsx`, at the host boundary,
 and delegate into the same core Effects.
+
+### Layout & naming law (2026-08-29 correction)
+
+1. **Very short file names.** Source files are short PascalCase domain nouns
+   (`gate.ts`, `runner.ts`, `tool.ts`, `executor.ts`) — compound
+   `SubjectVerb`/`DomainPart` names (`Sessionexecutor.ts`,
+   `Benchmarkrunner.ts`) are avoided at the top level.
+2. **Composed domains live in a folder.** When a concept composes multiple
+   other types/services, the related files move into a domain folder named
+   after the domain (short noun): `src/session/` (`sessions.ts` location
+   resolver, `origins.ts` child-origin registry, `executor.ts` host session
+   adapter) and `src/benchmark/` (`runner.ts` job orchestrator, `tool.ts`
+   op surface). The folder — not a long filename — carries the domain.
+3. **File matches the primary exported namespace**, with one documented
+   exception: the namespace may stay domain-prefixed when the bare noun
+   collides with a host or other-domain name (`Benchmark/tool.ts` exports
+   `BenchmarkTool`, because bare `Tool` collides with the host schema `Tool`
+   in the composition root).
+4. Tests stay colocated next to the file they test
+   (`Benchmark/runner.test.ts`).
+
+### Type-driven design law (2026-08-29 correction)
+
+Illegal states are made unrepresentable by types and Schema — a runtime `if`
+guarding "can't happen" shapes is a design smell and gets replaced by:
+
+1. **Union types over string-mode checks.** A database filename is
+   `{ _tag: 'Memory' } | { _tag: 'File'; path }`; the store layer is
+   overloaded so a File database REQUIRES the platform layer at compile
+   time. No `if (filename !== ':memory:')`.
+2. **Schema refinements at the boundary.** Slugs, bounded numbers, and
+   non-empty lists are enforced by Schema (`makeFilter` slug check,
+   `Finite.check(isBetween(...))`, `NonEmptyArray`) — e.g. a task without
+   candidate profile ids, or `trials: 9`, cannot be decoded.
+3. **Total Record maps over if-chains on Literal unions.**
+   `ExecutorOperation` is a Literal union; its status mapping is
+   `Record<ExecutorOperation, TrialStatus>` — exhaustiveness is checked by
+   the compiler, not by a final `else`.
+4. **Exhaustive `Match.value` over tagged op unions.** The benchmark tool
+   dispatch covers every op via `Match.when` + `Match.exhaustive`; a new op
+   without a handler is a compile error.
+5. **`Option` getters over `undefined` checks.** Single-entity store getters
+   return `Option<T>`; "not found" is a value handled with `Option.match`.
+6. **Boundary decode through Schema classes with `NonEmptyString`.** Host
+   session-create/generate responses are decoded — an empty session id or
+   generation is a typed decode failure, never `if (text.length === 0)`.
+7. **Guarded state transitions in SQL, not read-check-write in code.**
+   A trial's terminal transition is
+   `UPDATE … WHERE status='pending' RETURNING` — double completion is
+   `Option.none`; the leading solution is INSERT-only; the history chain is
+   re-verified on read and a mismatch fails typed.
+8. **Typed error channels instead of undefined smuggling.** `Model.Ref.parse`
+   failures are mapped to a typed `ExecutorError`; nothing "becomes
+   undefined" to keep the compiler quiet.
+
+Where a residual `if` remains, it guards genuine runtime data flow (e.g.
+branching on an already-validated Option inside `Option.match` callbacks),
+not representable-in-type state.

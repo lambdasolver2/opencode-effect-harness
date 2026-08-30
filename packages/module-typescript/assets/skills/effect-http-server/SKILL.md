@@ -431,7 +431,7 @@ Route handlers may fail with **any** error type — you do not have to reduce `E
 Implement `HttpServerRespondable.symbol` on the error class; throwing/failing with it anywhere in the handler produces the right response:
 
 ```ts
-class UserNotFound extends Schema.ErrorClass<UserNotFound>('UserNotFound')({
+class UserNotFound extends Schema.Error<UserNotFound>('UserNotFound')({
 	_tag: Schema.tag('UserNotFound'),
 	id: Schema.String
 }) {
@@ -765,7 +765,7 @@ class Todo extends Schema.Class<Todo>('Todo')({
 	title: Schema.String
 }) {}
 
-class TodoNotFound extends Schema.ErrorClass<TodoNotFound>('TodoNotFound')({
+class TodoNotFound extends Schema.Error<TodoNotFound>('TodoNotFound')({
 	_tag: Schema.tag('TodoNotFound'),
 	id: Schema.Number
 }) {

@@ -8,7 +8,7 @@
 import { Clock, Context, Effect, FileSystem, Layer, Option, Path, Ref, Schema } from 'effect';
 
 import { InvalidInput } from 'opencode-harness-shared';
-import { withinRoot } from 'opencode-harness-shared/PathGuard.ts';
+import { withinRoot } from 'opencode-harness-shared/path/Guard.ts';
 
 const safeSegment = (value: string): boolean =>
 	/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/.test(value);

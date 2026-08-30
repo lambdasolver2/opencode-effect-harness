@@ -4,7 +4,7 @@ tool: (edit|write)
 event: after
 name: avoid-yield-ref
 description: Do not yield* Ref/Deferred/Fiber/Latch directly — use explicit method calls
-glob: '**/*.ts'
+glob: '**/*.{ts,tsx}'
 detector: ast
 rule:
     pattern: yield* $RESOURCE

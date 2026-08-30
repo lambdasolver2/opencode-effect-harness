@@ -13,6 +13,8 @@ export class LocationError extends Schema.TaggedError<LocationError>()(
 
 import { Schema } from 'effect';
 
+import { projectKeyOf } from 'opencode-harness-shared/Refs.ts';
+
 /** Host-branded ids cross this boundary only through these converters. */
 export const asSessionId = <Brand>(value: string): Brand & string => value as Brand & string;
 export const asAgentId = <Brand>(value: string): Brand & string => value as Brand & string;
@@ -41,14 +43,6 @@ export namespace Sessions {
 		if (typeof location !== 'object' || location === null) return undefined;
 		const directory = Reflect.get(location, 'directory');
 		return typeof directory === 'string' ? directory : undefined;
-	};
-
-	const projectKeyOf = (root: string): string => {
-		const hash = [...root].reduce(
-			(state, ch) => ((state << 5) + state + (ch.codePointAt(0) ?? 0)) >>> 0,
-			5381
-		);
-		return hash.toString(16).padStart(8, '0');
 	};
 
 	export const make = (

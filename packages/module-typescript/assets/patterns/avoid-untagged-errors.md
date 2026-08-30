@@ -3,7 +3,7 @@ action: context
 tool: (edit|write)
 event: after
 name: avoid-untagged-errors
-description: Avoid instanceof Error and new Error for recoverable domain failures - use Schema.TaggedErrorClass for typed errors
+description: Avoid instanceof Error and new Error for recoverable domain failures - use Schema.TaggedError for typed errors
 glob: '**/*.{ts,tsx}'
 detector: ast
 pattern:
@@ -23,7 +23,7 @@ newError        :: String → Error         -- untagged, untrackable
 
 -- Instead
 data MyError = MyError { message :: Schema.String }
-  deriving Schema.TaggedErrorClass "MyError"
+  deriving Schema.TaggedError "MyError"
 
 taggedFail :: MyError → Effect a MyError
 catchTag   :: "MyError" → (MyError → Effect a) → Effect a E → Effect a (E - MyError)
@@ -50,7 +50,7 @@ handle = catchTags
   }
 ```
 
-`Schema.TaggedErrorClass` enables exhaustive pattern matching via `_tag`, serialization, and RPC compatibility. Use `catchTag` for type-safe error discrimination.
+`Schema.TaggedError` enables exhaustive pattern matching via `_tag`, serialization, and RPC compatibility. Use `catchTag` for type-safe error discrimination.
 
 Exceptions:
 

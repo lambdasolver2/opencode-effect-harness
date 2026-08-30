@@ -18,7 +18,7 @@ Key files:
 - `packages/effect/src/unstable/rpc/Rpc.ts` — `ServerClient`, `Handler`, `ToHandlerFn`, `ResultFrom`, `fork`, `uninterruptible`, `ServicesServer`
 - `packages/effect/src/unstable/rpc/RpcMiddleware.ts` — `Service` constructor, server middleware function shape, `layerClient`
 - `packages/effect/src/unstable/rpc/RpcSerialization.ts` — `json`, `ndjson`, `jsonRpc`, `ndJsonRpc`, `msgPack` parsers and their layers
-- `packages/effect/src/unstable/rpc/RpcMessage.ts` — the wire vocabulary (`Request`, `Ack`, `Interrupt`, `Eof`, `Chunk`, `Exit`, `Defect`, `ClientEnd`)
+- `packages/effect/src/unstable/rpc/Rpcmessage.ts` — the wire vocabulary (`Request`, `Ack`, `Interrupt`, `Eof`, `Chunk`, `Exit`, `Defect`, `ClientEnd`)
 - `packages/effect/src/unstable/rpc/RpcWorker.ts` — `InitialMessage` for worker transports
 - `packages/effect/src/unstable/rpc/RpcTest.ts` — in-process test client
 - `packages/effect/src/unstable/rpc/RpcSchema.ts` — `ClientAbort` cause annotation, stream schema markers
@@ -387,7 +387,7 @@ A middleware is a `Context.Service` whose value is a function wrapping handler e
 ```ts
 class CurrentUser extends Context.Service<CurrentUser, User>()('CurrentUser') {}
 
-class Unauthorized extends Schema.ErrorClass<Unauthorized>('Unauthorized')({
+class Unauthorized extends Schema.Error<Unauthorized>('Unauthorized')({
 	_tag: Schema.tag('Unauthorized')
 }) {}
 

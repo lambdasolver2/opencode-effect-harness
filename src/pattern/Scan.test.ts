@@ -8,7 +8,7 @@ import { loadPatterns } from 'opencode-harness-kit/Catalog.ts';
 import { Input } from 'opencode-harness-kit/Input.ts';
 import { findPatternMatches } from 'opencode-harness-kit/Matcher.ts';
 
-import { baseline } from './self-pattern-baseline.ts';
+import { baseline } from './Baseline.ts';
 
 const platform = Layer.mergeAll(NodeFs.layer, NodePath.layer);
 
@@ -19,7 +19,7 @@ const SKIP_DIRS = new Set([
 	'coverage',
 	'.workspaces'
 ]);
-const REPO_ROOT = new URL('..', import.meta.url).pathname.replace(/\/$/, '');
+const REPO_ROOT = new URL('../..', import.meta.url).pathname.replace(/\/$/, '');
 
 const isScanned = (rel: string): boolean =>
 	(rel.endsWith('.ts') || rel.endsWith('.tsx')) &&
@@ -109,6 +109,6 @@ describe('self-pattern scan (whole repo vs baseline)', () => {
 			expect(newViolations).toEqual([]);
 			expect(stale).toEqual([]);
 		},
-		120_000
+		180_000
 	);
 });

@@ -166,7 +166,7 @@ class CreateTodoPayload extends Schema.Class<CreateTodoPayload>(
 	title: Schema.String
 }) {}
 
-class TodoNotFound extends Schema.TaggedErrorClass<TodoNotFound>()(
+class TodoNotFound extends Schema.TaggedError<TodoNotFound>()(
 	'TodoNotFound',
 	{
 		id: Schema.Number

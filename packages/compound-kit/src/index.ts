@@ -12,3 +12,6 @@ export * as Insight from './Insight.ts';
 export * as Log from './Log.ts';
 export * as Llm from './Llm.ts';
 export * as Env from './Env.ts';
+export * as Task from './Task.ts';
+export * as Evaluator from './Evaluator.ts';
+export * as TaskStore from './task/Store.ts';

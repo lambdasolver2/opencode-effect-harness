@@ -5,7 +5,7 @@
  */
 import { Context, Effect, FileSystem, Layer, Option, Path, Schema } from 'effect';
 
-import { withinRoot } from 'opencode-harness-shared/PathGuard.ts';
+import { withinRoot } from 'opencode-harness-shared/path/Guard.ts';
 
 export class ChangedFile extends Schema.Class<ChangedFile>('ChangedFile')({
 	path: Schema.String,

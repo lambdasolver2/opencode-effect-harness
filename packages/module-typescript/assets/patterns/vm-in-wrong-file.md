@@ -4,7 +4,9 @@ tool: (edit|write)
 event: after
 name: vm-in-wrong-file
 description: View Model definitions must be in .vm.ts files - detected VM pattern outside of proper location
-glob: '**/!(*.vm).{ts,tsx}'
+glob: '**/*.{ts,tsx}'
+ignoreGlob: ['**/*.vm.ts']
+detector: regex
 pattern: (interface\s+\w+VM\s*\{|Context\.(Service|GenericTag)<\w*VM>|Layer\.(effect|scoped)\(\s*\w+VM)
 level: critical
 suggestSkills:
