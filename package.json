@@ -35,9 +35,6 @@
   "engines": {
     "opencode": ">=1.17.1"
   },
-  "workspaces": [
-    "packages/*"
-  ],
   "scripts": {
     "clean": "rm -rf dist",
     "build": "bun run clean && bun build ./src/index.ts --outdir ./dist --target bun --external @opencode-ai/plugin --external effect --external @ast-grep/napi --external @effect/platform-node --external @effect/sql-sqlite-node --external @opencode-ai/client --external @opencode-ai/schema",
