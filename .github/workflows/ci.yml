@@ -1,0 +1,44 @@
+name: ci
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bunx tsgo --noEmit
+      - run: bunx tsc --noEmit
+      - run: bunx vitest run
+      - run: bunx vitest run src/pattern/Scan.test.ts
+      - run: bunx vitest run packages/harness-kit/src/Catalog.test.ts
+
+  # Optional npm publish on version tags — requires NPM_TOKEN secret
+  # GitHub-only install works without any token (bun add github:...)
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          registry-url: https://registry.npmjs.org
+      - run: bun install --frozen-lockfile
+      - run: |
+          node -e "const f=require('fs');const p=JSON.parse(f.readFileSync('package.json','utf8'));delete p.private;f.writeFileSync('package.json',JSON.stringify(p,null,2))"
+          npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
