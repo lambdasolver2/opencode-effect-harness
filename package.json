@@ -36,14 +36,15 @@
     "@types/diff": "^8.0.0",
     "diff": "^9.0.0",
     "effect": "catalog:",
+    "opencode-bench-store": "workspace:*",
     "opencode-compound-kit": "workspace:*",
     "opencode-harness-kit": "workspace:*",
     "opencode-harness-shared": "workspace:*",
     "opencode-verify-kit": "workspace:*",
+    "pdfjs-dist": "^6.3.289",
     "picomatch": "^4.0.4",
-    "yaml": "^2.9.0",
-    "opencode-bench-store": "workspace:*",
-    "solid-js": "^1.9.0"
+    "solid-js": "^1.9.0",
+    "yaml": "^2.9.0"
   },
   "peerDependencies": {
     "@opencode-ai/theme": "0.0.0-beta-17898",
