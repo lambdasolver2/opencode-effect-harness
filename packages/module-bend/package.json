@@ -13,8 +13,8 @@
     "assets"
   ],
   "dependencies": {
-    "@effect/platform-node": "catalog:",
-    "effect": "catalog:",
+    "@effect/platform-node": "4.0.0-rc.110",
+    "effect": "4.0.0-rc.110",
     "opencode-harness-kit": "workspace:*",
     "opencode-harness-shared": "workspace:*",
     "opencode-verify-kit": "workspace:*"

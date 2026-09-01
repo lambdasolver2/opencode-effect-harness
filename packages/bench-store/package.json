@@ -5,11 +5,14 @@
   "description": "SQLite adapter for the benchmark TaskStore port (Effect SQL, append-only history).",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./*": "./src/*" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
   "dependencies": {
-    "@effect/platform-node": "catalog:",
+    "@effect/platform-node": "4.0.0-rc.110",
     "@effect/sql-sqlite-node": "4.0.0-rc.110",
-    "effect": "catalog:",
+    "effect": "4.0.0-rc.110",
     "opencode-compound-kit": "workspace:*",
     "opencode-harness-shared": "workspace:*"
   }

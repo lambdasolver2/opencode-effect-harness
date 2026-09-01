@@ -2,13 +2,16 @@
   "name": "opencode-harness-kit",
   "version": "0.2.0-alpha.1",
   "description": "Host-neutral enforcement kernel: intent/projection/matcher/rules/controller.",
-  "private": true, 
+  "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts", "./*": "./src/*" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
   "dependencies": {
-    "@ast-grep/napi": "catalog:",
-    "@effect/platform-node": "catalog:",
-    "effect": "catalog:",
+    "@ast-grep/napi": "^0.42.3",
+    "@effect/platform-node": "4.0.0-rc.110",
+    "effect": "4.0.0-rc.110",
     "opencode-harness-shared": "workspace:*",
     "picomatch": "^4.0.4",
     "yaml": "^2.9.0"

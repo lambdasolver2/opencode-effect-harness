@@ -2,11 +2,15 @@
   "name": "opencode-compound-kit",
   "version": "0.2.0-alpha.1",
   "description": "Compound domain: traces, blueprints, distillation+approvals, benchmarks, evolution, store.",
-  "private": true, "type": "module",
-  "exports": { ".": "./src/index.ts", "./*": "./src/*" },
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*"
+  },
   "dependencies": {
-    "@effect/platform-node": "catalog:",
-    "effect": "catalog:",
+    "@effect/platform-node": "4.0.0-rc.110",
+    "effect": "4.0.0-rc.110",
     "opencode-harness-kit": "workspace:*",
     "opencode-harness-shared": "workspace:*"
   }

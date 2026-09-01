@@ -49,8 +49,8 @@
     "typecheck:tsgo": "bunx tsgo --noEmit"
   },
   "dependencies": {
-    "@ast-grep/napi": "catalog:",
-    "@effect/platform-node": "catalog:",
+    "@ast-grep/napi": "^0.42.3",
+    "@effect/platform-node": "4.0.0-rc.110",
     "@effect/sql-sqlite-node": "4.0.0-rc.110",
     "@opencode-ai/client": "0.0.0-beta-17898",
     "@opencode-ai/plugin": "0.0.0-beta-17898",
@@ -59,7 +59,7 @@
     "@opencode-effect-harness/module-typescript": "workspace:*",
     "@types/diff": "^8.0.0",
     "diff": "^9.0.0",
-    "effect": "catalog:",
+    "effect": "4.0.0-rc.110",
     "opencode-bench-store": "workspace:*",
     "opencode-compound-kit": "workspace:*",
     "opencode-harness-kit": "workspace:*",
