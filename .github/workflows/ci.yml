@@ -1,4 +1,4 @@
-name: ci
+name: CI
 on:
   push:
     branches: [main]
@@ -21,28 +21,6 @@ jobs:
       - run: bunx vitest run src/pattern/Scan.test.ts
       - run: bunx vitest run packages/harness-kit/src/Catalog.test.ts
 
-  # npmjs publish on version tags — requires NPM_TOKEN secret
-  # GitHub-only install works without any token (opencode2 plugin add github:...)
-  publish-npmjs:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: check
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-      - uses: actions/setup-node@v4
-        with:
-          registry-url: https://registry.npmjs.org
-      - run: bun install --frozen-lockfile
-      - run: |
-          node -e "const f=require('fs');const p=JSON.parse(f.readFileSync('package.json','utf8'));delete p.private;f.writeFileSync('package.json',JSON.stringify(p,null,2))"
-          npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
   # GitHub Packages (npm.pkg.github.com) publish on version tags.
   # Requires a SCOPED package name: @lambdasolver2/opencode-effect-harness
   # Auth: GITHUB_TOKEN with packages:write — no secret needed.
@@ -56,22 +34,15 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           registry-url: 'https://npm.pkg.github.com'
           scope: '@lambdasolver2'
+      - run: bun install --frozen-lockfile
+      - run: bun run build
       - name: Publish to GitHub Packages
-        run: |
-          node -e "
-            const fs = require('fs');
-            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            delete p.private;
-            p.name = '@lambdasolver2/opencode-effect-harness';
-            p.publishConfig = { registry: 'https://npm.pkg.github.com' };
-            p.repository = { type: 'git', url: 'https://github.com/lambdasolver2/opencode-effect-harness.git' };
-            fs.writeFileSync('package.json', JSON.stringify(p, null, 2));
-          "
-          npm publish
+        run: npm publish --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

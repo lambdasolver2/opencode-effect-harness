@@ -22,41 +22,33 @@ src/companion/         headless CLI for session collection
 
 ## Install (one-line)
 
-### Option A — GitHub (works today, no npm publish needed)
+### GitHub source
 
-From any project:
-
-```sh
-bun add github:lambdasolver2/opencode-effect-harness
-```
-
-```jsonc
-// opencode.jsonc — bun resolves the GitHub checkout automatically; plugin loads via package name
-{
-  "plugins": [
-    {
-      "package": "opencode-effect-harness",
-      "options": {
-        "compound": { "enabled": true }
-      }
-    }
-  ]
-}
-```
-
-CI (GitHub Action) validates every push to `main` in `.github/workflows/ci.yml` (bun install → tsgo/tsc → vitest → Scan/Catalog); no token required. A tagged `v*` push optionally publishes to npm if `NPM_TOKEN` is set.
-
-### Option B — npm (after first `v*` tag)
-
-Once the workflow publishes:
+OpenCode's native installer installs the GitHub package and writes the plugin
+entry to the applicable `opencode.json(c)` automatically:
 
 ```sh
-bun add opencode-effect-harness
+opencode2 plugin add github:lambdasolver2/opencode-effect-harness#main
 ```
 
-```jsonc
-// opencode.jsonc — same shape, package from npm
-{ "plugins": [{ "package": "opencode-effect-harness" }] }
+No manual plugin configuration is needed. The repository includes the compiled
+`dist/index.js` entrypoint and the TypeScript/Bend catalogs required at runtime.
+
+### GitHub Packages
+
+Version tags publish the scoped npm package to GitHub Packages through the
+workflow's `GITHUB_TOKEN` (`packages: write`):
+
+```sh
+opencode2 plugin add @lambdasolver2/opencode-effect-harness
+```
+
+GitHub Packages requires npm registry authentication. Configure the scope with
+a classic GitHub token that has `read:packages` before using this form:
+
+```sh
+echo '@lambdasolver2:registry=https://npm.pkg.github.com' >> ~/.npmrc
+echo '//npm.pkg.github.com/:_authToken=YOUR_CLASSIC_PAT' >> ~/.npmrc
 ```
 
 ### Local clone (development)
@@ -66,7 +58,7 @@ bun add opencode-effect-harness
 { "plugins": ["./src/index.ts"] }
 ```
 
-> Skills (`assets/skills/*.md`) and guidance (`assets/guidance/*.md`) are **auto-registered** by the plugin at startup (`src/index.ts:377` `ctx.skill.transform` + `src/index.ts:1758` `guidanceHeader` injected via `session.hook('context')`). You do **not** need to copy the repo's `AGENTS.md` for skills to work — it is project instructions for *this* repo. To enforce the same 4-gate policy in a consumer project, copy the `AGENTS.md:3` Mandatory validation gates section (tsgo/tsc/vitest + `effect_harness_verify`) into that project's `AGENTS.md`; OpenCode reads `AGENTS.md` automatically at session start, while the plugin enforces the gate and injects the header regardless of where `AGENTS.md` lives.
+> Skills (`packages/module-typescript/assets/skills/*.md`) and guidance are **auto-registered** after the plugin loads (`src/index.ts:377` `ctx.skill.transform` + `src/index.ts:1758` `guidanceHeader` via `session.hook('context')`). `AGENTS.md` is not the plugin registration mechanism; it is project instruction context. The plugin package does not copy it into consumer repositories.
 
 ## Tools
 

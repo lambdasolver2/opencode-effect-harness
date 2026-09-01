@@ -23,8 +23,6 @@ import * as NodePath from '@effect/platform-node/NodePath';
 
 const platform = Layer.mergeAll(NodeFileSystem.layer, NodePath.layer);
 
-import { DEFAULT_ASSETS_ROOT as TS_MODULE_ASSETS } from '@opencode-effect-harness/module-typescript';
-
 import { Decision } from 'opencode-harness-kit/Decision.ts';
 import { Edit } from 'opencode-harness-kit/Edit.ts';
 import { Intent } from 'opencode-harness-kit/Intent.ts';
@@ -172,8 +170,12 @@ export default Plugin.define({
 				return defaultOptions();
 			});
 
-			const assetsRoot =
-				config.harness.assetsRoot ?? TS_MODULE_ASSETS.replace(/\/$/, '');
+			// This path is correct both from `src/index.ts` in the workspace and from
+			// `dist/index.js` in the standalone package. The catalogs remain data files,
+			// rather than being embedded into the JavaScript bundle.
+			const packagedTypescriptAssets = new URL('../packages/module-typescript/assets/', import.meta.url).pathname.replace(/\/$/, '');
+			const packagedBendAssets = new URL('../packages/module-bend/assets/', import.meta.url).pathname.replace(/\/$/, '');
+			const assetsRoot = config.harness.assetsRoot ?? packagedTypescriptAssets;
 
 			// Per-agent opt-out (request.body["opencode-effect-harness"] === false):
 			// consumed once at registration; opted-out agents receive no guidance
@@ -315,10 +317,12 @@ export default Plugin.define({
 							return [] as ReadonlyArray<VerificationModule>;
 						}
 						// Uniform contract: createModule({assetsRoot}) -> Effect (AUDIT-034).
-						// Forward an assetsRoot override ONLY when explicitly configured;
-						// otherwise each module resolves its OWN bundled catalog.
+						// Forward an override to every module, otherwise select its packaged
+						// catalog explicitly because both modules are bundled together.
 						const moduleOptions =
-							config.harness.assetsRoot !== undefined ? { assetsRoot } : {};
+							config.harness.assetsRoot !== undefined
+								? { assetsRoot }
+								: { assetsRoot: id === 'bend' ? packagedBendAssets : packagedTypescriptAssets };
 						const created = yield* factory(moduleOptions).pipe(
 							providePlatform,
 							Effect.orElseSucceed(() => undefined)
