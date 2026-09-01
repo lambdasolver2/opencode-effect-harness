@@ -40,7 +40,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "bun run clean && bun build ./src/index.ts --outdir ./dist --target bun --external @opencode-ai/plugin --external effect --external @ast-grep/napi",
+    "build": "bun run clean && bun build ./src/index.ts --outdir ./dist --target bun --external @opencode-ai/plugin --external effect --external @ast-grep/napi --external @effect/platform-node --external @effect/sql-sqlite-node --external @opencode-ai/client --external @opencode-ai/schema",
     "prepublishOnly": "bun run test && bun run build",
     "test": "vitest run",
     "test:watch": "vitest",

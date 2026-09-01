@@ -25,6 +25,22 @@
     "target": "ESNext",
     "useUnknownInCatchVariables": true,
     "verbatimModuleSyntax": true,
+    "paths": {
+      "opencode-harness-kit": ["./packages/harness-kit/src/index.ts"],
+      "opencode-harness-kit/*": ["./packages/harness-kit/src/*"],
+      "opencode-harness-shared": ["./packages/shared/src/index.ts"],
+      "opencode-harness-shared/*": ["./packages/shared/src/*"],
+      "opencode-verify-kit": ["./packages/verify-kit/src/index.ts"],
+      "opencode-verify-kit/*": ["./packages/verify-kit/src/*"],
+      "opencode-compound-kit": ["./packages/compound-kit/src/index.ts"],
+      "opencode-compound-kit/*": ["./packages/compound-kit/src/*"],
+      "opencode-bench-store": ["./packages/bench-store/src/index.ts"],
+      "opencode-bench-store/*": ["./packages/bench-store/src/*"],
+      "@opencode-effect-harness/module-typescript": ["./packages/module-typescript/src/index.ts"],
+      "@opencode-effect-harness/module-typescript/*": ["./packages/module-typescript/src/*"],
+      "@opencode-effect-harness/module-bend": ["./packages/module-bend/src/index.ts"],
+      "@opencode-effect-harness/module-bend/*": ["./packages/module-bend/src/*"]
+    },
     "jsx": "preserve",
     "jsxImportSource": "@opentui/solid",
     "types": [

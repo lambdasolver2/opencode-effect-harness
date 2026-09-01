@@ -7,24 +7,6 @@ var __hasOwnProp = Object.prototype.hasOwnProperty;
 function __accessProp(key) {
   return this[key];
 }
-var __reExport = (target, mod, secondTarget) => {
-  var keys = mod && typeof mod === "object" || typeof mod === "function" ? __getOwnPropNames(mod) : [];
-  for (let key of keys)
-    if (!__hasOwnProp.call(target, key) && key !== "default")
-      __defProp(target, key, {
-        get: __accessProp.bind(mod, key),
-        enumerable: true
-      });
-  if (secondTarget) {
-    for (let key of keys)
-      if (!__hasOwnProp.call(secondTarget, key) && key !== "default")
-        __defProp(secondTarget, key, {
-          get: __accessProp.bind(mod, key),
-          enumerable: true
-        });
-    return secondTarget;
-  }
-};
 var __toESMCache_node;
 var __toESMCache_esm;
 var __toESM = (mod, isNodeMode, target) => {
@@ -212,8 +194,8 @@ var require_constants = __commonJS(function(exports, module) {
         "@": { type: "at", open: "(?:", close: ")" }
       };
     },
-    globChars(win322) {
-      return win322 === true ? WINDOWS_CHARS : POSIX_CHARS;
+    globChars(win32) {
+      return win32 === true ? WINDOWS_CHARS : POSIX_CHARS;
     }
   };
 });
@@ -510,7 +492,7 @@ var require_scan = __commonJS(function(exports, module) {
     }
     let base = str;
     let prefix = "";
-    let glob3 = "";
+    let glob = "";
     if (start > 0) {
       prefix = str.slice(0, start);
       str = str.slice(start);
@@ -518,10 +500,10 @@ var require_scan = __commonJS(function(exports, module) {
     }
     if (base && isGlob === true && lastIndex > 0) {
       base = str.slice(0, lastIndex);
-      glob3 = str.slice(lastIndex);
+      glob = str.slice(lastIndex);
     } else if (isGlob === true) {
       base = "";
-      glob3 = str;
+      glob = str;
     } else {
       base = str;
     }
@@ -531,8 +513,8 @@ var require_scan = __commonJS(function(exports, module) {
       }
     }
     if (opts.unescape === true) {
-      if (glob3)
-        glob3 = utils.removeBackslashes(glob3);
+      if (glob)
+        glob = utils.removeBackslashes(glob);
       if (base && backslashes === true) {
         base = utils.removeBackslashes(base);
       }
@@ -542,7 +524,7 @@ var require_scan = __commonJS(function(exports, module) {
       input,
       start,
       base,
-      glob: glob3,
+      glob,
       isBrace,
       isBracket,
       isGlob,
@@ -598,7 +580,7 @@ var require_scan = __commonJS(function(exports, module) {
 
 // node_modules/.bun/picomatch@4.0.5/node_modules/picomatch/lib/parse.js
 var require_parse = __commonJS(function(exports, module) {
-  var constants2 = require_constants();
+  var constants = require_constants();
   var utils = require_utils();
   var {
     MAX_LENGTH,
@@ -606,7 +588,7 @@ var require_parse = __commonJS(function(exports, module) {
     REGEX_NON_SPECIAL_CHARS,
     REGEX_SPECIAL_CHARS_BACKREF,
     REPLACEMENTS
-  } = constants2;
+  } = constants;
   var expandRange = (args, options) => {
     if (typeof options.expandRange === "function") {
       return options.expandRange(...args, options);
@@ -815,7 +797,7 @@ var require_parse = __commonJS(function(exports, module) {
     if (options.maxExtglobRecursion === false) {
       return { risky: false };
     }
-    const max = typeof options.maxExtglobRecursion === "number" ? options.maxExtglobRecursion : constants2.DEFAULT_MAX_EXTGLOB_RECURSION;
+    const max = typeof options.maxExtglobRecursion === "number" ? options.maxExtglobRecursion : constants.DEFAULT_MAX_EXTGLOB_RECURSION;
     const branches = splitTopLevel(body).map((branch) => branch.trim());
     if (branches.length > 1) {
       if (branches.some((branch) => branch === "") || branches.some((branch) => /^[*?]+$/.test(branch)) || hasRepeatedCharPrefixOverlap(branches)) {
@@ -861,8 +843,8 @@ var require_parse = __commonJS(function(exports, module) {
     const bos = { type: "bos", value: "", output: opts.prepend || "" };
     const tokens = [bos];
     const capture = opts.capture ? "" : "?:";
-    const PLATFORM_CHARS = constants2.globChars(opts.windows);
-    const EXTGLOB_CHARS = constants2.extglobChars(PLATFORM_CHARS);
+    const PLATFORM_CHARS = constants.globChars(opts.windows);
+    const EXTGLOB_CHARS = constants.extglobChars(PLATFORM_CHARS);
     const {
       DOT_LITERAL,
       PLUS_LITERAL,
@@ -992,16 +974,16 @@ var require_parse = __commonJS(function(exports, module) {
       const analysis = analyzeRepeatedExtglob(body, opts);
       if ((token.type === "plus" || token.type === "star") && analysis.risky) {
         const safeOutput = analysis.safeOutput ? (token.output ? "" : ONE_CHAR) + (opts.capture ? `(${analysis.safeOutput})` : analysis.safeOutput) : undefined;
-        const open3 = tokens[token.tokensIndex];
-        open3.type = "text";
-        open3.value = literal;
-        open3.output = safeOutput || utils.escapeRegex(literal);
+        const open = tokens[token.tokensIndex];
+        open.type = "text";
+        open.value = literal;
+        open.output = safeOutput || utils.escapeRegex(literal);
         for (let i = token.tokensIndex + 1;i < tokens.length; i++) {
           tokens[i].value = "";
           tokens[i].output = "";
           delete tokens[i].suffix;
         }
-        state.output = token.output + open3.output;
+        state.output = token.output + open.output;
         state.backtrack = true;
         push({ type: "paren", extglob: true, value, output: "" });
         decrement("parens");
@@ -1117,9 +1099,9 @@ var require_parse = __commonJS(function(exports, module) {
               const idx = prev.value.lastIndexOf("[");
               const pre = prev.value.slice(0, idx);
               const rest2 = prev.value.slice(idx + 2);
-              const posix2 = POSIX_REGEX_SOURCE[rest2];
-              if (posix2) {
-                prev.value = pre + posix2;
+              const posix = POSIX_REGEX_SOURCE[rest2];
+              if (posix) {
+                prev.value = pre + posix;
                 state.backtrack = true;
                 advance();
                 if (!bos.output && tokens.indexOf(prev) === 1) {
@@ -1221,15 +1203,15 @@ var require_parse = __commonJS(function(exports, module) {
       }
       if (value === "{" && opts.nobrace !== true) {
         increment("braces");
-        const open3 = {
+        const open = {
           type: "brace",
           value,
           output: "(",
           outputIndex: state.output.length,
           tokensIndex: state.tokens.length
         };
-        braces.push(open3);
-        push(open3);
+        braces.push(open);
+        push(open);
         continue;
       }
       if (value === "}") {
@@ -1562,7 +1544,7 @@ var require_parse = __commonJS(function(exports, module) {
       NO_DOTS_SLASH,
       STAR,
       START_ANCHOR
-    } = constants2.globChars(opts.windows);
+    } = constants.globChars(opts.windows);
     const nodot = opts.dot ? NO_DOTS : NO_DOT;
     const slashDot = opts.dot ? NO_DOTS_SLASH : NO_DOT;
     const capture = opts.capture ? "" : "?:";
@@ -1620,11 +1602,11 @@ var require_picomatch = __commonJS(function(exports, module) {
   var scan = require_scan();
   var parse = require_parse();
   var utils = require_utils();
-  var constants2 = require_constants();
+  var constants = require_constants();
   var isObject = (val) => val && typeof val === "object" && !Array.isArray(val);
-  var picomatch = (glob3, options, returnState = false) => {
-    if (Array.isArray(glob3)) {
-      const fns = glob3.map((input) => picomatch(input, options, returnState));
+  var picomatch = (glob, options, returnState = false) => {
+    if (Array.isArray(glob)) {
+      const fns = glob.map((input) => picomatch(input, options, returnState));
       const arrayMatcher = (str) => {
         for (const isMatch of fns) {
           const state2 = isMatch(str);
@@ -1635,13 +1617,13 @@ var require_picomatch = __commonJS(function(exports, module) {
       };
       return arrayMatcher;
     }
-    const isState = isObject(glob3) && glob3.tokens && glob3.input;
-    if (glob3 === "" || typeof glob3 !== "string" && !isState) {
+    const isState = isObject(glob) && glob.tokens && glob.input;
+    if (glob === "" || typeof glob !== "string" && !isState) {
       throw new TypeError("Expected pattern to be a non-empty string");
     }
     const opts = options || {};
-    const posix2 = opts.windows;
-    const regex = isState ? picomatch.compileRe(glob3, options) : picomatch.makeRe(glob3, options, false, true);
+    const posix = opts.windows;
+    const regex = isState ? picomatch.compileRe(glob, options) : picomatch.makeRe(glob, options, false, true);
     const state = regex.state;
     delete regex.state;
     let isIgnored = () => false;
@@ -1650,8 +1632,8 @@ var require_picomatch = __commonJS(function(exports, module) {
       isIgnored = picomatch(opts.ignore, ignoreOpts, returnState);
     }
     const matcher = (input, returnObject = false) => {
-      const { isMatch, match, output } = picomatch.test(input, regex, options, { glob: glob3, posix: posix2 });
-      const result = { glob: glob3, state, regex, posix: posix2, input, output, match, isMatch };
+      const { isMatch, match, output } = picomatch.test(input, regex, options, { glob, posix });
+      const result = { glob, state, regex, posix, input, output, match, isMatch };
       if (typeof opts.onResult === "function") {
         opts.onResult(result);
       }
@@ -1676,7 +1658,7 @@ var require_picomatch = __commonJS(function(exports, module) {
     }
     return matcher;
   };
-  picomatch.test = (input, regex, options, { glob: glob3, posix: posix2 } = {}) => {
+  picomatch.test = (input, regex, options, { glob, posix } = {}) => {
     if (typeof input !== "string") {
       throw new TypeError("Expected input to be a string");
     }
@@ -1684,25 +1666,25 @@ var require_picomatch = __commonJS(function(exports, module) {
       return { isMatch: false, output: "" };
     }
     const opts = options || {};
-    const format = opts.format || (posix2 ? utils.toPosixSlashes : null);
-    let match = input === glob3;
+    const format = opts.format || (posix ? utils.toPosixSlashes : null);
+    let match = input === glob;
     let output = match && format ? format(input) : input;
     if (match === false) {
       output = format ? format(input) : input;
-      match = output === glob3;
+      match = output === glob;
     }
     if (match === false || opts.capture === true) {
       if (opts.matchBase === true || opts.basename === true) {
-        match = picomatch.matchBase(input, regex, options, posix2);
+        match = picomatch.matchBase(input, regex, options, posix);
       } else {
         match = regex.exec(output);
       }
     }
     return { isMatch: Boolean(match), match, output };
   };
-  picomatch.matchBase = (input, glob3, options, posix2 = options && options.windows) => {
-    const regex = glob3 instanceof RegExp ? glob3 : picomatch.makeRe(glob3, options);
-    return regex.test(utils.basename(input, { windows: posix2 }));
+  picomatch.matchBase = (input, glob, options, posix = options && options.windows) => {
+    const regex = glob instanceof RegExp ? glob : picomatch.makeRe(glob, options);
+    return regex.test(utils.basename(input, { windows: posix }));
   };
   picomatch.isMatch = (str, patterns, options) => picomatch(patterns, options)(str);
   picomatch.parse = (pattern, options) => {
@@ -1751,7 +1733,7 @@ var require_picomatch = __commonJS(function(exports, module) {
       return /$^/;
     }
   };
-  picomatch.constants = constants2;
+  picomatch.constants = constants;
   module.exports = picomatch;
 });
 
@@ -1759,28 +1741,28 @@ var require_picomatch = __commonJS(function(exports, module) {
 var require_picomatch2 = __commonJS(function(exports, module) {
   var pico = require_picomatch();
   var utils = require_utils();
-  function picomatch(glob3, options, returnState = false) {
+  function picomatch(glob, options, returnState = false) {
     if (options && (options.windows === null || options.windows === undefined)) {
       options = { ...options, windows: utils.isWindows() };
     }
-    return pico(glob3, options, returnState);
+    return pico(glob, options, returnState);
   }
   Object.assign(picomatch, pico);
   module.exports = picomatch;
 });
 
 // packages/harness-kit/src/rule/Definition.ts
-import { Schema as Schema7 } from "effect";
+import { Schema as Schema6 } from "effect";
 var RuleDefinition;
 var init_Definition = __esm(() => {
   ((RuleDefinition) => {
-    RuleDefinition.Action = Schema7.Literals([
+    RuleDefinition.Action = Schema6.Literals([
       "blockToolCall",
       "injectUserMessage",
       "injectSystemPrompt",
       "appendCustomEntry"
     ]);
-    RuleDefinition.Severity = Schema7.Literals([
+    RuleDefinition.Severity = Schema6.Literals([
       "critical",
       "high",
       "medium",
@@ -1788,13 +1770,13 @@ var init_Definition = __esm(() => {
       "info"
     ]);
 
-    class Definition extends Schema7.Class("RuleDefinition")({
-      id: Schema7.String,
-      description: Schema7.String,
+    class Definition extends Schema6.Class("RuleDefinition")({
+      id: Schema6.String,
+      description: Schema6.String,
       action: RuleDefinition.Action,
       severity: RuleDefinition.Severity,
-      patternName: Schema7.optionalKey(Schema7.String),
-      sourcePath: Schema7.optionalKey(Schema7.String)
+      patternName: Schema6.optionalKey(Schema6.String),
+      sourcePath: Schema6.optionalKey(Schema6.String)
     }) {
     }
     RuleDefinition.Definition = Definition;
@@ -1802,54 +1784,54 @@ var init_Definition = __esm(() => {
 });
 
 // packages/harness-kit/src/Pattern.ts
-import { Schema as Schema8 } from "effect";
+import { Schema as Schema7 } from "effect";
 var import_picomatch, Pattern;
 var init_Pattern = __esm(() => {
   init_Definition();
   import_picomatch = __toESM(require_picomatch2(), 1);
   ((Pattern) => {
-    Pattern.Event = Schema8.Literals(["before", "after"]);
+    Pattern.Event = Schema7.Literals(["before", "after"]);
 
-    class RegexDetector extends Schema8.TaggedClass()("RegexDetector", {
-      pattern: Schema8.String,
-      matchInComments: Schema8.Boolean
+    class RegexDetector extends Schema7.TaggedClass()("RegexDetector", {
+      pattern: Schema7.String,
+      matchInComments: Schema7.Boolean
     }) {
     }
     Pattern.RegexDetector = RegexDetector;
-    const AstGrepRuleDefinitionSchema = Schema8.declare((input) => typeof input === "object" && input !== null && !Array.isArray(input), { expected: "ast-grep rule object" });
+    const AstGrepRuleDefinitionSchema = Schema7.declare((input) => typeof input === "object" && input !== null && !Array.isArray(input), { expected: "ast-grep rule object" });
 
-    class AstDetector extends Schema8.TaggedClass()("AstDetector", {
-      patterns: Schema8.Array(Schema8.String),
-      inside: Schema8.optionalKey(Schema8.String),
-      rules: Schema8.optionalKey(Schema8.Array(AstGrepRuleDefinitionSchema)),
-      constraints: Schema8.optionalKey(Schema8.Record(Schema8.String, AstGrepRuleDefinitionSchema))
+    class AstDetector extends Schema7.TaggedClass()("AstDetector", {
+      patterns: Schema7.Array(Schema7.String),
+      inside: Schema7.optionalKey(Schema7.String),
+      rules: Schema7.optionalKey(Schema7.Array(AstGrepRuleDefinitionSchema)),
+      constraints: Schema7.optionalKey(Schema7.Record(Schema7.String, AstGrepRuleDefinitionSchema))
     }) {
     }
     Pattern.AstDetector = AstDetector;
-    Pattern.Detector = Schema8.Union([RegexDetector, AstDetector]);
+    Pattern.Detector = Schema7.Union([RegexDetector, AstDetector]);
 
-    class MatchLocation extends Schema8.Class("PatternMatchLocation")({
-      start: Schema8.Number,
-      end: Schema8.Number,
-      line: Schema8.Number,
-      column: Schema8.Number,
-      snippet: Schema8.String
+    class MatchLocation extends Schema7.Class("PatternMatchLocation")({
+      start: Schema7.Number,
+      end: Schema7.Number,
+      line: Schema7.Number,
+      column: Schema7.Number,
+      snippet: Schema7.String
     }) {
     }
     Pattern.MatchLocation = MatchLocation;
 
-    class Value extends Schema8.Class("PatternValue")({
-      name: Schema8.String,
-      description: Schema8.String,
+    class Value extends Schema7.Class("PatternValue")({
+      name: Schema7.String,
+      description: Schema7.String,
       event: Pattern.Event,
-      toolRegex: Schema8.String,
+      toolRegex: Schema7.String,
       level: RuleDefinition.Severity,
-      glob: Schema8.optionalKey(Schema8.String),
-      ignoreGlob: Schema8.optionalKey(Schema8.Array(Schema8.String)),
+      glob: Schema7.optionalKey(Schema7.String),
+      ignoreGlob: Schema7.optionalKey(Schema7.Array(Schema7.String)),
       detector: Pattern.Detector,
-      guidance: Schema8.String,
-      suggestedSkills: Schema8.optionalKey(Schema8.Array(Schema8.String)),
-      sourcePath: Schema8.String
+      guidance: Schema7.String,
+      suggestedSkills: Schema7.optionalKey(Schema7.Array(Schema7.String)),
+      sourcePath: Schema7.String
     }) {
     }
     Pattern.Value = Value;
@@ -2095,9 +2077,9 @@ var require_directives = __commonJS(function(exports) {
       this.tags = Object.assign({}, Directives.defaultTags, tags);
     }
     clone() {
-      const copy2 = new Directives(this.yaml, this.tags);
-      copy2.docStart = this.docStart;
-      return copy2;
+      const copy = new Directives(this.yaml, this.tags);
+      copy.docStart = this.docStart;
+      return copy;
     }
     atDocument() {
       const res = new Directives(this.yaml, this.tags);
@@ -2372,10 +2354,10 @@ var require_Node = __commonJS(function(exports) {
       Object.defineProperty(this, identity.NODE_TYPE, { value: type });
     }
     clone() {
-      const copy2 = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
+      const copy = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
       if (this.range)
-        copy2.range = this.range.slice();
-      return copy2;
+        copy.range = this.range.slice();
+      return copy;
     }
     toJS(doc, { mapAsMap, maxAliasCount, onAnchor, reviver } = {}) {
       if (!identity.isDocument(doc))
@@ -2558,9 +2540,9 @@ var require_createNode = __commonJS(function(exports) {
     if (identity.isNode(value))
       return value;
     if (identity.isPair(value)) {
-      const map2 = ctx.schema[identity.MAP].createNode?.(ctx.schema, null, ctx);
-      map2.items.push(value);
-      return map2;
+      const map = ctx.schema[identity.MAP].createNode?.(ctx.schema, null, ctx);
+      map.items.push(value);
+      return map;
     }
     if (value instanceof String || value instanceof Number || value instanceof Boolean || typeof BigInt !== "undefined" && value instanceof BigInt) {
       value = value.valueOf();
@@ -2648,13 +2630,13 @@ var require_Collection = __commonJS(function(exports) {
       });
     }
     clone(schema) {
-      const copy2 = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
+      const copy = Object.create(Object.getPrototypeOf(this), Object.getOwnPropertyDescriptors(this));
       if (schema)
-        copy2.schema = schema;
-      copy2.items = copy2.items.map((it) => identity.isNode(it) || identity.isPair(it) ? it.clone(schema) : it);
+        copy.schema = schema;
+      copy.items = copy.items.map((it) => identity.isNode(it) || identity.isPair(it) ? it.clone(schema) : it);
       if (this.range)
-        copy2.range = this.range.slice();
-      return copy2;
+        copy.range = this.range.slice();
+      return copy;
     }
     addIn(path, value) {
       if (isEmptyPath(path))
@@ -3467,30 +3449,30 @@ var require_merge = __commonJS(function(exports) {
     stringify: () => MERGE_KEY
   };
   var isMergeKey = (ctx, key) => (merge.identify(key) || identity.isScalar(key) && (!key.type || key.type === Scalar.Scalar.PLAIN) && merge.identify(key.value)) && ctx?.doc.schema.tags.some((tag) => tag.tag === merge.tag && tag.default);
-  function addMergeToJSMap(ctx, map2, value) {
+  function addMergeToJSMap(ctx, map, value) {
     const source = resolveAliasValue(ctx, value);
     if (identity.isSeq(source))
       for (const it of source.items)
-        mergeValue(ctx, map2, it);
+        mergeValue(ctx, map, it);
     else if (Array.isArray(source))
       for (const it of source)
-        mergeValue(ctx, map2, it);
+        mergeValue(ctx, map, it);
     else
-      mergeValue(ctx, map2, source);
+      mergeValue(ctx, map, source);
   }
-  function mergeValue(ctx, map2, value) {
+  function mergeValue(ctx, map, value) {
     const source = resolveAliasValue(ctx, value);
     if (!identity.isMap(source))
       throw new Error("Merge sources must be maps or map aliases");
     const srcMap = source.toJSON(null, ctx, Map);
     for (const [key, value2] of srcMap) {
-      if (map2 instanceof Map) {
-        if (!map2.has(key))
-          map2.set(key, value2);
-      } else if (map2 instanceof Set) {
-        map2.add(key);
-      } else if (!Object.prototype.hasOwnProperty.call(map2, key)) {
-        Object.defineProperty(map2, key, {
+      if (map instanceof Map) {
+        if (!map.has(key))
+          map.set(key, value2);
+      } else if (map instanceof Set) {
+        map.add(key);
+      } else if (!Object.prototype.hasOwnProperty.call(map, key)) {
+        Object.defineProperty(map, key, {
           value: value2,
           writable: true,
           enumerable: true,
@@ -3498,7 +3480,7 @@ var require_merge = __commonJS(function(exports) {
         });
       }
     }
-    return map2;
+    return map;
   }
   function resolveAliasValue(ctx, value) {
     return ctx && identity.isAlias(value) ? value.resolve(ctx.doc, ctx) : value;
@@ -3515,32 +3497,32 @@ var require_addPairToJSMap = __commonJS(function(exports) {
   var stringify = require_stringify();
   var identity = require_identity();
   var toJS = require_toJS();
-  function addPairToJSMap(ctx, map2, { key, value }) {
+  function addPairToJSMap(ctx, map, { key, value }) {
     if (identity.isNode(key) && key.addToJSMap)
-      key.addToJSMap(ctx, map2, value);
+      key.addToJSMap(ctx, map, value);
     else if (merge.isMergeKey(ctx, key))
-      merge.addMergeToJSMap(ctx, map2, value);
+      merge.addMergeToJSMap(ctx, map, value);
     else {
       const jsKey = toJS.toJS(key, "", ctx);
-      if (map2 instanceof Map) {
-        map2.set(jsKey, toJS.toJS(value, jsKey, ctx));
-      } else if (map2 instanceof Set) {
-        map2.add(jsKey);
+      if (map instanceof Map) {
+        map.set(jsKey, toJS.toJS(value, jsKey, ctx));
+      } else if (map instanceof Set) {
+        map.add(jsKey);
       } else {
         const stringKey = stringifyKey(key, jsKey, ctx);
         const jsValue = toJS.toJS(value, stringKey, ctx);
-        if (stringKey in map2)
-          Object.defineProperty(map2, stringKey, {
+        if (stringKey in map)
+          Object.defineProperty(map, stringKey, {
             value: jsValue,
             writable: true,
             enumerable: true,
             configurable: true
           });
         else
-          map2[stringKey] = jsValue;
+          map[stringKey] = jsValue;
       }
     }
-    return map2;
+    return map;
   }
   function stringifyKey(key, jsKey, ctx) {
     if (jsKey === null)
@@ -3790,14 +3772,14 @@ var require_YAMLMap = __commonJS(function(exports) {
     }
     static from(schema, obj, ctx) {
       const { keepUndefined, replacer } = ctx;
-      const map2 = new this(schema);
+      const map = new this(schema);
       const add = (key, value) => {
         if (typeof replacer === "function")
           value = replacer.call(obj, key, value);
         else if (Array.isArray(replacer) && !replacer.includes(key))
           return;
         if (value !== undefined || keepUndefined)
-          map2.items.push(Pair.createPair(key, value, ctx));
+          map.items.push(Pair.createPair(key, value, ctx));
       };
       if (obj instanceof Map) {
         for (const [key, value] of obj)
@@ -3807,9 +3789,9 @@ var require_YAMLMap = __commonJS(function(exports) {
           add(key, obj[key]);
       }
       if (typeof schema.sortMapEntries === "function") {
-        map2.items.sort(schema.sortMapEntries);
+        map.items.sort(schema.sortMapEntries);
       }
-      return map2;
+      return map;
     }
     add(pair, overwrite) {
       let _pair;
@@ -3857,12 +3839,12 @@ var require_YAMLMap = __commonJS(function(exports) {
       this.add(new Pair.Pair(key, value), true);
     }
     toJSON(_, ctx, Type) {
-      const map2 = Type ? new Type : ctx?.mapAsMap ? new Map : {};
+      const map = Type ? new Type : ctx?.mapAsMap ? new Map : {};
       if (ctx?.onCreate)
-        ctx.onCreate(map2);
+        ctx.onCreate(map);
       for (const item of this.items)
-        addPairToJSMap.addPairToJSMap(ctx, map2, item);
-      return map2;
+        addPairToJSMap.addPairToJSMap(ctx, map, item);
+      return map;
     }
     toString(ctx, onComment, onChompKeep) {
       if (!ctx)
@@ -3890,19 +3872,19 @@ var require_YAMLMap = __commonJS(function(exports) {
 var require_map = __commonJS(function(exports) {
   var identity = require_identity();
   var YAMLMap = require_YAMLMap();
-  var map2 = {
+  var map = {
     collection: "map",
     default: true,
     nodeClass: YAMLMap.YAMLMap,
     tag: "tag:yaml.org,2002:map",
-    resolve(map3, onError) {
-      if (!identity.isMap(map3))
+    resolve(map2, onError) {
+      if (!identity.isMap(map2))
         onError("Expected a mapping for this tag");
-      return map3;
+      return map2;
     },
     createNode: (schema, obj, ctx) => YAMLMap.YAMLMap.from(schema, obj, ctx)
   };
-  exports.map = map2;
+  exports.map = map;
 });
 
 // node_modules/.bun/yaml@2.9.0/node_modules/yaml/dist/nodes/YAMLSeq.js
@@ -4180,7 +4162,7 @@ var require_int = __commonJS(function(exports) {
 
 // node_modules/.bun/yaml@2.9.0/node_modules/yaml/dist/schema/core/schema.js
 var require_schema = __commonJS(function(exports) {
-  var map2 = require_map();
+  var map = require_map();
   var _null = require_null();
   var seq = require_seq();
   var string = require_string();
@@ -4188,7 +4170,7 @@ var require_schema = __commonJS(function(exports) {
   var float = require_float();
   var int = require_int();
   var schema = [
-    map2.map,
+    map.map,
     seq.seq,
     string.string,
     _null.nullTag,
@@ -4206,7 +4188,7 @@ var require_schema = __commonJS(function(exports) {
 // node_modules/.bun/yaml@2.9.0/node_modules/yaml/dist/schema/json/schema.js
 var require_schema2 = __commonJS(function(exports) {
   var Scalar = require_Scalar();
-  var map2 = require_map();
+  var map = require_map();
   var seq = require_seq();
   function intIdentify(value) {
     return typeof value === "bigint" || Number.isInteger(value);
@@ -4263,7 +4245,7 @@ var require_schema2 = __commonJS(function(exports) {
       return str;
     }
   };
-  var schema = [map2.map, seq.seq].concat(jsonScalars, jsonError);
+  var schema = [map.map, seq.seq].concat(jsonScalars, jsonError);
   exports.schema = schema;
 });
 
@@ -4418,9 +4400,9 @@ var require_omap = __commonJS(function(exports) {
     toJSON(_, ctx) {
       if (!ctx)
         return super.toJSON(_);
-      const map2 = new Map;
+      const map = new Map;
       if (ctx?.onCreate)
-        ctx.onCreate(map2);
+        ctx.onCreate(map);
       for (const pair of this.items) {
         let key, value;
         if (identity.isPair(pair)) {
@@ -4429,11 +4411,11 @@ var require_omap = __commonJS(function(exports) {
         } else {
           key = toJS.toJS(pair, "", ctx);
         }
-        if (map2.has(key))
+        if (map.has(key))
           throw new Error("Ordered maps must not include duplicate keys");
-        map2.set(key, value);
+        map.set(key, value);
       }
-      return map2;
+      return map;
     }
     static from(schema, iterable, ctx) {
       const pairs$1 = pairs.createPairs(schema, iterable, ctx);
@@ -4688,15 +4670,15 @@ var require_set = __commonJS(function(exports) {
     default: false,
     tag: "tag:yaml.org,2002:set",
     createNode: (schema, iterable, ctx) => YAMLSet.from(schema, iterable, ctx),
-    resolve(map2, onError) {
-      if (identity.isMap(map2)) {
-        if (map2.hasAllNullValues(true))
-          return Object.assign(new YAMLSet, map2);
+    resolve(map, onError) {
+      if (identity.isMap(map)) {
+        if (map.hasAllNullValues(true))
+          return Object.assign(new YAMLSet, map);
         else
           onError("Set items must all have null values");
       } else
         onError("Expected a mapping for this tag");
-      return map2;
+      return map;
     }
   };
   exports.YAMLSet = YAMLSet;
@@ -4787,7 +4769,7 @@ var require_timestamp = __commonJS(function(exports) {
 
 // node_modules/.bun/yaml@2.9.0/node_modules/yaml/dist/schema/yaml-1.1/schema.js
 var require_schema3 = __commonJS(function(exports) {
-  var map2 = require_map();
+  var map = require_map();
   var _null = require_null();
   var seq = require_seq();
   var string = require_string();
@@ -4801,7 +4783,7 @@ var require_schema3 = __commonJS(function(exports) {
   var set = require_set();
   var timestamp = require_timestamp();
   var schema = [
-    map2.map,
+    map.map,
     seq.seq,
     string.string,
     _null.nullTag,
@@ -4828,7 +4810,7 @@ var require_schema3 = __commonJS(function(exports) {
 
 // node_modules/.bun/yaml@2.9.0/node_modules/yaml/dist/schema/tags.js
 var require_tags = __commonJS(function(exports) {
-  var map2 = require_map();
+  var map = require_map();
   var _null = require_null();
   var seq = require_seq();
   var string = require_string();
@@ -4846,7 +4828,7 @@ var require_tags = __commonJS(function(exports) {
   var timestamp = require_timestamp();
   var schemas = new Map([
     ["core", schema.schema],
-    ["failsafe", [map2.map, seq.seq, string.string]],
+    ["failsafe", [map.map, seq.seq, string.string]],
     ["json", schema$1.schema],
     ["yaml11", schema$2.schema],
     ["yaml-1.1", schema$2.schema]
@@ -4862,7 +4844,7 @@ var require_tags = __commonJS(function(exports) {
     intHex: int.intHex,
     intOct: int.intOct,
     intTime: timestamp.intTime,
-    map: map2.map,
+    map: map.map,
     merge: merge.merge,
     null: _null.nullTag,
     omap: omap.omap,
@@ -4920,31 +4902,31 @@ var require_tags = __commonJS(function(exports) {
 // node_modules/.bun/yaml@2.9.0/node_modules/yaml/dist/schema/Schema.js
 var require_Schema = __commonJS(function(exports) {
   var identity = require_identity();
-  var map2 = require_map();
+  var map = require_map();
   var seq = require_seq();
   var string = require_string();
   var tags = require_tags();
   var sortMapEntriesByKey = (a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
 
-  class Schema9 {
+  class Schema8 {
     constructor({ compat, customTags, merge, resolveKnownTags, schema, sortMapEntries, toStringDefaults }) {
       this.compat = Array.isArray(compat) ? tags.getTags(compat, "compat") : compat ? tags.getTags(null, compat) : null;
       this.name = typeof schema === "string" && schema || "core";
       this.knownTags = resolveKnownTags ? tags.coreKnownTags : {};
       this.tags = tags.getTags(customTags, this.name, merge);
       this.toStringOptions = toStringDefaults ?? null;
-      Object.defineProperty(this, identity.MAP, { value: map2.map });
+      Object.defineProperty(this, identity.MAP, { value: map.map });
       Object.defineProperty(this, identity.SCALAR, { value: string.string });
       Object.defineProperty(this, identity.SEQ, { value: seq.seq });
       this.sortMapEntries = typeof sortMapEntries === "function" ? sortMapEntries : sortMapEntries === true ? sortMapEntriesByKey : null;
     }
     clone() {
-      const copy2 = Object.create(Schema9.prototype, Object.getOwnPropertyDescriptors(this));
-      copy2.tags = this.tags.slice();
-      return copy2;
+      const copy = Object.create(Schema8.prototype, Object.getOwnPropertyDescriptors(this));
+      copy.tags = this.tags.slice();
+      return copy;
     }
   }
-  exports.Schema = Schema9;
+  exports.Schema = Schema8;
 });
 
 // node_modules/.bun/yaml@2.9.0/node_modules/yaml/dist/stringify/stringifyDocument.js
@@ -5034,7 +5016,7 @@ var require_Document = __commonJS(function(exports) {
   var identity = require_identity();
   var Pair = require_Pair();
   var toJS = require_toJS();
-  var Schema9 = require_Schema();
+  var Schema8 = require_Schema();
   var stringifyDocument = require_stringifyDocument();
   var anchors = require_anchors();
   var applyReviver = require_applyReviver();
@@ -5077,21 +5059,21 @@ var require_Document = __commonJS(function(exports) {
       this.contents = value === undefined ? null : this.createNode(value, _replacer, options);
     }
     clone() {
-      const copy2 = Object.create(Document.prototype, {
+      const copy = Object.create(Document.prototype, {
         [identity.NODE_TYPE]: { value: identity.DOC }
       });
-      copy2.commentBefore = this.commentBefore;
-      copy2.comment = this.comment;
-      copy2.errors = this.errors.slice();
-      copy2.warnings = this.warnings.slice();
-      copy2.options = Object.assign({}, this.options);
+      copy.commentBefore = this.commentBefore;
+      copy.comment = this.comment;
+      copy.errors = this.errors.slice();
+      copy.warnings = this.warnings.slice();
+      copy.options = Object.assign({}, this.options);
       if (this.directives)
-        copy2.directives = this.directives.clone();
-      copy2.schema = this.schema.clone();
-      copy2.contents = identity.isNode(this.contents) ? this.contents.clone(copy2.schema) : this.contents;
+        copy.directives = this.directives.clone();
+      copy.schema = this.schema.clone();
+      copy.contents = identity.isNode(this.contents) ? this.contents.clone(copy.schema) : this.contents;
       if (this.range)
-        copy2.range = this.range.slice();
-      return copy2;
+        copy.range = this.range.slice();
+      return copy;
     }
     add(value) {
       if (assertCollection(this.contents))
@@ -5222,7 +5204,7 @@ var require_Document = __commonJS(function(exports) {
       if (options.schema instanceof Object)
         this.schema = options.schema;
       else if (opt)
-        this.schema = new Schema9.Schema(Object.assign(opt, options));
+        this.schema = new Schema8.Schema(Object.assign(opt, options));
       else
         throw new Error(`With a null YAML version, the { schema: Schema } option is required`);
     }
@@ -5536,7 +5518,7 @@ var require_resolve_block_map = __commonJS(function(exports) {
   var startColMsg = "All mapping items must start at the same column";
   function resolveBlockMap({ composeNode, composeEmptyNode }, ctx, bm, onError, tag) {
     const NodeClass = tag?.nodeClass ?? YAMLMap.YAMLMap;
-    const map2 = new NodeClass(ctx.schema);
+    const map = new NodeClass(ctx.schema);
     if (ctx.atRoot)
       ctx.atRoot = false;
     let offset = bm.offset;
@@ -5562,11 +5544,11 @@ var require_resolve_block_map = __commonJS(function(exports) {
         if (!keyProps.anchor && !keyProps.tag && !sep) {
           commentEnd = keyProps.end;
           if (keyProps.comment) {
-            if (map2.comment)
-              map2.comment += `
+            if (map.comment)
+              map.comment += `
 ` + keyProps.comment;
             else
-              map2.comment = keyProps.comment;
+              map.comment = keyProps.comment;
           }
           continue;
         }
@@ -5582,7 +5564,7 @@ var require_resolve_block_map = __commonJS(function(exports) {
       if (ctx.schema.compat)
         utilFlowIndentCheck.flowIndentCheck(bm.indent, key, onError);
       ctx.atKey = false;
-      if (utilMapIncludes.mapIncludes(ctx, map2.items, keyNode))
+      if (utilMapIncludes.mapIncludes(ctx, map.items, keyNode))
         onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
       const valueProps = resolveProps.resolveProps(sep ?? [], {
         indicator: "map-value-ind",
@@ -5607,7 +5589,7 @@ var require_resolve_block_map = __commonJS(function(exports) {
         const pair = new Pair.Pair(keyNode, valueNode);
         if (ctx.options.keepSourceTokens)
           pair.srcToken = collItem;
-        map2.items.push(pair);
+        map.items.push(pair);
       } else {
         if (implicitKey)
           onError(keyNode.range, "MISSING_CHAR", "Implicit map keys need to be followed by map values");
@@ -5621,13 +5603,13 @@ var require_resolve_block_map = __commonJS(function(exports) {
         const pair = new Pair.Pair(keyNode);
         if (ctx.options.keepSourceTokens)
           pair.srcToken = collItem;
-        map2.items.push(pair);
+        map.items.push(pair);
       }
     }
     if (commentEnd && commentEnd < offset)
       onError(commentEnd, "IMPOSSIBLE", "Map comment with trailing content");
-    map2.range = [bm.offset, offset, commentEnd ?? offset];
-    return map2;
+    map.range = [bm.offset, offset, commentEnd ?? offset];
+    return map;
   }
   exports.resolveBlockMap = resolveBlockMap;
 });
@@ -5866,17 +5848,17 @@ var require_resolve_flow_collection = __commonJS(function(exports) {
         if (ctx.options.keepSourceTokens)
           pair.srcToken = collItem;
         if (isMap) {
-          const map2 = coll;
-          if (utilMapIncludes.mapIncludes(ctx, map2.items, keyNode))
+          const map = coll;
+          if (utilMapIncludes.mapIncludes(ctx, map.items, keyNode))
             onError(keyStart, "DUPLICATE_KEY", "Map keys must be unique");
-          map2.items.push(pair);
+          map.items.push(pair);
         } else {
-          const map2 = new YAMLMap.YAMLMap(ctx.schema);
-          map2.flow = true;
-          map2.items.push(pair);
+          const map = new YAMLMap.YAMLMap(ctx.schema);
+          map.flow = true;
+          map.items.push(pair);
           const endRange = (valueNode ?? keyNode).range;
-          map2.range = [keyNode.range[0], endRange[1], endRange[2]];
-          coll.items.push(map2);
+          map.range = [keyNode.range[0], endRange[1], endRange[2]];
+          coll.items.push(map);
         }
         offset = valueNode ? valueNode.range[2] : valueProps.end;
       }
@@ -8216,14 +8198,14 @@ var require_parser = __commonJS(function(exports) {
           delete scalar.end;
         } else
           sep = [this.sourceToken];
-        const map2 = {
+        const map = {
           type: "block-map",
           offset: scalar.offset,
           indent: scalar.indent,
           items: [{ start, key: scalar, sep }]
         };
         this.onKeyLine = true;
-        this.stack[this.stack.length - 1] = map2;
+        this.stack[this.stack.length - 1] = map;
       } else
         yield* this.lineEnd(scalar);
     }
@@ -8254,8 +8236,8 @@ var require_parser = __commonJS(function(exports) {
           yield* this.step();
       }
     }
-    *blockMap(map2) {
-      const it = map2.items[map2.items.length - 1];
+    *blockMap(map) {
+      const it = map.items[map.items.length - 1];
       switch (this.type) {
         case "newline":
           this.onKeyLine = false;
@@ -8265,7 +8247,7 @@ var require_parser = __commonJS(function(exports) {
             if (last?.type === "comment")
               end?.push(this.sourceToken);
             else
-              map2.items.push({ start: [this.sourceToken] });
+              map.items.push({ start: [this.sourceToken] });
           } else if (it.sep) {
             it.sep.push(this.sourceToken);
           } else {
@@ -8275,17 +8257,17 @@ var require_parser = __commonJS(function(exports) {
         case "space":
         case "comment":
           if (it.value) {
-            map2.items.push({ start: [this.sourceToken] });
+            map.items.push({ start: [this.sourceToken] });
           } else if (it.sep) {
             it.sep.push(this.sourceToken);
           } else {
-            if (this.atIndentedComment(it.start, map2.indent)) {
-              const prev = map2.items[map2.items.length - 2];
+            if (this.atIndentedComment(it.start, map.indent)) {
+              const prev = map.items[map.items.length - 2];
               const end = prev?.value?.end;
               if (Array.isArray(end)) {
                 arrayPushArray(end, it.start);
                 end.push(this.sourceToken);
-                map2.items.pop();
+                map.items.pop();
                 return;
               }
             }
@@ -8293,8 +8275,8 @@ var require_parser = __commonJS(function(exports) {
           }
           return;
       }
-      if (this.indent >= map2.indent) {
-        const atMapIndent = !this.onKeyLine && this.indent === map2.indent;
+      if (this.indent >= map.indent) {
+        const atMapIndent = !this.onKeyLine && this.indent === map.indent;
         const atNextItem = atMapIndent && (it.sep || it.explicitKey) && this.type !== "seq-item-ind";
         let start = [];
         if (atNextItem && it.sep && !it.value) {
@@ -8308,7 +8290,7 @@ var require_parser = __commonJS(function(exports) {
               case "space":
                 break;
               case "comment":
-                if (st.indent > map2.indent)
+                if (st.indent > map.indent)
                   nl.length = 0;
                 break;
               default:
@@ -8323,7 +8305,7 @@ var require_parser = __commonJS(function(exports) {
           case "tag":
             if (atNextItem || it.value) {
               start.push(this.sourceToken);
-              map2.items.push({ start });
+              map.items.push({ start });
               this.onKeyLine = true;
             } else if (it.sep) {
               it.sep.push(this.sourceToken);
@@ -8337,7 +8319,7 @@ var require_parser = __commonJS(function(exports) {
               it.explicitKey = true;
             } else if (atNextItem || it.value) {
               start.push(this.sourceToken);
-              map2.items.push({ start, explicitKey: true });
+              map.items.push({ start, explicitKey: true });
             } else {
               this.stack.push({
                 type: "block-map",
@@ -8363,7 +8345,7 @@ var require_parser = __commonJS(function(exports) {
                   });
                 }
               } else if (it.value) {
-                map2.items.push({ start: [], key: null, sep: [this.sourceToken] });
+                map.items.push({ start: [], key: null, sep: [this.sourceToken] });
               } else if (includesToken(it.sep, "map-value-ind")) {
                 this.stack.push({
                   type: "block-map",
@@ -8393,7 +8375,7 @@ var require_parser = __commonJS(function(exports) {
               if (!it.sep) {
                 Object.assign(it, { key: null, sep: [this.sourceToken] });
               } else if (it.value || atNextItem) {
-                map2.items.push({ start, key: null, sep: [this.sourceToken] });
+                map.items.push({ start, key: null, sep: [this.sourceToken] });
               } else if (includesToken(it.sep, "map-value-ind")) {
                 this.stack.push({
                   type: "block-map",
@@ -8413,7 +8395,7 @@ var require_parser = __commonJS(function(exports) {
           case "double-quoted-scalar": {
             const fs = this.flowScalar(this.type);
             if (atNextItem || it.value) {
-              map2.items.push({ start, key: fs, sep: [] });
+              map.items.push({ start, key: fs, sep: [] });
               this.onKeyLine = true;
             } else if (it.sep) {
               this.stack.push(fs);
@@ -8424,7 +8406,7 @@ var require_parser = __commonJS(function(exports) {
             return;
           }
           default: {
-            const bv = this.startBlockValue(map2);
+            const bv = this.startBlockValue(map);
             if (bv) {
               if (bv.type === "block-seq") {
                 if (!it.explicitKey && it.sep && !includesToken(it.sep, "newline")) {
@@ -8437,7 +8419,7 @@ var require_parser = __commonJS(function(exports) {
                   return;
                 }
               } else if (atMapIndent) {
-                map2.items.push({ start });
+                map.items.push({ start });
               }
               this.stack.push(bv);
               return;
@@ -8578,14 +8560,14 @@ var require_parser = __commonJS(function(exports) {
           fixFlowSeqItems(fc);
           const sep = fc.end.splice(1, fc.end.length);
           sep.push(this.sourceToken);
-          const map2 = {
+          const map = {
             type: "block-map",
             offset: fc.offset,
             indent: fc.indent,
             items: [{ start, key: fc, sep }]
           };
           this.onKeyLine = true;
-          this.stack[this.stack.length - 1] = map2;
+          this.stack[this.stack.length - 1] = map;
         } else {
           yield* this.lineEnd(fc);
         }
@@ -8809,7 +8791,7 @@ var require_public_api = __commonJS(function(exports) {
 var require_dist = __commonJS(function(exports) {
   var composer = require_composer();
   var Document = require_Document();
-  var Schema9 = require_Schema();
+  var Schema8 = require_Schema();
   var errors = require_errors();
   var Alias = require_Alias();
   var identity = require_identity();
@@ -8825,7 +8807,7 @@ var require_dist = __commonJS(function(exports) {
   var visit = require_visit();
   exports.Composer = composer.Composer;
   exports.Document = Document.Document;
-  exports.Schema = Schema9.Schema;
+  exports.Schema = Schema8.Schema;
   exports.YAMLError = errors.YAMLError;
   exports.YAMLParseError = errors.YAMLParseError;
   exports.YAMLWarning = errors.YAMLWarning;
@@ -8865,7 +8847,7 @@ __export(exports_Catalog, {
   toDetector: () => toDetector,
   toRuleDefinition: () => toRuleDefinition
 });
-import { Context as Context3, Effect as Effect10, FileSystem as FileSystem5, Layer as Layer5, Option as Option8, Order as Order2, Path as Path5, Schema as Schema9 } from "effect";
+import { Context as Context3, Effect as Effect7, FileSystem as FileSystem3, Layer as Layer3, Option as Option7, Order as Order2, Path as Path3, Schema as Schema8 } from "effect";
 import { sort as sort2 } from "effect/Array";
 var import_yaml, FRONTMATTER_RE, isAlreadyQuoted = (val) => val.startsWith("'") && val.endsWith("'") || val.startsWith('"') && val.endsWith('"'), SAFE_VALUE_RE, quoteYamlValue = (line) => {
   const m = line.match(/^(\s*)(\w[\w-]*):\s+(.+)$/);
@@ -8891,10 +8873,10 @@ var import_yaml, FRONTMATTER_RE, isAlreadyQuoted = (val) => val.startsWith("'") 
   }
 }, extractBody = (content) => content.replace(/^---\n[\s\S]*?\n---\n?/, "").trim(), CatalogError, regexOption2, readStringArray = (value) => {
   if (!Array.isArray(value))
-    return Option8.none();
+    return Option7.none();
   const strings = value.flatMap((entry) => typeof entry === "string" ? [entry] : []);
-  return strings.length === value.length ? Option8.some(strings) : Option8.none();
-}, stringOption2 = (value) => typeof value === "string" ? Option8.some(value) : Option8.none(), isAstGrepRuleDefinition = (value) => {
+  return strings.length === value.length ? Option7.some(strings) : Option7.none();
+}, stringOption2 = (value) => typeof value === "string" ? Option7.some(value) : Option7.none(), isAstGrepRuleDefinition = (value) => {
   if (typeof value !== "object" || value === null || Array.isArray(value))
     return false;
   const record = value;
@@ -8904,98 +8886,98 @@ var import_yaml, FRONTMATTER_RE, isAlreadyQuoted = (val) => val.startsWith("'") 
   return keys.some((k) => ["pattern", "regex", "kind", "any", "all", "not", "inside", "constraints"].includes(k));
 }, readAstRuleList = (value) => {
   if (isAstGrepRuleDefinition(value))
-    return Option8.some([value]);
+    return Option7.some([value]);
   if (!Array.isArray(value))
-    return Option8.none();
+    return Option7.none();
   const rules = value.flatMap((entry) => isAstGrepRuleDefinition(entry) ? [entry] : []);
-  return rules.length === value.length && rules.length > 0 ? Option8.some(rules) : Option8.none();
+  return rules.length === value.length && rules.length > 0 ? Option7.some(rules) : Option7.none();
 }, readAstRuleRecord = (value) => {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    return Option8.none();
+    return Option7.none();
   }
   const entries = Object.entries(value);
   const rules = entries.flatMap(([key, entry]) => isAstGrepRuleDefinition(entry) ? [[key, entry]] : []);
-  return rules.length === entries.length ? Option8.some(Object.fromEntries(rules)) : Option8.none();
-}, isSkippedFile = (name) => SKIPPED_FILES.some((prefix) => name.toLowerCase().startsWith(prefix.toLowerCase()) || name.toLowerCase() === `${prefix.toLowerCase()}.md`), levelWithDefault = (value) => Option8.match(value, {
-  onNone: () => Option8.some("info"),
-  onSome: (current) => current === "critical" || current === "high" || current === "medium" || current === "warning" || current === "info" ? Option8.some(current) : Option8.none()
-}), eventWithDefault = (value) => Option8.match(value, {
-  onNone: () => Option8.some("before"),
+  return rules.length === entries.length ? Option7.some(Object.fromEntries(rules)) : Option7.none();
+}, isSkippedFile = (name) => SKIPPED_FILES.some((prefix) => name.toLowerCase().startsWith(prefix.toLowerCase()) || name.toLowerCase() === `${prefix.toLowerCase()}.md`), levelWithDefault = (value) => Option7.match(value, {
+  onNone: () => Option7.some("info"),
+  onSome: (current) => current === "critical" || current === "high" || current === "medium" || current === "warning" || current === "info" ? Option7.some(current) : Option7.none()
+}), eventWithDefault = (value) => Option7.match(value, {
+  onNone: () => Option7.some("before"),
   onSome: (current) => {
     const lower = current.toLowerCase();
-    return lower === "before" || lower === "after" ? Option8.some(lower) : Option8.none();
+    return lower === "before" || lower === "after" ? Option7.some(lower) : Option7.none();
   }
 }), readPatternList = (raw) => {
   if (typeof raw === "string")
-    return Option8.some([raw]);
+    return Option7.some([raw]);
   return readStringArray(raw);
 }, toDetector = (raw) => {
   const detectorOpt = stringOption2(raw.detector);
-  if (Option8.isNone(detectorOpt))
-    return Option8.none();
+  if (Option7.isNone(detectorOpt))
+    return Option7.none();
   const rawDetector = detectorOpt.value;
   if (rawDetector !== "ast" && rawDetector !== "regex")
-    return Option8.none();
+    return Option7.none();
   const detector = rawDetector;
   if (detector === "ast") {
     const rule = readAstRuleList(raw.rule);
-    const rules = Option8.isSome(rule) ? rule : readAstRuleList(raw.rules);
-    if (Option8.isSome(rules)) {
+    const rules = Option7.isSome(rule) ? rule : readAstRuleList(raw.rules);
+    if (Option7.isSome(rules)) {
       const constraints = readAstRuleRecord(raw.constraints);
-      return Option8.some(new Pattern.AstDetector({
+      return Option7.some(new Pattern.AstDetector({
         patterns: [],
         rules: [...rules.value],
-        ...Option8.isSome(constraints) ? { constraints: constraints.value } : undefined
+        ...Option7.isSome(constraints) ? { constraints: constraints.value } : undefined
       }));
     }
     const patterns = readPatternList(raw.pattern);
-    if (Option8.isNone(patterns) || patterns.value.length === 0) {
-      return Option8.none();
+    if (Option7.isNone(patterns) || patterns.value.length === 0) {
+      return Option7.none();
     }
     const inside = stringOption2(raw.inside);
-    return Option8.some(new Pattern.AstDetector({
+    return Option7.some(new Pattern.AstDetector({
       patterns: patterns.value,
-      ...Option8.isSome(inside) ? { inside: inside.value } : undefined
+      ...Option7.isSome(inside) ? { inside: inside.value } : undefined
     }));
   }
   const pattern = stringOption2(raw.pattern);
-  if (Option8.isNone(pattern))
-    return Option8.none();
-  return Option8.isSome(regexOption2(pattern.value)) ? Option8.some(new Pattern.RegexDetector({
+  if (Option7.isNone(pattern))
+    return Option7.none();
+  return Option7.isSome(regexOption2(pattern.value)) ? Option7.some(new Pattern.RegexDetector({
     pattern: pattern.value,
     matchInComments: raw.matchInComments === true || raw.matchInComments === "true"
-  })) : Option8.none();
+  })) : Option7.none();
 }, toPattern = (filePath, content) => {
   const raw = parseFrontmatter(content);
   const name = stringOption2(raw.name);
   const detector = toDetector(raw);
-  const toolRegex = Option8.match(stringOption2(raw.tool), {
+  const toolRegex = Option7.match(stringOption2(raw.tool), {
     onNone: () => ".*",
     onSome: (value) => value
   });
   const levelOpt = levelWithDefault(stringOption2(raw.level));
   const eventOpt = eventWithDefault(stringOption2(raw.event));
-  if (Option8.isNone(name) || Option8.isNone(detector) || Option8.isNone(levelOpt) || Option8.isNone(eventOpt) || Option8.isNone(regexOption2(toolRegex))) {
-    return Option8.none();
+  if (Option7.isNone(name) || Option7.isNone(detector) || Option7.isNone(levelOpt) || Option7.isNone(eventOpt) || Option7.isNone(regexOption2(toolRegex))) {
+    return Option7.none();
   }
-  const description = Option8.match(stringOption2(raw.description), {
+  const description = Option7.match(stringOption2(raw.description), {
     onNone: () => "",
     onSome: (value) => value
   });
-  const glob3 = stringOption2(raw.glob);
+  const glob = stringOption2(raw.glob);
   const ignoreGlob = readStringArray(raw.ignoreGlob);
   const suggestedSkills = readStringArray(raw.suggestSkills);
-  return Option8.some(new Pattern.Value({
+  return Option7.some(new Pattern.Value({
     name: name.value,
     description,
     event: eventOpt.value,
     toolRegex,
     level: levelOpt.value,
-    ...Option8.isSome(glob3) ? { glob: glob3.value } : undefined,
-    ...Option8.isSome(ignoreGlob) ? { ignoreGlob: [...ignoreGlob.value] } : undefined,
+    ...Option7.isSome(glob) ? { glob: glob.value } : undefined,
+    ...Option7.isSome(ignoreGlob) ? { ignoreGlob: [...ignoreGlob.value] } : undefined,
     detector: detector.value,
     guidance: extractBody(content),
-    ...Option8.isSome(suggestedSkills) ? { suggestedSkills: [...suggestedSkills.value] } : undefined,
+    ...Option7.isSome(suggestedSkills) ? { suggestedSkills: [...suggestedSkills.value] } : undefined,
     sourcePath: filePath
   }));
 }, patternOrder, toRuleDefinition = (pattern) => new RuleDefinition.Definition({
@@ -9005,20 +8987,20 @@ var import_yaml, FRONTMATTER_RE, isAlreadyQuoted = (val) => val.startsWith("'") 
   severity: pattern.level,
   patternName: pattern.name,
   sourcePath: pattern.sourcePath
-}), loadPatterns = (patternsDir) => Effect10.gen(function* () {
-  const fileSystem = yield* FileSystem5.FileSystem;
-  const path = yield* Path5.Path;
-  const stat3 = (target) => fileSystem.stat(target).pipe(Effect10.map(Option8.some), Effect10.catchTag("PlatformError", () => Effect10.succeed(Option8.none())));
-  const walkPatterns = (directory) => Effect10.gen(function* () {
-    const entries = yield* fileSystem.readDirectory(directory).pipe(Effect10.catchTag("PlatformError", () => Effect10.fail(new CatalogError({
+}), loadPatterns = (patternsDir) => Effect7.gen(function* () {
+  const fileSystem = yield* FileSystem3.FileSystem;
+  const path = yield* Path3.Path;
+  const stat = (target) => fileSystem.stat(target).pipe(Effect7.map(Option7.some), Effect7.catchTag("PlatformError", () => Effect7.succeed(Option7.none())));
+  const walkPatterns = (directory) => Effect7.gen(function* () {
+    const entries = yield* fileSystem.readDirectory(directory).pipe(Effect7.catchTag("PlatformError", () => Effect7.fail(new CatalogError({
       path: directory,
       reason: "cannot read patterns directory"
     }))));
-    const nested = yield* Effect10.forEach(entries, (entry) => Effect10.gen(function* () {
+    const nested = yield* Effect7.forEach(entries, (entry) => Effect7.gen(function* () {
       const fullPath = path.join(directory, entry);
-      const info = yield* stat3(fullPath);
-      if (Option8.isNone(info)) {
-        return yield* Effect10.fail(new CatalogError({ path: fullPath, reason: "unreadable entry" }));
+      const info = yield* stat(fullPath);
+      if (Option7.isNone(info)) {
+        return yield* Effect7.fail(new CatalogError({ path: fullPath, reason: "unreadable entry" }));
       }
       if (info.value.type === "Directory") {
         return yield* walkPatterns(fullPath);
@@ -9026,10 +9008,10 @@ var import_yaml, FRONTMATTER_RE, isAlreadyQuoted = (val) => val.startsWith("'") 
       if (info.value.type !== "File" || !entry.endsWith(".md") || isSkippedFile(entry)) {
         return [];
       }
-      const content = yield* fileSystem.readFileString(fullPath).pipe(Effect10.catchTag("PlatformError", () => Effect10.fail(new CatalogError({ path: fullPath, reason: "unreadable file" }))));
+      const content = yield* fileSystem.readFileString(fullPath).pipe(Effect7.catchTag("PlatformError", () => Effect7.fail(new CatalogError({ path: fullPath, reason: "unreadable file" }))));
       const parsed = toPattern(fullPath, content);
-      if (Option8.isNone(parsed)) {
-        return yield* Effect10.fail(new CatalogError({
+      if (Option7.isNone(parsed)) {
+        return yield* Effect7.fail(new CatalogError({
           path: fullPath,
           reason: "malformed pattern frontmatter/detector"
         }));
@@ -9047,45 +9029,45 @@ var init_Catalog = __esm(() => {
   import_yaml = __toESM(require_dist(), 1);
   FRONTMATTER_RE = /^---\n([\s\S]*?)\n---/;
   SAFE_VALUE_RE = /^[\w\s.\-/]+$/;
-  CatalogError = class CatalogError extends Schema9.TaggedError()("CatalogError", {
-    path: Schema9.String,
-    reason: Schema9.String
+  CatalogError = class CatalogError extends Schema8.TaggedError()("CatalogError", {
+    path: Schema8.String,
+    reason: Schema8.String
   }) {
   };
-  regexOption2 = Option8.liftThrowable((pattern) => new RegExp(pattern));
+  regexOption2 = Option7.liftThrowable((pattern) => new RegExp(pattern));
   patternOrder = Order2.mapInput(Order2.String, (pattern) => pattern.sourcePath);
   ((Catalog) => {
 
     class Service extends Context3.Service()("opencode-effect-harness/enforcement/PatternCatalog") {
     }
     Catalog.Service = Service;
-    Catalog.layer = (patternsDir) => Layer5.effect(Service, Effect10.gen(function* () {
+    Catalog.layer = (patternsDir) => Layer3.effect(Service, Effect7.gen(function* () {
       const patterns = yield* loadPatterns(patternsDir);
       return Service.of({
-        getPatterns: Effect10.succeed(patterns),
-        getRules: Effect10.succeed(patterns.map(toRuleDefinition))
+        getPatterns: Effect7.succeed(patterns),
+        getRules: Effect7.succeed(patterns.map(toRuleDefinition))
       });
     }));
   })(Catalog ||= {});
 });
 
 // packages/verify-kit/src/Module.ts
-import { Context as Context4, Effect as Effect11, FileSystem as FileSystem6, Layer as Layer6, Path as Path6, Schema as Schema10 } from "effect";
-var ModuleError, skillEntriesFromAssets = (input) => Effect11.gen(function* () {
-  const fs = yield* FileSystem6.FileSystem;
-  const path = yield* Path6.Path;
+import { Context as Context4, Effect as Effect8, FileSystem as FileSystem4, Layer as Layer4, Path as Path4, Schema as Schema9 } from "effect";
+var ModuleError, skillEntriesFromAssets = (input) => Effect8.gen(function* () {
+  const fs = yield* FileSystem4.FileSystem;
+  const path = yield* Path4.Path;
   const skillsDir = path.join(input.assetsRoot, "skills");
-  const names = yield* fs.readDirectory(skillsDir).pipe(Effect11.catchTag("PlatformError", () => Effect11.succeed([])));
-  return yield* Effect11.forEach(names.filter((n) => n.startsWith("effect-")), (name) => {
+  const names = yield* fs.readDirectory(skillsDir).pipe(Effect8.catchTag("PlatformError", () => Effect8.succeed([])));
+  return yield* Effect8.forEach(names.filter((n) => n.startsWith("effect-")), (name) => {
     const filePath = path.join(skillsDir, name, "SKILL.md");
-    return fsExists(fs, filePath).pipe(Effect11.map((exists) => exists ? [{ name, skillFilePath: filePath }] : []));
-  }, { concurrency: 8 }).pipe(Effect11.map((groups) => groups.flat()));
-}), fsExists = (fs, target) => fs.exists(target).pipe(Effect11.catchTag("PlatformError", () => Effect11.succeed(false))), Registry;
+    return fsExists(fs, filePath).pipe(Effect8.map((exists) => exists ? [{ name, skillFilePath: filePath }] : []));
+  }, { concurrency: 8 }).pipe(Effect8.map((groups) => groups.flat()));
+}), fsExists = (fs, target) => fs.exists(target).pipe(Effect8.catchTag("PlatformError", () => Effect8.succeed(false))), Registry;
 var init_Module = __esm(() => {
   init_Catalog();
-  ModuleError = class ModuleError extends Schema10.TaggedError()("ModuleError", {
-    moduleId: Schema10.String,
-    reason: Schema10.String
+  ModuleError = class ModuleError extends Schema9.TaggedError()("ModuleError", {
+    moduleId: Schema9.String,
+    reason: Schema9.String
   }) {
   };
   ((Registry) => {
@@ -9096,12 +9078,12 @@ var init_Module = __esm(() => {
     Registry.make = (modules) => {
       const registered = [...modules];
       return {
-        register: (module) => Effect11.sync(() => void registered.push(module)),
-        all: () => Effect11.succeed([...registered]),
-        resolve: (touchedFiles) => Effect11.succeed(registered.filter((m) => touchedFiles.some((f) => m.appliesTo(f))))
+        register: (module) => Effect8.sync(() => void registered.push(module)),
+        all: () => Effect8.succeed([...registered]),
+        resolve: (touchedFiles) => Effect8.succeed(registered.filter((m) => touchedFiles.some((f) => m.appliesTo(f))))
       };
     };
-    Registry.layerOf = (modules) => Layer6.succeed(Service, Service.of(Registry.make(modules)));
+    Registry.layerOf = (modules) => Layer4.succeed(Service, Service.of(Registry.make(modules)));
   })(Registry ||= {});
 });
 
@@ -9147,64 +9129,64 @@ var init_Guard = __esm(() => {
 });
 
 // packages/shared/src/Errors.ts
-import { Schema as Schema12 } from "effect";
+import { Schema as Schema11 } from "effect";
 var InvalidInput, NotFound, Unavailable, Conflict;
 var init_Errors = __esm(() => {
-  InvalidInput = class InvalidInput extends Schema12.TaggedError()("InvalidInput", { reason: Schema12.String }) {
+  InvalidInput = class InvalidInput extends Schema11.TaggedError()("InvalidInput", { reason: Schema11.String }) {
   };
-  NotFound = class NotFound extends Schema12.TaggedError()("NotFound", {
-    what: Schema12.String
+  NotFound = class NotFound extends Schema11.TaggedError()("NotFound", {
+    what: Schema11.String
   }) {
   };
-  Unavailable = class Unavailable extends Schema12.TaggedError()("Unavailable", {
-    capability: Schema12.String,
-    reason: Schema12.String
+  Unavailable = class Unavailable extends Schema11.TaggedError()("Unavailable", {
+    capability: Schema11.String,
+    reason: Schema11.String
   }) {
   };
-  Conflict = class Conflict extends Schema12.TaggedError()("Conflict", {
-    reason: Schema12.String
+  Conflict = class Conflict extends Schema11.TaggedError()("Conflict", {
+    reason: Schema11.String
   }) {
   };
 });
 
 // packages/shared/src/Model.ts
-import { Effect as Effect12, Schema as Schema13 } from "effect";
+import { Effect as Effect9, Schema as Schema12 } from "effect";
 var NonEmptyNoSlashHash, ModelReference;
 var init_Model = __esm(() => {
   init_Errors();
-  NonEmptyNoSlashHash = Schema13.NonEmptyString.check(Schema13.isPattern(/^[^/#]+$/, { message: "must not contain / or #" }));
-  ModelReference = class ModelReference extends Schema13.Class("ModelReference")({
+  NonEmptyNoSlashHash = Schema12.NonEmptyString.check(Schema12.isPattern(/^[^/#]+$/, { message: "must not contain / or #" }));
+  ModelReference = class ModelReference extends Schema12.Class("ModelReference")({
     provider: NonEmptyNoSlashHash,
     model: NonEmptyNoSlashHash,
-    variant: Schema13.optionalKey(NonEmptyNoSlashHash)
+    variant: Schema12.optionalKey(NonEmptyNoSlashHash)
   }) {
   };
 });
 
 // packages/shared/src/Command.ts
-import { Context as Context5, Schema as Schema14 } from "effect";
+import { Context as Context5, Schema as Schema13 } from "effect";
 var CommandSpec, CommandResult, ExecError, Exec;
 var init_Command = __esm(() => {
-  CommandSpec = class CommandSpec extends Schema14.Class("CommandSpec")({
-    executable: Schema14.NonEmptyString,
-    args: Schema14.Array(Schema14.String),
-    cwd: Schema14.optionalKey(Schema14.NonEmptyString),
-    timeoutMs: Schema14.Finite.check(Schema14.isInt(), Schema14.isGreaterThanOrEqualTo(1)),
-    maxOutputBytes: Schema14.Finite.check(Schema14.isInt(), Schema14.isGreaterThanOrEqualTo(1)),
-    env: Schema14.optionalKey(Schema14.Record(Schema14.String, Schema14.String))
+  CommandSpec = class CommandSpec extends Schema13.Class("CommandSpec")({
+    executable: Schema13.NonEmptyString,
+    args: Schema13.Array(Schema13.String),
+    cwd: Schema13.optionalKey(Schema13.NonEmptyString),
+    timeoutMs: Schema13.Finite.check(Schema13.isInt(), Schema13.isGreaterThanOrEqualTo(1)),
+    maxOutputBytes: Schema13.Finite.check(Schema13.isInt(), Schema13.isGreaterThanOrEqualTo(1)),
+    env: Schema13.optionalKey(Schema13.Record(Schema13.String, Schema13.String))
   }) {
   };
-  CommandResult = class CommandResult extends Schema14.Class("CommandResult")({
-    exitCode: Schema14.optionalKey(Schema14.Number),
-    stdout: Schema14.String,
-    stderr: Schema14.String,
-    timedOut: Schema14.Boolean,
-    truncated: Schema14.Boolean
+  CommandResult = class CommandResult extends Schema13.Class("CommandResult")({
+    exitCode: Schema13.optionalKey(Schema13.Number),
+    stdout: Schema13.String,
+    stderr: Schema13.String,
+    timedOut: Schema13.Boolean,
+    truncated: Schema13.Boolean
   }) {
   };
-  ExecError = class ExecError extends Schema14.TaggedError()("ExecError", {
-    reason: Schema14.String,
-    command: Schema14.String
+  ExecError = class ExecError extends Schema13.TaggedError()("ExecError", {
+    reason: Schema13.String,
+    command: Schema13.String
   }) {
   };
   ((Exec) => {
@@ -9222,43 +9204,43 @@ var fnv1aHex = (input) => {
 };
 
 // packages/shared/src/Refs.ts
-import { Schema as Schema15 } from "effect";
+import { Schema as Schema14 } from "effect";
 var projectKeyOf = (absoluteRoot) => fnv1aHex(absoluteRoot), ProjectKeyBrand, AbsolutePathBrand, ProjectScope, SessionOrigin, SessionRef, SnapshotRef, ArtifactRef;
 var init_Refs = __esm(() => {
-  ProjectKeyBrand = Schema15.String.check(Schema15.isPattern(/^[0-9a-f]{8}$/, { message: "projectKey must be 8-hex" }));
-  AbsolutePathBrand = Schema15.NonEmptyString;
-  ProjectScope = class ProjectScope extends Schema15.Class("ProjectScope")({
+  ProjectKeyBrand = Schema14.String.check(Schema14.isPattern(/^[0-9a-f]{8}$/, { message: "projectKey must be 8-hex" }));
+  AbsolutePathBrand = Schema14.NonEmptyString;
+  ProjectScope = class ProjectScope extends Schema14.Class("ProjectScope")({
     projectKey: ProjectKeyBrand,
     root: AbsolutePathBrand
   }) {
   };
-  SessionOrigin = Schema15.Literals(["builder", "verifier", "critic", "compound", "benchmark"]);
-  SessionRef = class SessionRef extends Schema15.Class("SessionRef")({
-    sessionID: Schema15.NonEmptyString,
+  SessionOrigin = Schema14.Literals(["builder", "verifier", "critic", "compound", "benchmark"]);
+  SessionRef = class SessionRef extends Schema14.Class("SessionRef")({
+    sessionID: Schema14.NonEmptyString,
     projectKey: ProjectKeyBrand,
     origin: SessionOrigin
   }) {
   };
-  SnapshotRef = class SnapshotRef extends Schema15.Class("SnapshotRef")({
-    repositoryHash: Schema15.String,
-    specRevisions: Schema15.Array(Schema15.String),
-    planRevision: Schema15.optionalKey(Schema15.String),
-    contentHash: Schema15.String
+  SnapshotRef = class SnapshotRef extends Schema14.Class("SnapshotRef")({
+    repositoryHash: Schema14.String,
+    specRevisions: Schema14.Array(Schema14.String),
+    planRevision: Schema14.optionalKey(Schema14.String),
+    contentHash: Schema14.String
   }) {
   };
-  ArtifactRef = class ArtifactRef extends Schema15.Class("ArtifactRef")({
-    path: Schema15.String,
-    sha256: Schema15.String,
-    bytes: Schema15.Number
+  ArtifactRef = class ArtifactRef extends Schema14.Class("ArtifactRef")({
+    path: Schema14.String,
+    sha256: Schema14.String,
+    bytes: Schema14.Number
   }) {
   };
 });
 
 // packages/shared/src/lock/Lock.ts
-import { Effect as Effect14 } from "effect";
-var withExclusiveDirectoryLock = (fs, lockPath, effect2, onAcquireFailure) => Effect14.gen(function* () {
-  yield* fs.makeDirectory(lockPath).pipe(Effect14.catchTag("PlatformError", () => Effect14.fail(onAcquireFailure())));
-  return yield* effect2.pipe(Effect14.ensuring(fs.remove(lockPath, { recursive: true }).pipe(Effect14.ignore)));
+import { Effect as Effect11 } from "effect";
+var withExclusiveDirectoryLock = (fs, lockPath, effect, onAcquireFailure) => Effect11.gen(function* () {
+  yield* fs.makeDirectory(lockPath).pipe(Effect11.catchTag("PlatformError", () => Effect11.fail(onAcquireFailure())));
+  return yield* effect.pipe(Effect11.ensuring(fs.remove(lockPath, { recursive: true }).pipe(Effect11.ignore)));
 });
 var init_Lock = () => {};
 
@@ -9266,13 +9248,13 @@ var init_Lock = () => {};
 import {
   Clock,
   Context as Context6,
-  Effect as Effect15,
-  FileSystem as FileSystem8,
-  Layer as Layer7,
-  Option as Option9,
-  Path as Path7,
+  Effect as Effect12,
+  FileSystem as FileSystem6,
+  Layer as Layer5,
+  Option as Option8,
+  Path as Path5,
   Ref,
-  Schema as Schema16
+  Schema as Schema15
 } from "effect";
 import { Semaphore } from "effect";
 var JournalEntry, JournalError, GENESIS_HASH = "genesis", Journal, safeSegment = (value) => /^[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(value), stableStringify = (value) => {
@@ -9290,7 +9272,7 @@ var JournalEntry, JournalError, GENESIS_HASH = "genesis", Journal, safeSegment =
   return Object.fromEntries(Object.entries(value).flatMap(([key, seq]) => typeof seq === "number" && Number.isInteger(seq) && seq >= 0 ? [[key, seq]] : []));
 }, parseLine = (line) => {
   try {
-    const entry = Schema16.decodeUnknownSync(JournalEntry)(JSON.parse(line));
+    const entry = Schema15.decodeUnknownSync(JournalEntry)(JSON.parse(line));
     return { ok: true, entry };
   } catch {
     return { ok: false };
@@ -9298,20 +9280,20 @@ var JournalEntry, JournalError, GENESIS_HASH = "genesis", Journal, safeSegment =
 };
 var init_Journal = __esm(() => {
   init_Lock();
-  JournalEntry = class JournalEntry extends Schema16.Class("JournalEntry")({
-    sequence: Schema16.Number,
-    recordedAt: Schema16.Number,
-    actor: Schema16.String,
-    kind: Schema16.String,
-    payload: Schema16.Unknown,
-    previousHash: Schema16.String,
-    hash: Schema16.String
+  JournalEntry = class JournalEntry extends Schema15.Class("JournalEntry")({
+    sequence: Schema15.Number,
+    recordedAt: Schema15.Number,
+    actor: Schema15.String,
+    kind: Schema15.String,
+    payload: Schema15.Unknown,
+    previousHash: Schema15.String,
+    hash: Schema15.String
   }) {
   };
-  JournalError = class JournalError extends Schema16.TaggedError()("JournalError", {
-    operation: Schema16.Literals(["append", "read", "repair"]),
-    stream: Schema16.String,
-    reason: Schema16.String
+  JournalError = class JournalError extends Schema15.TaggedError()("JournalError", {
+    operation: Schema15.Literals(["append", "read", "repair"]),
+    stream: Schema15.String,
+    reason: Schema15.String
   }) {
   };
   ((Journal) => {
@@ -9321,38 +9303,38 @@ var init_Journal = __esm(() => {
     Journal.Service = Service;
   })(Journal ||= {});
   ((Journal) => {
-    Journal.layer = (baseDir) => Layer7.effect(Journal.Service, Effect15.gen(function* () {
+    Journal.layer = (baseDir) => Layer5.effect(Journal.Service, Effect12.gen(function* () {
       const deps = {
-        fs: yield* FileSystem8.FileSystem,
-        path: yield* Path7.Path
+        fs: yield* FileSystem6.FileSystem,
+        path: yield* Path5.Path
       };
-      yield* Effect15.ignore(deps.fs.makeDirectory(baseDir, { recursive: true }));
+      yield* Effect12.ignore(deps.fs.makeDirectory(baseDir, { recursive: true }));
       const locksDir = deps.path.join(baseDir, ".locks");
-      yield* Effect15.ignore(deps.fs.makeDirectory(locksDir, { recursive: true }));
+      yield* Effect12.ignore(deps.fs.makeDirectory(locksDir, { recursive: true }));
       const locks = yield* Ref.make(new Map);
-      const lockFor = (stream) => Ref.modify(locks, (map2) => {
-        const existing = map2.get(stream);
+      const lockFor = (stream) => Ref.modify(locks, (map) => {
+        const existing = map.get(stream);
         if (existing !== undefined)
-          return [existing, map2];
+          return [existing, map];
         const created = Semaphore.makeUnsafe(1);
-        return [created, new Map(map2).set(stream, created)];
+        return [created, new Map(map).set(stream, created)];
       });
       const filePathOf2 = (stream) => deps.path.join(baseDir, `${stream}.ndjson`);
       const idsPathOf = (stream) => deps.path.join(baseDir, `${stream}.ids.json`);
-      const guarded = (stream, effect2) => Effect15.flatMap(lockFor(stream), (semaphore) => semaphore.withPermits(1)(safeSegment(stream) ? withExclusiveDirectoryLock(deps.fs, deps.path.join(locksDir, `${stream}.lock`), effect2, () => toError(stream, "append", "another process owns the stream lock")) : effect2));
+      const guarded = (stream, effect) => Effect12.flatMap(lockFor(stream), (semaphore) => semaphore.withPermits(1)(safeSegment(stream) ? withExclusiveDirectoryLock(deps.fs, deps.path.join(locksDir, `${stream}.lock`), effect, () => toError(stream, "append", "another process owns the stream lock")) : effect));
       const toError = (stream, operation, reason) => new JournalError({ operation, stream, reason });
-      const readFileRaw = (stream) => deps.fs.exists(filePathOf2(stream)).pipe(Effect15.catchTag("PlatformError", () => Effect15.succeed(false)), Effect15.flatMap((exists) => exists ? deps.fs.readFileString(filePathOf2(stream)).pipe(Effect15.catchTag("PlatformError", () => Effect15.fail(toError(stream, "read", "stream file unreadable")))) : Effect15.succeed("")));
-      const decodeEntries = (raw, stream) => Effect15.suspend(() => {
+      const readFileRaw = (stream) => deps.fs.exists(filePathOf2(stream)).pipe(Effect12.catchTag("PlatformError", () => Effect12.succeed(false)), Effect12.flatMap((exists) => exists ? deps.fs.readFileString(filePathOf2(stream)).pipe(Effect12.catchTag("PlatformError", () => Effect12.fail(toError(stream, "read", "stream file unreadable")))) : Effect12.succeed("")));
+      const decodeEntries = (raw, stream) => Effect12.suspend(() => {
         if (raw.trim().length === 0)
-          return Effect15.succeed([]);
+          return Effect12.succeed([]);
         const lines = raw.split(`
 `).filter((line) => line.length > 0);
-        return Effect15.forEach(lines, (line) => Effect15.succeed(parseLine(line)), { concurrency: 1 }).pipe(Effect15.flatMap((parsed) => {
+        return Effect12.forEach(lines, (line) => Effect12.succeed(parseLine(line)), { concurrency: 1 }).pipe(Effect12.flatMap((parsed) => {
           const firstBad = parsed.findIndex((p) => !p.ok);
           if (firstBad !== -1) {
-            return Effect15.fail(toError(stream, "read", `corrupt entry after ${String(firstBad)} valid entries`));
+            return Effect12.fail(toError(stream, "read", `corrupt entry after ${String(firstBad)} valid entries`));
           }
-          return Effect15.succeed(parsed.flatMap((p) => p.ok ? [p.entry] : [])).pipe(Effect15.flatMap((entries) => {
+          return Effect12.succeed(parsed.flatMap((p) => p.ok ? [p.entry] : [])).pipe(Effect12.flatMap((entries) => {
             const brokenAt = entries.findIndex((entry, index) => {
               if (entry.sequence !== index)
                 return true;
@@ -9362,22 +9344,22 @@ var init_Journal = __esm(() => {
               const previous = index === 0 ? GENESIS_HASH : entries[index - 1]?.hash;
               return entry.previousHash !== previous;
             });
-            return brokenAt === -1 ? Effect15.succeed(entries) : Effect15.fail(toError(stream, "read", `broken chain at entry ${String(brokenAt)}`));
+            return brokenAt === -1 ? Effect12.succeed(entries) : Effect12.fail(toError(stream, "read", `broken chain at entry ${String(brokenAt)}`));
           }));
         }));
       });
-      const readIds = (stream) => deps.fs.readFileString(idsPathOf(stream)).pipe(Effect15.flatMap((raw) => Effect15.try(() => JSON.parse(raw))), Effect15.map(toIdIndex), Effect15.orElseSucceed(() => ({})));
-      const writeAtomic = (target, data) => Effect15.gen(function* () {
+      const readIds = (stream) => deps.fs.readFileString(idsPathOf(stream)).pipe(Effect12.flatMap((raw) => Effect12.try(() => JSON.parse(raw))), Effect12.map(toIdIndex), Effect12.orElseSucceed(() => ({})));
+      const writeAtomic = (target, data) => Effect12.gen(function* () {
         const tmp = target + `.tmp-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
         yield* deps.fs.writeFileString(tmp, data);
         yield* deps.fs.rename(tmp, target);
-      }).pipe(Effect15.catchTag("PlatformError", () => Effect15.fail(toError("internal", "append", `atomic write failed: ${target}`))));
-      const append = (input) => guarded(input.stream, Effect15.gen(function* () {
+      }).pipe(Effect12.catchTag("PlatformError", () => Effect12.fail(toError("internal", "append", `atomic write failed: ${target}`))));
+      const append = (input) => guarded(input.stream, Effect12.gen(function* () {
         if (!safeSegment(input.stream)) {
-          return yield* Effect15.fail(toError(input.stream, "append", "invalid stream name"));
+          return yield* Effect12.fail(toError(input.stream, "append", "invalid stream name"));
         }
         if (input.kind.trim().length === 0) {
-          return yield* Effect15.fail(toError(input.stream, "append", "empty kind"));
+          return yield* Effect12.fail(toError(input.stream, "append", "empty kind"));
         }
         const raw = yield* readFileRaw(input.stream);
         const entries = yield* decodeEntries(raw, input.stream);
@@ -9415,11 +9397,11 @@ ${JSON.stringify(entry)}
         }
         return entry;
       }));
-      const read2 = (stream) => safeSegment(stream) ? Effect15.flatMap(readFileRaw(stream), (raw) => decodeEntries(raw, stream)) : Effect15.fail(toError(stream, "read", "invalid stream name"));
-      const latest = (stream) => Effect15.map(read2(stream), (entries) => Option9.fromUndefinedOr(entries.at(-1)));
-      const repair = (stream) => guarded(stream, Effect15.gen(function* () {
+      const read = (stream) => safeSegment(stream) ? Effect12.flatMap(readFileRaw(stream), (raw) => decodeEntries(raw, stream)) : Effect12.fail(toError(stream, "read", "invalid stream name"));
+      const latest = (stream) => Effect12.map(read(stream), (entries) => Option8.fromUndefinedOr(entries.at(-1)));
+      const repair = (stream) => guarded(stream, Effect12.gen(function* () {
         if (!safeSegment(stream)) {
-          return yield* Effect15.fail(toError(stream, "repair", "invalid stream name"));
+          return yield* Effect12.fail(toError(stream, "repair", "invalid stream name"));
         }
         const raw = yield* readFileRaw(stream);
         if (raw.trim().length === 0)
@@ -9429,28 +9411,28 @@ ${JSON.stringify(entry)}
         const parsed = lines.map(parseLine);
         const validCount = parsed.findIndex((p) => !p.ok) === -1 ? parsed.length : parsed.findIndex((p) => !p.ok);
         const quarantined = lines.length - validCount;
-        return yield* quarantined > 0 ? Effect15.gen(function* () {
+        return yield* quarantined > 0 ? Effect12.gen(function* () {
           const quarantineTarget = deps.path.join(baseDir, `${stream}.corrupt-${Date.now()}`);
           yield* deps.fs.writeFileString(quarantineTarget, lines.slice(validCount).join(`
 `) + `
-`).pipe(Effect15.catchTag("PlatformError", () => Effect15.fail(toError(stream, "repair", "quarantine write failed"))));
+`).pipe(Effect12.catchTag("PlatformError", () => Effect12.fail(toError(stream, "repair", "quarantine write failed"))));
           const kept = validCount === 0 ? "" : lines.slice(0, validCount).join(`
 `) + `
 `;
           yield* writeAtomic(filePathOf2(stream), kept);
           return quarantined;
-        }) : Effect15.succeed(0);
+        }) : Effect12.succeed(0);
       }));
-      return Journal.Service.of({ append, read: read2, latest, repair });
+      return Journal.Service.of({ append, read, latest, repair });
     }));
   })(Journal ||= {});
 });
 
 // packages/shared/src/Slug.ts
-import { Schema as Schema17 } from "effect";
+import { Schema as Schema16 } from "effect";
 var Slug;
 var init_Slug = __esm(() => {
-  Slug = Schema17.String.check(Schema17.isPattern(/^[a-z0-9][a-z0-9-]{0,63}$/, { message: "invalid slug" }));
+  Slug = Schema16.String.check(Schema16.isPattern(/^[a-z0-9][a-z0-9-]{0,63}$/, { message: "invalid slug" }));
 });
 
 // packages/shared/src/index.ts
@@ -9466,56 +9448,56 @@ var init_src = __esm(() => {
 });
 
 // packages/verify-kit/src/Checker.ts
-import { Clock as Clock2, Effect as Effect16, Schema as Schema18 } from "effect";
+import { Clock as Clock2, Effect as Effect13, Schema as Schema17 } from "effect";
 var Verdict, CheckerKind, Diagnostic, CheckerSpec, CheckerResult, Runner;
 var init_Checker = __esm(() => {
   init_src();
-  Verdict = Schema18.Literals([
+  Verdict = Schema17.Literals([
     "passed",
     "failed",
     "error",
     "skipped"
   ]);
-  CheckerKind = Schema18.Literals([
+  CheckerKind = Schema17.Literals([
     "typecheck",
     "test",
     "lint",
     "build",
     "custom"
   ]);
-  Diagnostic = class Diagnostic extends Schema18.Class("Diagnostic")({
-    checkerId: Schema18.String,
-    severity: Schema18.Literals(["error", "warning", "info"]),
-    file: Schema18.optionalKey(Schema18.String),
-    line: Schema18.optionalKey(Schema18.Number),
-    column: Schema18.optionalKey(Schema18.Number),
-    message: Schema18.String
+  Diagnostic = class Diagnostic extends Schema17.Class("Diagnostic")({
+    checkerId: Schema17.String,
+    severity: Schema17.Literals(["error", "warning", "info"]),
+    file: Schema17.optionalKey(Schema17.String),
+    line: Schema17.optionalKey(Schema17.Number),
+    column: Schema17.optionalKey(Schema17.Number),
+    message: Schema17.String
   }) {
   };
-  CheckerSpec = class CheckerSpec extends Schema18.Class("CheckerSpec")({
-    id: Schema18.String,
+  CheckerSpec = class CheckerSpec extends Schema17.Class("CheckerSpec")({
+    id: Schema17.String,
     kind: CheckerKind,
-    label: Schema18.String,
+    label: Schema17.String,
     command: CommandSpec
   }) {
   };
-  CheckerResult = class CheckerResult extends Schema18.Class("CheckerResult")({
-    specId: Schema18.String,
+  CheckerResult = class CheckerResult extends Schema17.Class("CheckerResult")({
+    specId: Schema17.String,
     kind: CheckerKind,
-    label: Schema18.String,
+    label: Schema17.String,
     verdict: Verdict,
-    exitCode: Schema18.optionalKey(Schema18.Number),
-    timedOut: Schema18.optionalKey(Schema18.Boolean),
-    stdout: Schema18.String,
-    stderr: Schema18.String,
-    diagnostics: Schema18.Array(Diagnostic),
-    durationMs: Schema18.Number
+    exitCode: Schema17.optionalKey(Schema17.Number),
+    timedOut: Schema17.optionalKey(Schema17.Boolean),
+    stdout: Schema17.String,
+    stderr: Schema17.String,
+    diagnostics: Schema17.Array(Diagnostic),
+    durationMs: Schema17.Number
   }) {
   };
   ((Runner) => {
-    Runner.run = Effect16.fnUntraced(function* (exec, spec, options = {}) {
+    Runner.run = Effect13.fnUntraced(function* (exec, spec, options = {}) {
       const startedAt = yield* Clock2.currentTimeMillis;
-      const commandResult = yield* exec.run(spec.command).pipe(Effect16.catchTag("ExecError", () => Effect16.succeed(new CommandResult({
+      const commandResult = yield* exec.run(spec.command).pipe(Effect13.catchTag("ExecError", () => Effect13.succeed(new CommandResult({
         stdout: "",
         stderr: `executor failure for ${spec.id}`,
         timedOut: true,
@@ -9547,7 +9529,7 @@ __export(exports_src, {
   createModule: () => createModule,
   verifyAssetsManifest: () => verifyAssetsManifest
 });
-import { Effect as Effect38, FileSystem as FileSystem12, Option as Option23, Path as Path10 } from "effect";
+import { Effect as Effect33, FileSystem as FileSystem10, Option as Option20, Path as Path8 } from "effect";
 var TSC_DIAGNOSTIC_RE, DEFAULT_ASSETS_ROOT, EXPECTED_COUNTS, unitRowOfKind = (kind, rel) => kind === "skills" ? rel.endsWith("/SKILL.md") : true, MANIFEST_HASH_RE, safeManifestRel = (rel) => rel.length > 0 && !rel.startsWith("/") && !rel.split("/").includes("..") && !rel.split("/").includes(""), parseManifestTsv = (raw) => {
   const cells = raw.split(`
 `).filter((line) => line.length > 0).map((line) => line.split("\t"));
@@ -9569,12 +9551,12 @@ var TSC_DIAGNOSTIC_RE, DEFAULT_ASSETS_ROOT, EXPECTED_COUNTS, unitRowOfKind = (ki
     return { ok: false, reason: `duplicate manifest entry ${duplicate.rel}` };
   }
   return { ok: true, rows };
-}, verifyAssetsManifest = (assetsRoot) => Effect38.gen(function* () {
-  const fs = yield* FileSystem12.FileSystem;
-  const path = yield* Path10.Path;
+}, verifyAssetsManifest = (assetsRoot) => Effect33.gen(function* () {
+  const fs = yield* FileSystem10.FileSystem;
+  const path = yield* Path8.Path;
   const manifestPath = path.join(assetsRoot, "manifest.tsv");
-  const rawOpt = yield* fs.readFileString(manifestPath).pipe(Effect38.option);
-  if (Option23.isNone(rawOpt)) {
+  const rawOpt = yield* fs.readFileString(manifestPath).pipe(Effect33.option);
+  if (Option20.isNone(rawOpt)) {
     return {
       ok: false,
       reason: `manifest missing: ${manifestPath}`
@@ -9594,34 +9576,34 @@ var TSC_DIAGNOSTIC_RE, DEFAULT_ASSETS_ROOT, EXPECTED_COUNTS, unitRowOfKind = (ki
     const actual = rows.filter((row) => row.rel.startsWith(`${kind}/`) && unitRowOfKind(kind, row.rel)).length;
     return actual === expected ? [] : [`count ${kind}: manifest ${String(actual)} != required ${String(expected)}`];
   });
-  const checked = yield* Effect38.forEach(rows, (row) => Effect38.gen(function* () {
+  const checked = yield* Effect33.forEach(rows, (row) => Effect33.gen(function* () {
     const target = path.join(assetsRoot, row.rel);
-    const statOpt = yield* fs.stat(target).pipe(Effect38.option);
-    if (Option23.isNone(statOpt)) {
-      return Option23.some(`missing ${row.rel}`);
+    const statOpt = yield* fs.stat(target).pipe(Effect33.option);
+    if (Option20.isNone(statOpt)) {
+      return Option20.some(`missing ${row.rel}`);
     }
     if (Number(statOpt.value.size) !== row.size) {
-      return Option23.some(`size-drift ${row.rel}`);
+      return Option20.some(`size-drift ${row.rel}`);
     }
-    const contentOpt = yield* fs.readFileString(target).pipe(Effect38.option);
-    if (Option23.isNone(contentOpt)) {
-      return Option23.some(`unreadable ${row.rel}`);
+    const contentOpt = yield* fs.readFileString(target).pipe(Effect33.option);
+    if (Option20.isNone(contentOpt)) {
+      return Option20.some(`unreadable ${row.rel}`);
     }
-    return fnv1aHex(contentOpt.value) === row.hash ? Option23.none() : Option23.some(`content-drift ${row.rel}`);
+    return fnv1aHex(contentOpt.value) === row.hash ? Option20.none() : Option20.some(`content-drift ${row.rel}`);
   }), { concurrency: 8 });
-  const fileMismatches = checked.flatMap((o) => Option23.isSome(o) ? [o.value] : []);
-  const walk = (relDir) => Effect38.gen(function* () {
-    const entries = yield* fs.readDirectory(path.join(assetsRoot, relDir)).pipe(Effect38.catchTag("PlatformError", () => Effect38.succeed([])));
-    const nested = yield* Effect38.forEach(entries, (entry) => Effect38.gen(function* () {
+  const fileMismatches = checked.flatMap((o) => Option20.isSome(o) ? [o.value] : []);
+  const walk = (relDir) => Effect33.gen(function* () {
+    const entries = yield* fs.readDirectory(path.join(assetsRoot, relDir)).pipe(Effect33.catchTag("PlatformError", () => Effect33.succeed([])));
+    const nested = yield* Effect33.forEach(entries, (entry) => Effect33.gen(function* () {
       const rel = `${relDir}/${entry}`;
-      const statOpt = yield* fs.stat(path.join(assetsRoot, rel)).pipe(Effect38.option);
-      if (Option23.isNone(statOpt))
+      const statOpt = yield* fs.stat(path.join(assetsRoot, rel)).pipe(Effect33.option);
+      if (Option20.isNone(statOpt))
         return [];
       return statOpt.value.type === "Directory" ? yield* walk(rel) : [rel];
     }), { concurrency: 8 });
     return nested.flat();
   });
-  const inventories = yield* Effect38.forEach(kindCounts.map(([kind]) => kind), (kind) => Effect38.map(walk(kind), (files) => [kind, files]), { concurrency: 3 });
+  const inventories = yield* Effect33.forEach(kindCounts.map(([kind]) => kind), (kind) => Effect33.map(walk(kind), (files) => [kind, files]), { concurrency: 3 });
   const inventoryMismatches = inventories.flatMap(([kind, actualFiles]) => {
     const listed = new Set(rows.filter((row) => row.rel.startsWith(`${kind}/`)).map((row) => row.rel));
     return actualFiles.filter((rel) => !listed.has(rel)).map((rel) => `unlisted asset ${rel}`);
@@ -9634,25 +9616,25 @@ var TSC_DIAGNOSTIC_RE, DEFAULT_ASSETS_ROOT, EXPECTED_COUNTS, unitRowOfKind = (ki
     };
   }
   return { ok: true };
-}), createModule = (options = {}) => Effect38.gen(function* () {
-  const fs = yield* FileSystem12.FileSystem;
-  const path = yield* Path10.Path;
+}), createModule = (options = {}) => Effect33.gen(function* () {
+  const fs = yield* FileSystem10.FileSystem;
+  const path = yield* Path8.Path;
   const assetsRoot = options.assetsRoot ?? DEFAULT_ASSETS_ROOT;
   const patternsDir = path.join(assetsRoot, "patterns");
   const skillsDir = path.join(assetsRoot, "skills");
   const manifestCheck = yield* verifyAssetsManifest(assetsRoot);
   if (!manifestCheck.ok) {
-    return yield* Effect38.fail(new CatalogError({ path: assetsRoot, reason: manifestCheck.reason }));
+    return yield* Effect33.fail(new CatalogError({ path: assetsRoot, reason: manifestCheck.reason }));
   }
   const detectorList = yield* loadPatterns(patternsDir);
-  const names = yield* fs.readDirectory(skillsDir).pipe(Effect38.catchTag("PlatformError", () => Effect38.succeed([])));
+  const names = yield* fs.readDirectory(skillsDir).pipe(Effect33.catchTag("PlatformError", () => Effect33.succeed([])));
   const skillFile = (name) => path.join(skillsDir, name, "SKILL.md");
-  const presentSkills = (yield* Effect38.forEach(names.filter((n) => n.startsWith("effect-")), (name) => fs.exists(skillFile(name)).pipe(Effect38.catchTag("PlatformError", () => Effect38.succeed(false)), Effect38.map((exists) => exists ? [{ name, path: skillFile(name) }] : [])))).flat();
+  const presentSkills = (yield* Effect33.forEach(names.filter((n) => n.startsWith("effect-")), (name) => fs.exists(skillFile(name)).pipe(Effect33.catchTag("PlatformError", () => Effect33.succeed(false)), Effect33.map((exists) => exists ? [{ name, path: skillFile(name) }] : [])))).flat();
   return {
     id: "typescript",
     languages: ["ts", "tsx"],
     appliesTo: (filePath) => filePath.endsWith(".ts") || filePath.endsWith(".tsx"),
-    checkers: (context) => Effect38.succeed([
+    checkers: (context) => Effect33.succeed([
       new CheckerSpec({
         id: "ts-typecheck",
         kind: "typecheck",
@@ -9691,14 +9673,14 @@ var TSC_DIAGNOSTIC_RE, DEFAULT_ASSETS_ROOT, EXPECTED_COUNTS, unitRowOfKind = (ki
       load: (name) => {
         const entry = presentSkills.find((candidate) => candidate.name === name);
         if (entry === undefined) {
-          return Effect38.fail(new ModuleError({ moduleId: "typescript", reason: `unknown skill ${name}` }));
+          return Effect33.fail(new ModuleError({ moduleId: "typescript", reason: `unknown skill ${name}` }));
         }
-        return fs.readFileString(entry.path).pipe(Effect38.catchTag("PlatformError", () => Effect38.fail(new ModuleError({ moduleId: "typescript", reason: `unreadable ${name}` }))));
+        return fs.readFileString(entry.path).pipe(Effect33.catchTag("PlatformError", () => Effect33.fail(new ModuleError({ moduleId: "typescript", reason: `unreadable ${name}` }))));
       }
     },
     patterns: {
       root: patternsDir,
-      detectors: () => Effect38.succeed(detectorList)
+      detectors: () => Effect33.succeed(detectorList)
     }
   };
 });
@@ -9723,7 +9705,7 @@ __export(exports_src2, {
   DEFAULT_ASSETS_ROOT: () => DEFAULT_ASSETS_ROOT2,
   createModule: () => createModule2
 });
-import { Effect as Effect39, FileSystem as FileSystem13, Option as Option24, Path as Path11 } from "effect";
+import { Effect as Effect34, FileSystem as FileSystem11, Option as Option21, Path as Path9 } from "effect";
 var EXPECTED_COUNTS2, unitRowOfKind2 = (kind, rel) => kind === "skills" ? rel.endsWith("/SKILL.md") : true, MANIFEST_HASH_RE2, safeManifestRel2 = (rel) => rel.length > 0 && !rel.startsWith("/") && !rel.split("/").includes("..") && !rel.split("/").includes(""), parseManifestTsv2 = (raw) => {
   const cells = raw.split(`
 `).filter((l) => l.length > 0).map((l) => l.split("\t"));
@@ -9741,12 +9723,12 @@ var EXPECTED_COUNTS2, unitRowOfKind2 = (kind, rel) => kind === "skills" ? rel.en
   if (dup !== undefined)
     return { ok: false, reason: `duplicate manifest entry ${dup.rel}` };
   return { ok: true, rows };
-}, verifyAssetsManifest2 = (assetsRoot) => Effect39.gen(function* () {
-  const fs = yield* FileSystem13.FileSystem;
-  const path = yield* Path11.Path;
+}, verifyAssetsManifest2 = (assetsRoot) => Effect34.gen(function* () {
+  const fs = yield* FileSystem11.FileSystem;
+  const path = yield* Path9.Path;
   const manifestPath = path.join(assetsRoot, "manifest.tsv");
-  const rawOpt = yield* fs.readFileString(manifestPath).pipe(Effect39.option);
-  if (Option24.isNone(rawOpt))
+  const rawOpt = yield* fs.readFileString(manifestPath).pipe(Effect34.option);
+  if (Option21.isNone(rawOpt))
     return { ok: false, reason: `manifest missing: ${manifestPath}` };
   const parsed = parseManifestTsv2(rawOpt.value);
   if (!parsed.ok)
@@ -9757,53 +9739,53 @@ var EXPECTED_COUNTS2, unitRowOfKind2 = (kind, rel) => kind === "skills" ? rel.en
     const actual = rows.filter((r) => r.rel.startsWith(`${kind}/`) && unitRowOfKind2(kind, r.rel)).length;
     return actual === expected ? [] : [`count ${kind}: manifest ${String(actual)} != required ${String(expected)}`];
   });
-  const checked = yield* Effect39.forEach(rows, (row) => Effect39.gen(function* () {
+  const checked = yield* Effect34.forEach(rows, (row) => Effect34.gen(function* () {
     const target = path.join(assetsRoot, row.rel);
-    const statOpt = yield* fs.stat(target).pipe(Effect39.option);
-    if (Option24.isNone(statOpt))
-      return Option24.some(`missing ${row.rel}`);
+    const statOpt = yield* fs.stat(target).pipe(Effect34.option);
+    if (Option21.isNone(statOpt))
+      return Option21.some(`missing ${row.rel}`);
     if (Number(statOpt.value.size) !== row.size)
-      return Option24.some(`size-drift ${row.rel}`);
-    const contentOpt = yield* fs.readFileString(target).pipe(Effect39.option);
-    if (Option24.isNone(contentOpt))
-      return Option24.some(`unreadable ${row.rel}`);
-    return fnv1aHex(contentOpt.value) === row.hash ? Option24.none() : Option24.some(`content-drift ${row.rel}`);
+      return Option21.some(`size-drift ${row.rel}`);
+    const contentOpt = yield* fs.readFileString(target).pipe(Effect34.option);
+    if (Option21.isNone(contentOpt))
+      return Option21.some(`unreadable ${row.rel}`);
+    return fnv1aHex(contentOpt.value) === row.hash ? Option21.none() : Option21.some(`content-drift ${row.rel}`);
   }), { concurrency: 8 });
-  const fileMismatches = checked.flatMap((o) => Option24.isSome(o) ? [o.value] : []);
-  const walk = (relDir) => Effect39.gen(function* () {
-    const entries = yield* fs.readDirectory(path.join(assetsRoot, relDir)).pipe(Effect39.catchTag("PlatformError", () => Effect39.succeed([])));
-    const nested = yield* Effect39.forEach(entries, (entry) => Effect39.gen(function* () {
+  const fileMismatches = checked.flatMap((o) => Option21.isSome(o) ? [o.value] : []);
+  const walk = (relDir) => Effect34.gen(function* () {
+    const entries = yield* fs.readDirectory(path.join(assetsRoot, relDir)).pipe(Effect34.catchTag("PlatformError", () => Effect34.succeed([])));
+    const nested = yield* Effect34.forEach(entries, (entry) => Effect34.gen(function* () {
       const rel = `${relDir}/${entry}`;
-      const statOpt = yield* fs.stat(path.join(assetsRoot, rel)).pipe(Effect39.option);
-      if (Option24.isNone(statOpt))
+      const statOpt = yield* fs.stat(path.join(assetsRoot, rel)).pipe(Effect34.option);
+      if (Option21.isNone(statOpt))
         return [];
       return statOpt.value.type === "Directory" ? yield* walk(rel) : [rel];
     }), { concurrency: 8 });
     return nested.flat();
   });
-  const inventories = yield* Effect39.forEach(kindCounts.map(([k]) => k), (kind) => Effect39.map(walk(kind), (files) => [kind, files]), { concurrency: 3 });
+  const inventories = yield* Effect34.forEach(kindCounts.map(([k]) => k), (kind) => Effect34.map(walk(kind), (files) => [kind, files]), { concurrency: 3 });
   const inventoryMismatches = inventories.flatMap(([kind, actualFiles]) => {
     const listed = new Set(rows.filter((r) => r.rel.startsWith(`${kind}/`)).map((r) => r.rel));
     return actualFiles.filter((rel) => !listed.has(rel)).map((rel) => `unlisted asset ${rel}`);
   });
   const all = [...countMismatches, ...fileMismatches, ...inventoryMismatches];
   return all.length > 0 ? { ok: false, reason: `asset drift (${String(all.length)}): ${all.slice(0, 6).join("; ")}` } : { ok: true };
-}), DEFAULT_ASSETS_ROOT2, createModule2 = (options = {}) => Effect39.gen(function* () {
-  const fs = yield* FileSystem13.FileSystem;
-  const path = yield* Path11.Path;
+}), DEFAULT_ASSETS_ROOT2, createModule2 = (options = {}) => Effect34.gen(function* () {
+  const fs = yield* FileSystem11.FileSystem;
+  const path = yield* Path9.Path;
   const assetsRoot = options.assetsRoot ?? DEFAULT_ASSETS_ROOT2;
   const skillsDir = path.join(assetsRoot, "skills");
   const patternsDir = path.join(assetsRoot, "patterns");
   const manifestCheck = yield* verifyAssetsManifest2(assetsRoot);
   if (!manifestCheck.ok)
-    return yield* Effect39.fail(new CatalogError({ path: assetsRoot, reason: manifestCheck.reason }));
+    return yield* Effect34.fail(new CatalogError({ path: assetsRoot, reason: manifestCheck.reason }));
   const detectors = yield* loadPatterns(patternsDir);
   const skillPath = path.join(skillsDir, "bend-gen-run", "SKILL.md");
   return {
     id: "bend",
     languages: ["bend"],
     appliesTo: (filePath) => filePath.endsWith(".bend"),
-    checkers: (context) => Effect39.succeed([
+    checkers: (context) => Effect34.succeed([
       new CheckerSpec({
         id: "bend-typecheck",
         kind: "typecheck",
@@ -9820,17 +9802,17 @@ var EXPECTED_COUNTS2, unitRowOfKind2 = (kind, rel) => kind === "skills" ? rel.en
     skills: {
       root: skillsDir,
       entries: [{ name: "bend-gen-run", skillFilePath: skillPath }],
-      load: (skillName) => skillName === "bend-gen-run" ? fs.readFileString(skillPath).pipe(Effect39.catchTag("PlatformError", () => Effect39.fail(new ModuleError({
+      load: (skillName) => skillName === "bend-gen-run" ? fs.readFileString(skillPath).pipe(Effect34.catchTag("PlatformError", () => Effect34.fail(new ModuleError({
         moduleId: "bend",
         reason: `unreadable ${skillName}`
-      })))) : Effect39.fail(new ModuleError({
+      })))) : Effect34.fail(new ModuleError({
         moduleId: "bend",
         reason: `unknown skill ${skillName}`
       }))
     },
     patterns: {
       root: patternsDir,
-      detectors: () => Effect39.succeed(detectors)
+      detectors: () => Effect34.succeed(detectors)
     }
   };
 });
@@ -9845,543 +9827,30 @@ var init_src3 = __esm(() => {
 });
 
 // src/index.ts
-import { Clock as Clock7, Effect as Effect40, FileSystem as FileSystem14, Layer as Layer21, Option as Option25, Path as Path12, Ref as Ref11, Schema as Schema49 } from "effect";
+import { Clock as Clock7, Effect as Effect35, FileSystem as FileSystem12, Layer as Layer17, Option as Option22, Path as Path10, Ref as Ref8, Schema as Schema34 } from "effect";
 import { FetchHttpClient } from "effect/unstable/http";
 import { OtlpLogger, OtlpSerialization, OtlpTracer } from "effect/unstable/observability";
 import { Plugin } from "@opencode-ai/plugin/effect";
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/tool.js
-var exports_tool = {};
-__export(exports_tool, {
-  CallID: () => CallID,
-  Content: () => Content,
-  Error: () => Error2,
-  FileContent: () => FileContent,
-  TextContent: () => TextContent,
-  Tool: () => exports_tool
-});
-import { Effect, JsonSchema, Schema } from "effect";
-var CallID = Schema.String.pipe(Schema.brand("Tool.CallID"));
-
-class Error2 extends Schema.TaggedError()("Tool.Error", {
-  message: Schema.String,
-  error: Schema.optional(Schema.Defect()),
-  metadata: Schema.optional(Schema.Record(Schema.String, Schema.Unknown))
-}) {
-}
-var TextContent = Schema.Struct({
-  type: Schema.Literal("text"),
-  text: Schema.String
-}).annotate({ identifier: "Tool.TextContent" });
-var FileContent = Schema.Struct({
-  type: Schema.Literal("file"),
-  uri: Schema.String,
-  mime: Schema.String,
-  name: Schema.optional(Schema.String)
-}).annotate({ identifier: "Tool.FileContent" });
-var Content = Schema.Union([TextContent, FileContent]).pipe(Schema.toTaggedUnion("type")).annotate({ identifier: "Tool.Content" });
-
-// node_modules/.bun/@effect+platform-node-shared@4.0.0-rc.111+1d1b44bb2cb1f9cf/node_modules/@effect/platform-node-shared/dist/NodeFileSystem.js
-import * as Cause from "effect/Cause";
-import * as Effect2 from "effect/Effect";
-import { effectify } from "effect/Effect";
-import * as FileSystem from "effect/FileSystem";
-import { pipe } from "effect/Function";
-import * as Layer from "effect/Layer";
-import * as Option from "effect/Option";
-import * as Error3 from "effect/PlatformError";
-import * as Queue from "effect/Queue";
-import * as Stream from "effect/Stream";
-import * as Crypto from "crypto";
-import * as NFS from "fs";
-import * as OS from "os";
-import * as Path from "path";
-
-// node_modules/.bun/@effect+platform-node-shared@4.0.0-rc.111+1d1b44bb2cb1f9cf/node_modules/@effect/platform-node-shared/dist/internal/utils.js
-import * as PlatformError from "effect/PlatformError";
-var handleErrnoException = (module, method) => (err, [path]) => {
-  let reason = "Unknown";
-  switch (err.code) {
-    case "ENOENT":
-      reason = "NotFound";
-      break;
-    case "EACCES":
-      reason = "PermissionDenied";
-      break;
-    case "EEXIST":
-      reason = "AlreadyExists";
-      break;
-    case "EISDIR":
-      reason = "BadResource";
-      break;
-    case "ENOTDIR":
-      reason = "BadResource";
-      break;
-    case "EBUSY":
-      reason = "Busy";
-      break;
-    case "ELOOP":
-      reason = "BadResource";
-      break;
-  }
-  return PlatformError.systemError({
-    _tag: reason,
-    module,
-    method,
-    pathOrDescriptor: path,
-    syscall: err.syscall,
-    cause: err
-  });
-};
-
-// node_modules/.bun/@effect+platform-node-shared@4.0.0-rc.111+1d1b44bb2cb1f9cf/node_modules/@effect/platform-node-shared/dist/NodeFileSystem.js
-var handleBadArgument = (method) => (err) => Error3.badArgument({
-  module: "FileSystem",
-  method,
-  description: err.message ?? String(err)
-});
-var access2 = /* @__PURE__ */ (() => {
-  const nodeAccess = /* @__PURE__ */ effectify(NFS.access, /* @__PURE__ */ handleErrnoException("FileSystem", "access"), /* @__PURE__ */ handleBadArgument("access"));
-  return (path, options) => {
-    let mode = NFS.constants.F_OK;
-    if (options?.readable) {
-      mode |= NFS.constants.R_OK;
-    }
-    if (options?.writable) {
-      mode |= NFS.constants.W_OK;
-    }
-    return nodeAccess(path, mode);
-  };
-})();
-var copy = /* @__PURE__ */ (() => {
-  const nodeCp = /* @__PURE__ */ effectify(NFS.cp, /* @__PURE__ */ handleErrnoException("FileSystem", "copy"), /* @__PURE__ */ handleBadArgument("copy"));
-  return (fromPath, toPath, options) => nodeCp(fromPath, toPath, {
-    force: options?.overwrite ?? false,
-    preserveTimestamps: options?.preserveTimestamps ?? false,
-    recursive: true
-  });
-})();
-var copyFile2 = /* @__PURE__ */ (() => {
-  const nodeCopyFile = /* @__PURE__ */ effectify(NFS.copyFile, /* @__PURE__ */ handleErrnoException("FileSystem", "copyFile"), /* @__PURE__ */ handleBadArgument("copyFile"));
-  return (fromPath, toPath) => nodeCopyFile(fromPath, toPath);
-})();
-var chmod2 = /* @__PURE__ */ (() => {
-  const nodeChmod = /* @__PURE__ */ effectify(NFS.chmod, /* @__PURE__ */ handleErrnoException("FileSystem", "chmod"), /* @__PURE__ */ handleBadArgument("chmod"));
-  return (path, mode) => nodeChmod(path, mode);
-})();
-var chown2 = /* @__PURE__ */ (() => {
-  const nodeChown = /* @__PURE__ */ effectify(NFS.chown, /* @__PURE__ */ handleErrnoException("FileSystem", "chown"), /* @__PURE__ */ handleBadArgument("chown"));
-  return (path, uid, gid) => nodeChown(path, uid, gid);
-})();
-var glob2 = /* @__PURE__ */ (() => {
-  const nodeGlob = /* @__PURE__ */ effectify(NFS.glob, /* @__PURE__ */ handleErrnoException("FileSystem", "glob"), /* @__PURE__ */ handleBadArgument("glob"));
-  return (pattern, options) => nodeGlob(pattern, {
-    cwd: options?.root,
-    exclude: options?.exclude
-  });
-})();
-var link2 = /* @__PURE__ */ (() => {
-  const nodeLink = /* @__PURE__ */ effectify(NFS.link, /* @__PURE__ */ handleErrnoException("FileSystem", "link"), /* @__PURE__ */ handleBadArgument("link"));
-  return (existingPath, newPath) => nodeLink(existingPath, newPath);
-})();
-var makeDirectory = /* @__PURE__ */ (() => {
-  const nodeMkdir = /* @__PURE__ */ effectify(NFS.mkdir, /* @__PURE__ */ handleErrnoException("FileSystem", "makeDirectory"), /* @__PURE__ */ handleBadArgument("makeDirectory"));
-  return (path, options) => nodeMkdir(path, {
-    recursive: options?.recursive ?? false,
-    mode: options?.mode
-  });
-})();
-var makeTempDirectoryFactory = (method) => {
-  const nodeMkdtemp = effectify(NFS.mkdtemp, handleErrnoException("FileSystem", method), handleBadArgument(method));
-  return (options) => Effect2.suspend(() => {
-    const prefix = options?.prefix ?? "";
-    const directory = typeof options?.directory === "string" ? Path.join(options.directory, ".") : OS.tmpdir();
-    return nodeMkdtemp(prefix ? Path.join(directory, prefix) : directory + "/");
-  });
-};
-var makeTempDirectory = /* @__PURE__ */ makeTempDirectoryFactory("makeTempDirectory");
-var removeFactory = (method) => {
-  const nodeRm = effectify(NFS.rm, handleErrnoException("FileSystem", method), handleBadArgument(method));
-  return (path, options) => nodeRm(path, {
-    recursive: options?.recursive ?? false,
-    force: options?.force ?? false
-  });
-};
-var remove = /* @__PURE__ */ removeFactory("remove");
-var makeTempDirectoryScoped = /* @__PURE__ */ (() => {
-  const makeDirectory2 = /* @__PURE__ */ makeTempDirectoryFactory("makeTempDirectoryScoped");
-  const removeDirectory = /* @__PURE__ */ removeFactory("makeTempDirectoryScoped");
-  return (options) => Effect2.acquireRelease(makeDirectory2(options), (directory) => Effect2.orDie(removeDirectory(directory, {
-    recursive: true
-  })));
-})();
-var openFactory = (method) => {
-  const nodeOpen = effectify(NFS.open, handleErrnoException("FileSystem", method), handleBadArgument(method));
-  const nodeClose = effectify(NFS.close, handleErrnoException("FileSystem", method), handleBadArgument(method));
-  return (path, options) => pipe(Effect2.acquireRelease(nodeOpen(path, options?.flag ?? "r", options?.mode), (fd) => Effect2.orDie(nodeClose(fd))), Effect2.map((fd) => makeFile(fd, options?.flag?.startsWith("a") ?? false)));
-};
-var open2 = /* @__PURE__ */ openFactory("open");
-var makeFile = /* @__PURE__ */ (() => {
-  const nodeReadFactory = (method) => effectify(NFS.read, handleErrnoException("FileSystem", method), handleBadArgument(method));
-  const nodeRead = /* @__PURE__ */ nodeReadFactory("read");
-  const nodeReadAlloc = /* @__PURE__ */ nodeReadFactory("readAlloc");
-  const nodeStat = /* @__PURE__ */ effectify(NFS.fstat, /* @__PURE__ */ handleErrnoException("FileSystem", "stat"), /* @__PURE__ */ handleBadArgument("stat"));
-  const nodeTruncate = /* @__PURE__ */ effectify(NFS.ftruncate, /* @__PURE__ */ handleErrnoException("FileSystem", "truncate"), /* @__PURE__ */ handleBadArgument("truncate"));
-  const nodeSync = /* @__PURE__ */ effectify(NFS.fsync, /* @__PURE__ */ handleErrnoException("FileSystem", "sync"), /* @__PURE__ */ handleBadArgument("sync"));
-  const nodeWriteFactory = (method) => effectify(NFS.write, handleErrnoException("FileSystem", method), handleBadArgument(method));
-  const nodeWrite = /* @__PURE__ */ nodeWriteFactory("write");
-  const nodeWriteAll = /* @__PURE__ */ nodeWriteFactory("writeAll");
-
-  class FileImpl {
-    [FileSystem.FileTypeId];
-    fd;
-    append;
-    position = /* @__PURE__ */ BigInt(0);
-    constructor(fd, append) {
-      this[FileSystem.FileTypeId] = FileSystem.FileTypeId;
-      this.fd = fd;
-      this.append = append;
-    }
-    get stat() {
-      return Effect2.map(nodeStat(this.fd), makeFileInfo);
-    }
-    get sync() {
-      return nodeSync(this.fd);
-    }
-    seek(offset, from) {
-      const offsetSize = FileSystem.Size(offset);
-      return Effect2.sync(() => {
-        if (from === "start") {
-          this.position = offsetSize;
-        } else if (from === "current") {
-          this.position = this.position + offsetSize;
-        }
-        return FileSystem.Size(this.position);
-      });
-    }
-    read(buffer) {
-      return Effect2.suspend(() => {
-        const position = this.position;
-        return Effect2.map(nodeRead(this.fd, {
-          buffer,
-          position
-        }), (bytesRead) => {
-          const sizeRead = FileSystem.Size(bytesRead);
-          this.position = position + sizeRead;
-          return sizeRead;
-        });
-      });
-    }
-    readAlloc(size) {
-      const sizeNumber = Number(size);
-      return Effect2.suspend(() => {
-        const buffer = Buffer.allocUnsafeSlow(sizeNumber);
-        const position = this.position;
-        return Effect2.map(nodeReadAlloc(this.fd, {
-          buffer,
-          position
-        }), (bytesRead) => {
-          if (bytesRead === 0) {
-            return Option.none();
-          }
-          this.position = position + BigInt(bytesRead);
-          if (bytesRead === sizeNumber) {
-            return Option.some(buffer);
-          }
-          const dst = Buffer.allocUnsafeSlow(bytesRead);
-          buffer.copy(dst, 0, 0, bytesRead);
-          return Option.some(dst);
-        });
-      });
-    }
-    truncate(length) {
-      return Effect2.map(nodeTruncate(this.fd, length ? Number(length) : undefined), () => {
-        if (!this.append) {
-          const len = BigInt(length ?? 0);
-          if (this.position > len) {
-            this.position = len;
-          }
-        }
-      });
-    }
-    write(buffer) {
-      return Effect2.suspend(() => {
-        const position = this.position;
-        return Effect2.map(nodeWrite(this.fd, buffer, undefined, undefined, this.append ? undefined : Number(position)), (bytesWritten) => {
-          const sizeWritten = FileSystem.Size(bytesWritten);
-          if (!this.append) {
-            this.position = position + sizeWritten;
-          }
-          return sizeWritten;
-        });
-      });
-    }
-    writeAllChunk(buffer) {
-      return Effect2.suspend(() => {
-        const position = this.position;
-        return Effect2.flatMap(nodeWriteAll(this.fd, buffer, undefined, undefined, this.append ? undefined : Number(position)), (bytesWritten) => {
-          if (bytesWritten === 0) {
-            return Effect2.fail(Error3.systemError({
-              module: "FileSystem",
-              method: "writeAll",
-              _tag: "WriteZero",
-              pathOrDescriptor: this.fd,
-              description: "write returned 0 bytes written"
-            }));
-          }
-          if (!this.append) {
-            this.position = position + BigInt(bytesWritten);
-          }
-          return bytesWritten < buffer.length ? this.writeAllChunk(buffer.subarray(bytesWritten)) : Effect2.void;
-        });
-      });
-    }
-    writeAll(buffer) {
-      return this.writeAllChunk(buffer);
-    }
-  }
-  return (fd, append) => new FileImpl(fd, append);
-})();
-var makeTempFileFactory = (method) => {
-  const makeDirectory2 = makeTempDirectoryFactory(method);
-  return Effect2.fnUntraced(function* (options) {
-    const directory = yield* makeDirectory2(options);
-    const random = Crypto.randomBytes(6).toString("hex");
-    const name = Path.join(directory, options?.suffix ? `${random}${options.suffix}` : random);
-    yield* writeFile2(name, new Uint8Array(0));
-    return name;
-  });
-};
-var makeTempFile = /* @__PURE__ */ makeTempFileFactory("makeTempFile");
-var makeTempFileScoped = /* @__PURE__ */ (() => {
-  const makeFile2 = /* @__PURE__ */ makeTempFileFactory("makeTempFileScoped");
-  const removeDirectory = /* @__PURE__ */ removeFactory("makeTempFileScoped");
-  return (options) => Effect2.acquireRelease(makeFile2(options), (file) => Effect2.orDie(removeDirectory(Path.dirname(file), {
-    recursive: true
-  })));
-})();
-var readDirectory = (path, options) => Effect2.tryPromise({
-  try: () => NFS.promises.readdir(path, options),
-  catch: (err) => handleErrnoException("FileSystem", "readDirectory")(err, [path])
-});
-var readFile2 = (path) => Effect2.callback((resume, signal) => {
-  try {
-    NFS.readFile(path, {
-      signal
-    }, (err, data) => {
-      if (err) {
-        resume(Effect2.fail(handleErrnoException("FileSystem", "readFile")(err, [path])));
-      } else {
-        resume(Effect2.succeed(data));
-      }
-    });
-  } catch (err) {
-    resume(Effect2.fail(handleBadArgument("readFile")(err)));
-  }
-});
-var readLink = /* @__PURE__ */ (() => {
-  const nodeReadLink = /* @__PURE__ */ effectify(NFS.readlink, /* @__PURE__ */ handleErrnoException("FileSystem", "readLink"), /* @__PURE__ */ handleBadArgument("readLink"));
-  return (path) => nodeReadLink(path);
-})();
-var realPath = /* @__PURE__ */ (() => {
-  const nodeRealPath = /* @__PURE__ */ effectify(NFS.realpath, /* @__PURE__ */ handleErrnoException("FileSystem", "realPath"), /* @__PURE__ */ handleBadArgument("realPath"));
-  return (path) => nodeRealPath(path);
-})();
-var rename2 = /* @__PURE__ */ (() => {
-  const nodeRename = /* @__PURE__ */ effectify(NFS.rename, /* @__PURE__ */ handleErrnoException("FileSystem", "rename"), /* @__PURE__ */ handleBadArgument("rename"));
-  return (oldPath, newPath) => nodeRename(oldPath, newPath);
-})();
-var makeFileInfo = (stat2) => ({
-  type: stat2.isFile() ? "File" : stat2.isDirectory() ? "Directory" : stat2.isSymbolicLink() ? "SymbolicLink" : stat2.isBlockDevice() ? "BlockDevice" : stat2.isCharacterDevice() ? "CharacterDevice" : stat2.isFIFO() ? "FIFO" : stat2.isSocket() ? "Socket" : "Unknown",
-  mtime: Option.fromNullishOr(stat2.mtime),
-  atime: Option.fromNullishOr(stat2.atime),
-  birthtime: Option.fromNullishOr(stat2.birthtime),
-  dev: stat2.dev,
-  rdev: Option.fromNullishOr(stat2.rdev),
-  ino: Option.fromNullishOr(stat2.ino),
-  mode: stat2.mode,
-  nlink: Option.fromNullishOr(stat2.nlink),
-  uid: Option.fromNullishOr(stat2.uid),
-  gid: Option.fromNullishOr(stat2.gid),
-  size: FileSystem.Size(stat2.size),
-  blksize: stat2.blksize !== undefined ? Option.some(FileSystem.Size(stat2.blksize)) : Option.none(),
-  blocks: Option.fromNullishOr(stat2.blocks)
-});
-var stat2 = /* @__PURE__ */ (() => {
-  const nodeStat = /* @__PURE__ */ effectify(NFS.stat, /* @__PURE__ */ handleErrnoException("FileSystem", "stat"), /* @__PURE__ */ handleBadArgument("stat"));
-  return (path) => Effect2.map(nodeStat(path), makeFileInfo);
-})();
-var symlink2 = /* @__PURE__ */ (() => {
-  const nodeSymlink = /* @__PURE__ */ effectify(NFS.symlink, /* @__PURE__ */ handleErrnoException("FileSystem", "symlink"), /* @__PURE__ */ handleBadArgument("symlink"));
-  return (target, path) => nodeSymlink(target, path);
-})();
-var truncate2 = /* @__PURE__ */ (() => {
-  const nodeTruncate = /* @__PURE__ */ effectify(NFS.truncate, /* @__PURE__ */ handleErrnoException("FileSystem", "truncate"), /* @__PURE__ */ handleBadArgument("truncate"));
-  return (path, length) => nodeTruncate(path, length !== undefined ? Number(length) : undefined);
-})();
-var utimes2 = /* @__PURE__ */ (() => {
-  const nodeUtimes = /* @__PURE__ */ effectify(NFS.utimes, /* @__PURE__ */ handleErrnoException("FileSystem", "utime"), /* @__PURE__ */ handleBadArgument("utime"));
-  return (path, atime, mtime) => nodeUtimes(path, atime, mtime);
-})();
-var watchNode = (path, options) => Stream.callback((queue) => Effect2.acquireRelease(Effect2.sync(() => {
-  const watcher = NFS.watch(path, {
-    recursive: options?.recursive ?? false
-  }, (event, path2) => {
-    if (!path2)
-      return;
-    switch (event) {
-      case "rename": {
-        Effect2.runFork(Effect2.matchEffect(stat2(path2), {
-          onSuccess: (_) => Queue.offer(queue, {
-            _tag: "Create",
-            path: path2
-          }),
-          onFailure: (_) => Queue.offer(queue, {
-            _tag: "Remove",
-            path: path2
-          })
-        }));
-        return;
-      }
-      case "change": {
-        Queue.offerUnsafe(queue, {
-          _tag: "Update",
-          path: path2
-        });
-        return;
-      }
-    }
-  });
-  watcher.on("error", (error) => {
-    Queue.failCauseUnsafe(queue, Cause.fail(Error3.systemError({
-      module: "FileSystem",
-      _tag: "Unknown",
-      method: "watch",
-      pathOrDescriptor: path,
-      cause: error
-    })));
-  });
-  watcher.on("close", () => {
-    Queue.endUnsafe(queue);
-  });
-  return watcher;
-}), (watcher) => Effect2.sync(() => watcher.close())));
-var watch2 = (backend, path, options) => stat2(path).pipe(Effect2.map((stat3) => backend.pipe(Option.flatMap((_) => _.register(path, stat3, options)), Option.getOrElse(() => watchNode(path, options)))), Stream.unwrap);
-var writeFile2 = (path, data, options) => Effect2.callback((resume, signal) => {
-  try {
-    NFS.writeFile(path, data, {
-      signal,
-      flag: options?.flag,
-      mode: options?.mode
-    }, (err) => {
-      if (err) {
-        resume(Effect2.fail(handleErrnoException("FileSystem", "writeFile")(err, [path])));
-      } else {
-        resume(Effect2.void);
-      }
-    });
-  } catch (err) {
-    resume(Effect2.fail(handleBadArgument("writeFile")(err)));
-  }
-});
-var makeFileSystem = /* @__PURE__ */ Effect2.map(/* @__PURE__ */ Effect2.serviceOption(FileSystem.WatchBackend), (backend) => FileSystem.make({
-  access: access2,
-  chmod: chmod2,
-  chown: chown2,
-  copy,
-  copyFile: copyFile2,
-  glob: glob2,
-  link: link2,
-  makeDirectory,
-  makeTempDirectory,
-  makeTempDirectoryScoped,
-  makeTempFile,
-  makeTempFileScoped,
-  open: open2,
-  readDirectory,
-  readFile: readFile2,
-  readLink,
-  realPath,
-  remove,
-  rename: rename2,
-  stat: stat2,
-  symlink: symlink2,
-  truncate: truncate2,
-  utimes: utimes2,
-  watch(path, options) {
-    return watch2(backend, path, options);
-  },
-  writeFile: writeFile2
-}));
-var layer = /* @__PURE__ */ Layer.effect(FileSystem.FileSystem)(makeFileSystem);
-
-// node_modules/.bun/@effect+platform-node@4.0.0-rc.110+7e0ee2f47f532612/node_modules/@effect/platform-node/dist/NodeFileSystem.js
-var layer2 = layer;
-
-// node_modules/.bun/@effect+platform-node-shared@4.0.0-rc.111+1d1b44bb2cb1f9cf/node_modules/@effect/platform-node-shared/dist/NodePath.js
-import * as Effect3 from "effect/Effect";
-import * as Layer2 from "effect/Layer";
-import { Path as Path2, TypeId } from "effect/Path";
-import { BadArgument } from "effect/PlatformError";
-import * as NodePath from "path";
-import * as NodeUrl from "url";
-var fileUrlOps = (windows) => ({
-  fromFileUrl: (url) => Effect3.try({
-    try: () => NodeUrl.fileURLToPath(url, {
-      windows
-    }),
-    catch: (cause) => new BadArgument({
-      module: "Path",
-      method: "fromFileUrl",
-      cause
-    })
-  }),
-  toFileUrl: (path) => Effect3.try({
-    try: () => NodeUrl.pathToFileURL(path, {
-      windows
-    }),
-    catch: (cause) => new BadArgument({
-      module: "Path",
-      method: "toFileUrl",
-      cause
-    })
-  })
-});
-var layerPosix = /* @__PURE__ */ Layer2.succeed(Path2)({
-  [TypeId]: TypeId,
-  ...NodePath.posix,
-  .../* @__PURE__ */ fileUrlOps(false)
-});
-var layerWin32 = /* @__PURE__ */ Layer2.succeed(Path2)({
-  [TypeId]: TypeId,
-  ...NodePath.win32,
-  .../* @__PURE__ */ fileUrlOps(true)
-});
-var layer3 = /* @__PURE__ */ Layer2.succeed(Path2)({
-  [TypeId]: TypeId,
-  ...NodePath,
-  .../* @__PURE__ */ fileUrlOps(undefined)
-});
-
-// node_modules/.bun/@effect+platform-node@4.0.0-rc.110+7e0ee2f47f532612/node_modules/@effect/platform-node/dist/NodePath.js
-var layer4 = layer3;
+import { Tool } from "@opencode-ai/schema/tool";
+import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
+import * as NodePath from "@effect/platform-node/NodePath";
 
 // packages/harness-kit/src/Decision.ts
-import { Schema as Schema3 } from "effect";
+import { Schema as Schema2 } from "effect";
 
 // packages/harness-kit/src/Message.ts
-import { Schema as Schema2 } from "effect";
+import { Schema } from "effect";
 var Message;
 ((Message) => {
-  Message.Delivery = Schema2.Literals([
+  Message.Delivery = Schema.Literals([
     "steer",
     "followUp",
     "nextTurn"
   ]);
 
-  class Value extends Schema2.Class("UserMessage")({
-    content: Schema2.String,
-    deliverAs: Schema2.optionalKey(Message.Delivery)
+  class Value extends Schema.Class("UserMessage")({
+    content: Schema.String,
+    deliverAs: Schema.optionalKey(Message.Delivery)
   }) {
   }
   Message.Value = Value;
@@ -10393,31 +9862,31 @@ var Message;
 var Decision;
 ((Decision) => {
 
-  class BlockToolCall extends Schema3.TaggedClass()("BlockToolCall", {
-    reason: Schema3.String
+  class BlockToolCall extends Schema2.TaggedClass()("BlockToolCall", {
+    reason: Schema2.String
   }) {
   }
   Decision.BlockToolCall = BlockToolCall;
 
-  class InjectUserMessage extends Schema3.TaggedClass()("InjectUserMessage", {
+  class InjectUserMessage extends Schema2.TaggedClass()("InjectUserMessage", {
     message: Message.Value
   }) {
   }
   Decision.InjectUserMessage = InjectUserMessage;
 
-  class InjectSystemPrompt extends Schema3.TaggedClass()("InjectSystemPrompt", {
-    content: Schema3.String
+  class InjectSystemPrompt extends Schema2.TaggedClass()("InjectSystemPrompt", {
+    content: Schema2.String
   }) {
   }
   Decision.InjectSystemPrompt = InjectSystemPrompt;
 
-  class AppendCustomEntry extends Schema3.TaggedClass()("AppendCustomEntry", {
-    customType: Schema3.String,
-    data: Schema3.optionalKey(Schema3.Unknown)
+  class AppendCustomEntry extends Schema2.TaggedClass()("AppendCustomEntry", {
+    customType: Schema2.String,
+    data: Schema2.optionalKey(Schema2.Unknown)
   }) {
   }
   Decision.AppendCustomEntry = AppendCustomEntry;
-  Decision.Value = Schema3.Union([
+  Decision.Value = Schema2.Union([
     BlockToolCall,
     InjectUserMessage,
     InjectSystemPrompt,
@@ -10426,44 +9895,44 @@ var Decision;
 })(Decision ||= {});
 
 // packages/harness-kit/src/Edit.ts
-import { Schema as Schema4 } from "effect";
+import { Schema as Schema3 } from "effect";
 var Edit;
 ((Edit) => {
 
-  class Span extends Schema4.Class("EditSpan")({
-    start: Schema4.Number,
-    end: Schema4.Number
+  class Span extends Schema3.Class("EditSpan")({
+    start: Schema3.Number,
+    end: Schema3.Number
   }) {
   }
   Edit.Span = Span;
 
-  class Value extends Schema4.Class("EditValue")({
-    oldText: Schema4.String,
-    newText: Schema4.String
+  class Value extends Schema3.Class("EditValue")({
+    oldText: Schema3.String,
+    newText: Schema3.String
   }) {
   }
   Edit.Value = Value;
 
-  class UniqueMatch extends Schema4.TaggedClass()("UniqueMatch", { span: Span }) {
+  class UniqueMatch extends Schema3.TaggedClass()("UniqueMatch", { span: Span }) {
   }
   Edit.UniqueMatch = UniqueMatch;
 
-  class MissingMatch extends Schema4.TaggedClass()("MissingMatch", {}) {
+  class MissingMatch extends Schema3.TaggedClass()("MissingMatch", {}) {
   }
   Edit.MissingMatch = MissingMatch;
 
-  class AmbiguousMatch extends Schema4.TaggedClass()("AmbiguousMatch", { occurrenceCount: Schema4.Number }) {
+  class AmbiguousMatch extends Schema3.TaggedClass()("AmbiguousMatch", { occurrenceCount: Schema3.Number }) {
   }
   Edit.AmbiguousMatch = AmbiguousMatch;
 
-  class OverlappingMatch extends Schema4.TaggedClass()("OverlappingMatch", {}) {
+  class OverlappingMatch extends Schema3.TaggedClass()("OverlappingMatch", {}) {
   }
   Edit.OverlappingMatch = OverlappingMatch;
 
-  class EmptyOldText extends Schema4.TaggedClass()("EmptyOldText", {}) {
+  class EmptyOldText extends Schema3.TaggedClass()("EmptyOldText", {}) {
   }
   Edit.EmptyOldText = EmptyOldText;
-  Edit.Resolution = Schema4.Union([
+  Edit.Resolution = Schema3.Union([
     UniqueMatch,
     MissingMatch,
     AmbiguousMatch,
@@ -10492,27 +9961,27 @@ var Edit;
 })(Edit ||= {});
 
 // packages/harness-kit/src/Intent.ts
-import { Schema as Schema5 } from "effect";
+import { Schema as Schema4 } from "effect";
 var Intent;
 ((Intent) => {
-  Intent.Phase = Schema5.Literals(["before", "after"]);
+  Intent.Phase = Schema4.Literals(["before", "after"]);
 
-  class WriteFile extends Schema5.TaggedClass()("WriteFile", {
+  class WriteFile extends Schema4.TaggedClass()("WriteFile", {
     phase: Intent.Phase,
-    filePath: Schema5.optionalKey(Schema5.String),
-    content: Schema5.String
+    filePath: Schema4.optionalKey(Schema4.String),
+    content: Schema4.String
   }) {
   }
   Intent.WriteFile = WriteFile;
 
-  class EditFile extends Schema5.TaggedClass()("EditFile", {
+  class EditFile extends Schema4.TaggedClass()("EditFile", {
     phase: Intent.Phase,
-    filePath: Schema5.optionalKey(Schema5.String),
-    replacements: Schema5.Array(Edit.Value)
+    filePath: Schema4.optionalKey(Schema4.String),
+    replacements: Schema4.Array(Edit.Value)
   }) {
   }
   Intent.EditFile = EditFile;
-  Intent.Value = Schema5.Union([WriteFile, EditFile]);
+  Intent.Value = Schema4.Union([WriteFile, EditFile]);
 })(Intent ||= {});
 ((Intent) => {
   Intent.contentRaw = (intent) => {
@@ -10525,77 +9994,77 @@ var Intent;
 // packages/harness-kit/src/Projection.ts
 import {
   Context,
-  Effect as Effect5,
-  FileSystem as FileSystem4,
-  Layer as Layer3,
-  Option as Option4,
+  Effect as Effect2,
+  FileSystem as FileSystem2,
+  Layer,
+  Option as Option3,
   Order,
-  Path as Path4
+  Path as Path2
 } from "effect";
 import { sort } from "effect/Array";
 
 // packages/harness-kit/src/Input.ts
-import { Option as Option2, Schema as Schema6 } from "effect";
+import { Option, Schema as Schema5 } from "effect";
 var Input;
 ((Input) => {
 
-  class Value extends Schema6.Class("MatcherInput")({
-    filePath: Schema6.Option(Schema6.String),
-    content: Schema6.Option(Schema6.String),
-    changedSpans: Schema6.Option(Schema6.Array(Edit.Span)),
-    command: Schema6.Option(Schema6.String),
-    pattern: Schema6.Option(Schema6.String),
-    query: Schema6.Option(Schema6.String),
-    url: Schema6.Option(Schema6.String),
-    prompt: Schema6.Option(Schema6.String),
-    projectionError: Schema6.optionalKey(Schema6.String)
+  class Value extends Schema5.Class("MatcherInput")({
+    filePath: Schema5.Option(Schema5.String),
+    content: Schema5.Option(Schema5.String),
+    changedSpans: Schema5.Option(Schema5.Array(Edit.Span)),
+    command: Schema5.Option(Schema5.String),
+    pattern: Schema5.Option(Schema5.String),
+    query: Schema5.Option(Schema5.String),
+    url: Schema5.Option(Schema5.String),
+    prompt: Schema5.Option(Schema5.String),
+    projectionError: Schema5.optionalKey(Schema5.String)
   }) {
   }
   Input.Value = Value;
   Input.empty = () => new Value({
-    filePath: Option2.none(),
-    content: Option2.none(),
-    changedSpans: Option2.none(),
-    command: Option2.none(),
-    pattern: Option2.none(),
-    query: Option2.none(),
-    url: Option2.none(),
-    prompt: Option2.none()
+    filePath: Option.none(),
+    content: Option.none(),
+    changedSpans: Option.none(),
+    command: Option.none(),
+    pattern: Option.none(),
+    query: Option.none(),
+    url: Option.none(),
+    prompt: Option.none()
   });
 })(Input ||= {});
 
 // packages/harness-kit/src/Normalize.ts
-import { Config, Effect as Effect4, Option as Option3 } from "effect";
+import { Config, Effect, Option as Option2 } from "effect";
 var stripAtPrefix = (value) => value.startsWith("@") ? value.slice(1) : value;
-var expandHome = (value, homeDirectory, path) => Option3.match(homeDirectory, {
+var expandHome = (value, homeDirectory, path) => Option2.match(homeDirectory, {
   onNone: () => value,
   onSome: (home) => value === "~" ? home : value.startsWith("~/") ? path.join(home, value.slice(2)) : value
 });
-var resolveHomeDirectory = () => Effect4.gen(function* () {
+var resolveHomeDirectory = () => Effect.gen(function* () {
   const home = yield* Config.option(Config.string("HOME"));
-  if (Option3.isSome(home)) {
+  if (Option2.isSome(home)) {
     return home;
   }
   return yield* Config.option(Config.string("USERPROFILE"));
-}).pipe(Effect4.catchTag("ConfigError", () => Effect4.succeed(Option3.none())));
+}).pipe(Effect.catchTag("ConfigError", () => Effect.succeed(Option2.none())));
 var normalizePath = ({
   cwd,
   fileSystem,
   path,
   value
-}) => Effect4.gen(function* () {
+}) => Effect.gen(function* () {
   const expanded = expandHome(stripAtPrefix(value.trim()), yield* resolveHomeDirectory(), path);
   const resolved = path.isAbsolute(expanded) ? path.normalize(expanded) : path.resolve(cwd, expanded);
-  return yield* fileSystem.realPath(resolved).pipe(Effect4.catchTag("PlatformError", () => Effect4.succeed(resolved)));
+  return yield* fileSystem.realPath(resolved).pipe(Effect.catchTag("PlatformError", () => Effect.succeed(resolved)));
 });
 
 // packages/harness-kit/src/Projection.ts
-var none2 = () => Option4.none();
-var stringOption = (value) => value === undefined ? none2() : Option4.some(value);
+var none = () => Option3.none();
+var stringOption = (value) => value === undefined ? none() : Option3.some(value);
 var property = (value, key) => value !== null && typeof value === "object" ? Reflect.get(value, key) : undefined;
-var getFilePath = (input) => ["path", "filePath"].map((key) => property(input, key)).flatMap((value) => typeof value === "string" ? [Option4.some(value)] : []).at(0) ?? Option4.none();
-var nonEmptyStringOption = (value) => typeof value === "string" && value.length > 0 ? Option4.some(value) : none2();
-var anyStringOption = (value) => typeof value === "string" ? Option4.some(value) : none2();
+var getFilePath = (input) => ["path", "filePath"].map((key) => property(input, key)).flatMap((value) => typeof value === "string" ? [Option3.some(value)] : []).at(0) ?? Option3.none();
+var nonEmptyStringOption = (value) => typeof value === "string" && value.length > 0 ? Option3.some(value) : none();
+var anyStringOption = (value) => typeof value === "string" ? Option3.some(value) : none();
 var fullChangedSpan = (content) => [
   new Edit.Span({ start: 0, end: content.length })
 ];
@@ -10610,15 +10079,15 @@ var buildInput = (input) => new Input.Value({
   prompt: input.prompt,
   ...input.projectionError !== undefined ? { projectionError: input.projectionError } : {}
 });
-var withFile = (filePath, content, changedSpans = none2(), projectionError) => buildInput({
+var withFile = (filePath, content, changedSpans = none(), projectionError) => buildInput({
   filePath,
-  command: none2(),
+  command: none(),
   content,
   changedSpans,
-  pattern: none2(),
-  prompt: none2(),
-  query: none2(),
-  url: none2(),
+  pattern: none(),
+  prompt: none(),
+  query: none(),
+  url: none(),
   projectionError
 });
 var rawProjection = (input) => {
@@ -10628,8 +10097,8 @@ var rawProjection = (input) => {
     const newText = nonEmptyStringOption(property(edit, "newText"));
     return [
       ...parts2,
-      ...Option4.isSome(oldText) ? [oldText.value] : [],
-      ...Option4.isSome(newText) ? [newText.value] : []
+      ...Option3.isSome(oldText) ? [oldText.value] : [],
+      ...Option3.isSome(newText) ? [newText.value] : []
     ];
   }, []) : [];
   const parts = [
@@ -10645,14 +10114,14 @@ var rawProjection = (input) => {
     property(input, "prompt")
   ].reduce((accumulator, value) => {
     const current = nonEmptyStringOption(value);
-    return Option4.isSome(current) ? [...accumulator, current.value] : accumulator;
+    return Option3.isSome(current) ? [...accumulator, current.value] : accumulator;
   }, editContent);
   return buildInput({
     filePath: getFilePath(input),
     command: anyStringOption(property(input, "command")),
-    content: parts.length === 0 ? none2() : Option4.some(parts.join(`
+    content: parts.length === 0 ? none() : Option3.some(parts.join(`
 `)),
-    changedSpans: none2(),
+    changedSpans: none(),
     pattern: anyStringOption(property(input, "pattern")),
     prompt: anyStringOption(property(input, "prompt")),
     query: anyStringOption(property(input, "query")),
@@ -10701,21 +10170,21 @@ var applyEdits = (source, sorted) => {
 };
 var resolvedNewSpan = (replacement, output) => {
   if (replacement.newText.length === 0)
-    return none2();
+    return none();
   const first = output.indexOf(replacement.newText);
   if (first === -1)
-    return none2();
+    return none();
   if (output.indexOf(replacement.newText, first + 1) !== -1)
-    return none2();
-  return Option4.some(new Edit.Span({ start: first, end: first + replacement.newText.length }));
+    return none();
+  return Option3.some(new Edit.Span({ start: first, end: first + replacement.newText.length }));
 };
 var changedSpansFromFinalOutput = (output, replacements) => {
   const withText = replacements.filter((r) => r.newText.length > 0);
-  const spans = withText.flatMap((replacement) => Option4.match(resolvedNewSpan(replacement, output), {
+  const spans = withText.flatMap((replacement) => Option3.match(resolvedNewSpan(replacement, output), {
     onNone: () => [],
     onSome: (span) => [span]
   }));
-  return spans.length === withText.length ? Option4.some(spans) : none2();
+  return spans.length === withText.length ? Option3.some(spans) : none();
 };
 var Projection;
 ((Projection) => {
@@ -10723,43 +10192,43 @@ var Projection;
   class Service extends Context.Service()("opencode-effect-harness/enforcement/Projection") {
   }
   Projection.Service = Service;
-  Projection.layer = Layer3.effect(Service, Effect5.gen(function* () {
-    const fileSystem = yield* FileSystem4.FileSystem;
-    const path = yield* Path4.Path;
-    const readTargetFile = (cwd, filePath) => Option4.isNone(filePath) ? Effect5.succeed(none2()) : normalizePath({
+  Projection.layer = Layer.effect(Service, Effect2.gen(function* () {
+    const fileSystem = yield* FileSystem2.FileSystem;
+    const path = yield* Path2.Path;
+    const readTargetFile = (cwd, filePath) => Option3.isNone(filePath) ? Effect2.succeed(none()) : normalizePath({
       cwd,
       fileSystem,
       path,
       value: filePath.value
-    }).pipe(Effect5.flatMap((normalizedPath) => fileSystem.readFileString(normalizedPath).pipe(Effect5.map(Option4.some), Effect5.catchTag("PlatformError", () => Effect5.succeed(none2())))));
-    const raw = (input) => Effect5.succeed(rawProjection(input));
-    const prospectiveEdit = (cwd, intent, filePath) => readTargetFile(cwd, filePath).pipe(Effect5.flatMap((source) => {
-      if (Option4.isNone(source)) {
-        return Effect5.succeed(withFile(filePath, none2(), none2(), "target-file-missing"));
+    }).pipe(Effect2.flatMap((normalizedPath) => fileSystem.readFileString(normalizedPath).pipe(Effect2.map(Option3.some), Effect2.catchTag("PlatformError", () => Effect2.succeed(none())))));
+    const raw = (input) => Effect2.succeed(rawProjection(input));
+    const prospectiveEdit = (cwd, intent, filePath) => readTargetFile(cwd, filePath).pipe(Effect2.flatMap((source) => {
+      if (Option3.isNone(source)) {
+        return Effect2.succeed(withFile(filePath, none(), none(), "target-file-missing"));
       }
       const outcome = resolveEdits(source.value, intent.replacements);
       if (!outcome.ok) {
-        return Effect5.succeed(withFile(filePath, none2(), none2(), outcome.reason));
+        return Effect2.succeed(withFile(filePath, none(), none(), outcome.reason));
       }
       const projected = applyEdits(source.value, outcome.resolved);
-      return Effect5.succeed(withFile(filePath, Option4.some(projected.content), Option4.some(projected.changedSpans)));
+      return Effect2.succeed(withFile(filePath, Option3.some(projected.content), Option3.some(projected.changedSpans)));
     }));
     const prospective = (cwd, intent) => {
       const filePath = stringOption(intent.filePath);
       if (intent instanceof Intent.WriteFile) {
-        return Effect5.succeed(withFile(filePath, Option4.some(intent.content), Option4.some(fullChangedSpan(intent.content))));
+        return Effect2.succeed(withFile(filePath, Option3.some(intent.content), Option3.some(fullChangedSpan(intent.content))));
       }
       return prospectiveEdit(cwd, intent, filePath);
     };
     const actual = (cwd, intent) => {
       const filePath = stringOption(intent.filePath);
-      return readTargetFile(cwd, filePath).pipe(Effect5.flatMap((content) => {
-        if (Option4.isNone(content))
+      return readTargetFile(cwd, filePath).pipe(Effect2.flatMap((content) => {
+        if (Option3.isNone(content))
           return prospective(cwd, intent);
         if (intent instanceof Intent.WriteFile) {
-          return Effect5.succeed(withFile(filePath, content, Option4.some(fullChangedSpan(content.value))));
+          return Effect2.succeed(withFile(filePath, content, Option3.some(fullChangedSpan(content.value))));
         }
-        return Effect5.succeed(withFile(filePath, content, changedSpansFromFinalOutput(content.value, intent.replacements)));
+        return Effect2.succeed(withFile(filePath, content, changedSpansFromFinalOutput(content.value, intent.replacements)));
       }));
     };
     return Service.of({ raw, prospective, actual });
@@ -10768,7 +10237,7 @@ var Projection;
 
 // packages/harness-kit/src/rule/Gate.ts
 init_Constants();
-import { Effect as Effect6, Option as Option5 } from "effect";
+import { Effect as Effect3, Option as Option4 } from "effect";
 var Gate;
 ((Gate) => {
   const noDecisions = [];
@@ -10781,47 +10250,47 @@ var Gate;
     evaluate: (input) => {
       const strict = input.agent !== undefined && options.strictAgents.includes(input.agent);
       if (!strict)
-        return Effect6.succeed(noDecisions);
-      return Effect6.flatMap(options.project(input.cwd, input.writeIntent), (projection) => {
-        if (Option5.isNone(projection.content)) {
+        return Effect3.succeed(noDecisions);
+      return Effect3.flatMap(options.project(input.cwd, input.writeIntent), (projection) => {
+        if (Option4.isNone(projection.content)) {
           if (!options.failClosed)
-            return Effect6.succeed(noDecisions);
-          return Effect6.succeed(block(`harness gate: cannot verify this edit safely (${projection.projectionError ?? "projection unavailable"}). ` + "Open the file to confirm the result, then retry."));
+            return Effect3.succeed(noDecisions);
+          return Effect3.succeed(block(`harness gate: cannot verify this edit safely (${projection.projectionError ?? "projection unavailable"}). ` + "Open the file to confirm the result, then retry."));
         }
         if (!EFFECT_CODE_RE.test(projection.content.value)) {
-          return Effect6.succeed(noDecisions);
+          return Effect3.succeed(noDecisions);
         }
-        return Effect6.flatMap(options.loaded(input.sessionId ?? ""), (loaded) => loaded < options.min ? Effect6.map(options.reason(loaded), block) : Effect6.succeed(noDecisions));
+        return Effect3.flatMap(options.loaded(input.sessionId ?? ""), (loaded) => loaded < options.min ? Effect3.map(options.reason(loaded), block) : Effect3.succeed(noDecisions));
       });
     }
   });
 })(Gate ||= {});
 
 // packages/harness-kit/src/rule/Header.ts
-import { Effect as Effect7 } from "effect";
+import { Effect as Effect4 } from "effect";
 var Header;
 ((Header) => {
   const noDecisions = [];
   Header.rule = (options) => ({
     id: "header",
     phase: "beforeAgentStart",
-    evaluate: () => Effect7.flatMap(options.enabled, (enabled) => enabled ? Effect7.map(options.header, (content) => [
+    evaluate: () => Effect4.flatMap(options.enabled, (enabled) => enabled ? Effect4.map(options.header, (content) => [
       new Decision.InjectSystemPrompt({ content })
-    ]) : Effect7.succeed(noDecisions))
+    ]) : Effect4.succeed(noDecisions))
   });
 })(Header ||= {});
 
 // packages/harness-kit/src/rule/Feedback.ts
-import { Effect as Effect9, Option as Option7 } from "effect";
+import { Effect as Effect6, Option as Option6 } from "effect";
 
 // packages/harness-kit/src/Matcher.ts
 init_Pattern();
 var import_picomatch2 = __toESM(require_picomatch2(), 1);
 import { Lang, parse } from "@ast-grep/napi";
-import { Context as Context2, Effect as Effect8, Layer as Layer4, Option as Option6 } from "effect";
-var regexOption = Option6.liftThrowable((pattern) => new RegExp(pattern));
-var globOption = Option6.liftThrowable((glob3) => import_picomatch2.default(glob3));
-var astRoot = Option6.liftThrowable((lang, source) => parse(lang, source).root());
+import { Context as Context2, Effect as Effect5, Layer as Layer2, Option as Option5 } from "effect";
+var regexOption = Option5.liftThrowable((pattern) => new RegExp(pattern));
+var globOption = Option5.liftThrowable((glob) => import_picomatch2.default(glob));
+var astRoot = Option5.liftThrowable((lang, source) => parse(lang, source).root());
 var blankChar = (ch) => ch === `
 ` ? `
 ` : " ";
@@ -10880,27 +10349,27 @@ var stripComments = (source) => {
   const tail = final.state.tag === "code" && final.state.pendingSlash ? ["/"] : [];
   return [...final.out, ...tail].join("");
 };
-var toolMatches = (pattern, toolName) => Option6.match(regexOption(pattern.toolRegex), {
+var toolMatches = (pattern, toolName) => Option5.match(regexOption(pattern.toolRegex), {
   onNone: () => false,
   onSome: (regex) => regex.test(toolName)
 });
-var pathMatchesGlob = (glob3, value) => Option6.match(globOption(glob3), {
+var pathMatchesGlob = (glob, value) => Option5.match(globOption(glob), {
   onNone: () => false,
   onSome: (matcher) => matcher(value)
 });
 var filePathOf = (projection) => projection.filePath;
 var globMatches = (pattern, projection) => {
-  const glob3 = pattern.glob;
-  if (glob3 === undefined)
+  const glob = pattern.glob;
+  if (glob === undefined)
     return true;
-  return Option6.match(filePathOf(projection), {
+  return Option5.match(filePathOf(projection), {
     onNone: () => false,
-    onSome: (value) => pathMatchesGlob(glob3, value)
+    onSome: (value) => pathMatchesGlob(glob, value)
   });
 };
-var ignoreGlobMatches = (pattern, projection) => pattern.ignoreGlob === undefined ? false : Option6.match(filePathOf(projection), {
+var ignoreGlobMatches = (pattern, projection) => pattern.ignoreGlob === undefined ? false : Option5.match(filePathOf(projection), {
   onNone: () => false,
-  onSome: (value) => pattern.ignoreGlob?.some((glob3) => pathMatchesGlob(glob3, value)) ?? false
+  onSome: (value) => pattern.ignoreGlob?.some((glob) => pathMatchesGlob(glob, value)) ?? false
 });
 var globalRegex = (regex) => new RegExp(regex.source, regex.flags.includes("g") ? regex.flags : `${regex.flags}g`);
 var locationFromSpan = (source, start, end) => {
@@ -10920,7 +10389,7 @@ var locationFromSpan = (source, start, end) => {
     snippet: snippet.trim()
   });
 };
-var regexMatchLocations = (pattern, source, originalSource) => Option6.match(regexOption(pattern.pattern), {
+var regexMatchLocations = (pattern, source, originalSource) => Option5.match(regexOption(pattern.pattern), {
   onNone: () => [],
   onSome: (regex) => [...source.matchAll(globalRegex(regex))].flatMap((match) => {
     if (typeof match.index !== "number" || match[0].length === 0)
@@ -10930,9 +10399,9 @@ var regexMatchLocations = (pattern, source, originalSource) => Option6.match(reg
     ];
   })
 });
-var langFromPath = (value) => value.endsWith(".tsx") ? Option6.some(Lang.Tsx) : value.endsWith(".ts") ? Option6.some(Lang.TypeScript) : value.endsWith(".jsx") ? Option6.some(Lang.Tsx) : value.endsWith(".js") ? Option6.some(Lang.JavaScript) : Option6.none();
-var astFindAll = Option6.liftThrowable((root, matcher) => root.findAll(matcher));
-var astMatcherLocations = (root, matcher, source) => Option6.match(astFindAll(root, matcher), {
+var langFromPath = (value) => value.endsWith(".tsx") ? Option5.some(Lang.Tsx) : value.endsWith(".ts") ? Option5.some(Lang.TypeScript) : value.endsWith(".jsx") ? Option5.some(Lang.Tsx) : value.endsWith(".js") ? Option5.some(Lang.JavaScript) : Option5.none();
+var astFindAll = Option5.liftThrowable((root, matcher) => root.findAll(matcher));
+var astMatcherLocations = (root, matcher, source) => Option5.match(astFindAll(root, matcher), {
   onNone: () => [],
   onSome: (nodes) => nodes.map((node) => locationFromSpan(source, node.range().start.index, node.range().end.index))
 });
@@ -10947,23 +10416,23 @@ var astMatchLocationsForRoot = (root, pattern, source) => [
   ...pattern.patterns.flatMap((candidate) => astMatcherLocations(root, legacyAstMatcher(pattern, candidate), source)),
   ...(pattern.rules ?? []).flatMap((rule) => astMatcherLocations(root, astRuleMatcher(pattern, rule), source))
 ];
-var astMatchLocations = (pattern, source, projection) => Option6.match(filePathOf(projection), {
+var astMatchLocations = (pattern, source, projection) => Option5.match(filePathOf(projection), {
   onNone: () => [],
-  onSome: (value) => Option6.match(langFromPath(value), {
+  onSome: (value) => Option5.match(langFromPath(value), {
     onNone: () => [],
-    onSome: (lang) => Option6.match(astRoot(lang, source), {
+    onSome: (lang) => Option5.match(astRoot(lang, source), {
       onNone: () => [],
       onSome: (root) => astMatchLocationsForRoot(root, pattern, source)
     })
   })
 });
 var spansIntersect = (left, right) => left.start < right.end && right.start < left.end;
-var filterToChangedSpans = (projection, locations) => Option6.match(projection.changedSpans, {
+var filterToChangedSpans = (projection, locations) => Option5.match(projection.changedSpans, {
   onNone: () => locations,
   onSome: (changedSpans) => locations.filter((location) => changedSpans.some((span) => spansIntersect(location, span)))
 });
 var findPatternMatches = (toolName, projection, eventType, pattern) => {
-  const content = Option6.getOrElse(projection.content, () => "");
+  const content = Option5.getOrElse(projection.content, () => "");
   if (pattern.event !== eventType || !toolMatches(pattern, toolName) || !globMatches(pattern, projection) || ignoreGlobMatches(pattern, projection)) {
     return [];
   }
@@ -10977,9 +10446,9 @@ var Matcher;
   class Service extends Context2.Service()("opencode-effect-harness/enforcement/Matcher") {
   }
   Matcher.Service = Service;
-  Matcher.layer = Layer4.succeed(Service, Service.of({
-    matches: (toolName, projection, eventType, pattern) => Effect8.succeed(matchesPattern(toolName, projection, eventType, pattern)),
-    findMatches: (toolName, projection, eventType, pattern) => Effect8.succeed(findPatternMatches(toolName, projection, eventType, pattern))
+  Matcher.layer = Layer2.succeed(Service, Service.of({
+    matches: (toolName, projection, eventType, pattern) => Effect5.succeed(matchesPattern(toolName, projection, eventType, pattern)),
+    findMatches: (toolName, projection, eventType, pattern) => Effect5.succeed(findPatternMatches(toolName, projection, eventType, pattern))
   }));
 })(Matcher ||= {});
 
@@ -11021,14 +10490,14 @@ file: \`${filePath}\``,
   Feedback.rule = (options) => ({
     id: "feedback",
     phase: "toolResult",
-    evaluate: (input) => Effect9.flatMap(options.actual(input.cwd, input.writeIntent), (projection) => {
-      if (Option7.isNone(projection.content))
-        return Effect9.succeed(noDecisions);
-      return Effect9.map(options.patterns, (patterns) => {
+    evaluate: (input) => Effect6.flatMap(options.actual(input.cwd, input.writeIntent), (projection) => {
+      if (Option6.isNone(projection.content))
+        return Effect6.succeed(noDecisions);
+      return Effect6.map(options.patterns, (patterns) => {
         const hits = patterns.filter((pattern) => findPatternMatches(input.toolName, projection, "after", pattern).length > 0);
         if (hits.length === 0)
           return noDecisions;
-        const filePath = Option7.getOrElse(projection.filePath, () => input.writeIntent.filePath ?? "(unknown)");
+        const filePath = Option6.getOrElse(projection.filePath, () => input.writeIntent.filePath ?? "(unknown)");
         return [message(filePath, uniqueByname(hits))];
       });
     })
@@ -11040,21 +10509,21 @@ init_Module();
 
 // packages/verify-kit/src/Orchestrator.ts
 init_Guard();
-import { Effect as Effect18, Option as Option11, Ref as Ref2 } from "effect";
+import { Effect as Effect15, Option as Option10, Ref as Ref2 } from "effect";
 
 // packages/verify-kit/src/Evidence.ts
-import { Schema as Schema11 } from "effect";
-var EvidenceStatus = Schema11.Literals([
+import { Schema as Schema10 } from "effect";
+var EvidenceStatus = Schema10.Literals([
   "sufficient",
   "insufficient",
   "skipped"
 ]);
 
-class SkillEvidence extends Schema11.Class("SkillEvidence")({
+class SkillEvidence extends Schema10.Class("SkillEvidence")({
   status: EvidenceStatus,
-  loadedSkills: Schema11.Array(Schema11.String),
-  minRequired: Schema11.Number,
-  reason: Schema11.optionalKey(Schema11.String)
+  loadedSkills: Schema10.Array(Schema10.String),
+  minRequired: Schema10.Number,
+  reason: Schema10.optionalKey(Schema10.String)
 }) {
 }
 var assessEvidence = (input) => {
@@ -11082,33 +10551,33 @@ init_Checker();
 
 // packages/verify-kit/src/change/Set.ts
 init_Guard();
-import { Context as Context7, Effect as Effect17, FileSystem as FileSystem9, Layer as Layer8, Option as Option10, Schema as Schema19 } from "effect";
+import { Context as Context7, Effect as Effect14, FileSystem as FileSystem7, Layer as Layer6, Option as Option9, Schema as Schema18 } from "effect";
 
-class ChangedFile extends Schema19.Class("ChangedFile")({
-  path: Schema19.String,
-  before: Schema19.optionalKey(Schema19.String),
-  after: Schema19.String
+class ChangedFile extends Schema18.Class("ChangedFile")({
+  path: Schema18.String,
+  before: Schema18.optionalKey(Schema18.String),
+  after: Schema18.String
 }) {
 }
 
-class ChangeSet extends Schema19.Class("ChangeSet")({
-  projectRoot: Schema19.String,
-  files: Schema19.Array(ChangedFile),
-  truncated: Schema19.Boolean
+class ChangeSet extends Schema18.Class("ChangeSet")({
+  projectRoot: Schema18.String,
+  files: Schema18.Array(ChangedFile),
+  truncated: Schema18.Boolean
 }) {
 }
 var MAX_FILE_BYTES = 32000;
 var MAX_FILES = 40;
-var boundedFromReader = Effect17.fn("boundedFromReader")(function* (input, readFileString) {
+var boundedFromReader = Effect14.fn("boundedFromReader")(function* (input, readFileString) {
   const capped = input.paths.slice(0, MAX_FILES);
   const contained = capped.flatMap((rel) => {
     const absolute = withinRoot(input.projectRoot, rel);
     return absolute === undefined ? [] : [{ rel, absolute }];
   });
   const droppedOutside = capped.length - contained.length;
-  const files = yield* Effect17.forEach(contained, (file) => Effect17.map(readFileString(file.absolute), (content) => new ChangedFile({
+  const files = yield* Effect14.forEach(contained, (file) => Effect14.map(readFileString(file.absolute), (content) => new ChangedFile({
     path: file.rel,
-    after: (Option10.isSome(content) ? content.value : "").slice(0, MAX_FILE_BYTES)
+    after: (Option9.isSome(content) ? content.value : "").slice(0, MAX_FILE_BYTES)
   })), { concurrency: 8 });
   return new ChangeSet({
     projectRoot: input.projectRoot,
@@ -11123,11 +10592,11 @@ var ChangeSetProvider;
   }
   ChangeSetProvider.Service = Service;
   const serviceFromFileSystem = (fs) => Service.of({
-    fromPaths: (input) => boundedFromReader(input, (absolutePath) => fs.readFileString(absolutePath).pipe(Effect17.option))
+    fromPaths: (input) => boundedFromReader(input, (absolutePath) => fs.readFileString(absolutePath).pipe(Effect14.option))
   });
-  ChangeSetProvider.layerFileSystem = Layer8.effect(Service, Effect17.map(FileSystem9.FileSystem, serviceFromFileSystem));
+  ChangeSetProvider.layerFileSystem = Layer6.effect(Service, Effect14.map(FileSystem7.FileSystem, serviceFromFileSystem));
   ChangeSetProvider.makeStatic = (files) => ({
-    fromPaths: (input) => Effect17.succeed(new ChangeSet({
+    fromPaths: (input) => Effect14.succeed(new ChangeSet({
       projectRoot: input.projectRoot,
       files: [...files],
       truncated: false
@@ -11138,31 +10607,31 @@ var ChangeSetProvider;
 // packages/verify-kit/src/Report.ts
 init_Checker();
 init_Checker();
-import { Schema as Schema20 } from "effect";
-class PatternFinding extends Schema20.Class("PatternFinding")({
-  patternName: Schema20.String,
-  level: Schema20.Literals(["critical", "high", "medium", "warning", "info"]),
-  file: Schema20.String,
-  line: Schema20.Number,
-  snippet: Schema20.String,
-  guidance: Schema20.String,
-  suggestedSkills: Schema20.Array(Schema20.String)
+import { Schema as Schema19 } from "effect";
+class PatternFinding extends Schema19.Class("PatternFinding")({
+  patternName: Schema19.String,
+  level: Schema19.Literals(["critical", "high", "medium", "warning", "info"]),
+  file: Schema19.String,
+  line: Schema19.Number,
+  snippet: Schema19.String,
+  guidance: Schema19.String,
+  suggestedSkills: Schema19.Array(Schema19.String)
 }) {
 }
 
-class ReviewFinding extends Schema20.Class("ReviewFinding")({
-  severity: Schema20.Literals(["critical", "major", "minor", "note"]),
-  kind: Schema20.String,
-  claim: Schema20.String,
-  evidence: Schema20.String,
-  suggestion: Schema20.optionalKey(Schema20.String)
+class ReviewFinding extends Schema19.Class("ReviewFinding")({
+  severity: Schema19.Literals(["critical", "major", "minor", "note"]),
+  kind: Schema19.String,
+  claim: Schema19.String,
+  evidence: Schema19.String,
+  suggestion: Schema19.optionalKey(Schema19.String)
 }) {
 }
 
-class SemanticReview extends Schema20.Class("SemanticReview")({
-  status: Schema20.Literals(["passed", "failed", "error", "skipped"]),
-  findings: Schema20.Array(ReviewFinding),
-  workerSessionID: Schema20.optionalKey(Schema20.String)
+class SemanticReview extends Schema19.Class("SemanticReview")({
+  status: Schema19.Literals(["passed", "failed", "error", "skipped"]),
+  findings: Schema19.Array(ReviewFinding),
+  workerSessionID: Schema19.optionalKey(Schema19.String)
 }) {
 }
 var skippedSemanticReview = () => new SemanticReview({ status: "skipped", findings: [] });
@@ -11177,39 +10646,39 @@ var errorSemanticReview = (reason) => new SemanticReview({
     })
   ]
 });
-var Trigger = Schema20.Literals(["manual", "auto", "command"]);
+var Trigger = Schema19.Literals(["manual", "auto", "command"]);
 
-class VerifyRequest extends Schema20.Class("VerifyRequest")({
-  sessionID: Schema20.String,
-  projectKey: Schema20.String,
-  projectRoot: Schema20.String,
-  touchedFiles: Schema20.Array(Schema20.String),
+class VerifyRequest extends Schema19.Class("VerifyRequest")({
+  sessionID: Schema19.String,
+  projectKey: Schema19.String,
+  projectRoot: Schema19.String,
+  touchedFiles: Schema19.Array(Schema19.String),
   trigger: Trigger,
-  loadedSkills: Schema20.Array(Schema20.String),
-  minSkillEvidence: Schema20.Number
+  loadedSkills: Schema19.Array(Schema19.String),
+  minSkillEvidence: Schema19.Number
 }) {
 }
 
-class VerifierReport extends Schema20.Class("VerifierReport")({
+class VerifierReport extends Schema19.Class("VerifierReport")({
   request: VerifyRequest,
-  checks: Schema20.Array(Schema20.Struct({
-    specId: Schema20.String,
+  checks: Schema19.Array(Schema19.Struct({
+    specId: Schema19.String,
     kind: CheckerKind,
-    label: Schema20.String,
-    verdict: Schema20.Literals(["passed", "failed", "error", "skipped"]),
-    durationMs: Schema20.Number,
-    diagnostics: Schema20.Array(Diagnostic)
+    label: Schema19.String,
+    verdict: Schema19.Literals(["passed", "failed", "error", "skipped"]),
+    durationMs: Schema19.Number,
+    diagnostics: Schema19.Array(Diagnostic)
   })),
-  patternFindings: Schema20.Array(PatternFinding),
-  patternScanStatus: Schema20.optionalKey(Schema20.Literals(["ok", "error", "skipped"])),
-  patternScanError: Schema20.optionalKey(Schema20.String),
-  moduleLoadFailures: Schema20.optionalKey(Schema20.Array(Schema20.Struct({
-    moduleId: Schema20.String,
-    reason: Schema20.String
+  patternFindings: Schema19.Array(PatternFinding),
+  patternScanStatus: Schema19.optionalKey(Schema19.Literals(["ok", "error", "skipped"])),
+  patternScanError: Schema19.optionalKey(Schema19.String),
+  moduleLoadFailures: Schema19.optionalKey(Schema19.Array(Schema19.Struct({
+    moduleId: Schema19.String,
+    reason: Schema19.String
   }))),
   skillEvidence: SkillEvidence,
   semantic: SemanticReview,
-  overall: Schema20.Literals(["passed", "failed", "error"])
+  overall: Schema19.Literals(["passed", "failed", "error"])
 }) {
 }
 var overall = (input) => {
@@ -11232,25 +10701,25 @@ var overall = (input) => {
 
 // packages/verify-kit/src/Orchestrator.ts
 var projectionFor = (filePath, content) => new Input.Value({
-  filePath: Option11.some(filePath),
-  content: Option11.some(content),
-  changedSpans: Option11.none(),
-  command: Option11.none(),
-  pattern: Option11.none(),
-  query: Option11.none(),
-  url: Option11.none(),
-  prompt: Option11.none()
+  filePath: Option10.some(filePath),
+  content: Option10.some(content),
+  changedSpans: Option10.none(),
+  command: Option10.none(),
+  pattern: Option10.none(),
+  query: Option10.none(),
+  url: Option10.none(),
+  prompt: Option10.none()
 });
 var Orchestrator;
 ((Orchestrator) => {
-  Orchestrator.verify = (deps, request, modulesOverride) => Effect18.gen(function* () {
+  Orchestrator.verify = (deps, request, modulesOverride) => Effect15.gen(function* () {
     const modules = modulesOverride !== undefined && modulesOverride.length > 0 ? modulesOverride : yield* deps.registry.resolve(request.touchedFiles);
     const context = {
       projectRoot: request.projectRoot,
       touchedFiles: request.touchedFiles
     };
-    const nestedChecks = yield* Effect18.forEach(modules, (module) => Effect18.gen(function* () {
-      const attempted = yield* module.checkers(context).pipe(Effect18.map((specs) => ({ ok: true, specs })), Effect18.catchTag("ModuleError", (reason) => Effect18.succeed({ ok: false, reason })));
+    const nestedChecks = yield* Effect15.forEach(modules, (module) => Effect15.gen(function* () {
+      const attempted = yield* module.checkers(context).pipe(Effect15.map((specs) => ({ ok: true, specs })), Effect15.catchTag("ModuleError", (reason) => Effect15.succeed({ ok: false, reason })));
       if (!attempted.ok) {
         return [
           new CheckerResult({
@@ -11265,7 +10734,7 @@ var Orchestrator;
           })
         ];
       }
-      return yield* Effect18.forEach(attempted.specs, (spec) => Runner.run(deps.exec, spec, {
+      return yield* Effect15.forEach(attempted.specs, (spec) => Runner.run(deps.exec, spec, {
         parseDiagnostics: module.parseDiagnostics
       }), { concurrency: 4 });
     }), { concurrency: 4 });
@@ -11277,8 +10746,8 @@ var Orchestrator;
       yield* Ref2.set(statusRef, "error");
       yield* Ref2.set(errorRef, "readFile dependency not wired \u2014 deterministic pattern scan could not run");
     }
-    const nestedFindings = yield* Effect18.forEach(patternModules, (module) => Effect18.gen(function* () {
-      const catalog = yield* module.patterns.detectors().pipe(Effect18.map((detectors) => ({ ok: true, detectors })), Effect18.catchTag("CatalogError", () => Effect18.succeed({ ok: false })));
+    const nestedFindings = yield* Effect15.forEach(patternModules, (module) => Effect15.gen(function* () {
+      const catalog = yield* module.patterns.detectors().pipe(Effect15.map((detectors) => ({ ok: true, detectors })), Effect15.catchTag("CatalogError", () => Effect15.succeed({ ok: false })));
       if (!catalog.ok) {
         yield* Ref2.set(statusRef, "error");
         yield* Ref2.update(errorRef, (prev) => prev ?? `${module.id}: pattern catalog unavailable`);
@@ -11288,20 +10757,20 @@ var Orchestrator;
       if (currentStatus !== "error") {
         yield* Ref2.set(statusRef, "ok");
       }
-      return yield* Effect18.forEach(request.touchedFiles.filter((file) => module.appliesTo(file)), (file) => {
+      return yield* Effect15.forEach(request.touchedFiles.filter((file) => module.appliesTo(file)), (file) => {
         if (deps.readFile === undefined) {
-          return Effect18.succeed([]);
+          return Effect15.succeed([]);
         }
         const abs = joinPath(request.projectRoot, file);
         if (abs === undefined) {
-          return Effect18.succeed([]);
+          return Effect15.succeed([]);
         }
-        return Effect18.flatMap(deps.readFile(abs), (content) => {
+        return Effect15.flatMap(deps.readFile(abs), (content) => {
           if (content === undefined) {
-            return Effect18.succeed([]);
+            return Effect15.succeed([]);
           }
           const projection = projectionFor(file, content);
-          return Effect18.succeed(catalog.detectors.flatMap((detector) => findPatternMatches("write", projection, "after", detector).map((location) => ({
+          return Effect15.succeed(catalog.detectors.flatMap((detector) => findPatternMatches("write", projection, "after", detector).map((location) => ({
             detector,
             file,
             line: location.line,
@@ -11346,7 +10815,7 @@ var Orchestrator;
       })),
       changeSet,
       loadedSkills: request.loadedSkills
-    }).pipe(Effect18.catchTag("ReviewerError", (cause) => Effect18.succeed(errorSemanticReview(cause.reason))));
+    }).pipe(Effect15.catchTag("ReviewerError", (cause) => Effect15.succeed(errorSemanticReview(cause.reason))));
     return new VerifierReport({
       request,
       checks: checks.map((c) => ({
@@ -11376,8 +10845,8 @@ var Orchestrator;
 })(Orchestrator ||= {});
 
 // packages/verify-kit/src/Critic.ts
-import { Effect as Effect19, Schema as Schema21 } from "effect";
-var CriticFocus = Schema21.Literals([
+import { Effect as Effect16, Schema as Schema20 } from "effect";
+var CriticFocus = Schema20.Literals([
   "feature",
   "plan",
   "architecture",
@@ -11385,17 +10854,17 @@ var CriticFocus = Schema21.Literals([
   "full"
 ]);
 
-class CriticRequest extends Schema21.Class("CriticRequest")({
-  builderSessionID: Schema21.String,
-  builderModel: Schema21.optionalKey(Schema21.String),
-  summary: Schema21.String,
+class CriticRequest extends Schema20.Class("CriticRequest")({
+  builderSessionID: Schema20.String,
+  builderModel: Schema20.optionalKey(Schema20.String),
+  summary: Schema20.String,
   focus: CriticFocus,
-  explicit: Schema21.Boolean,
-  planRef: Schema21.optionalKey(Schema21.String),
-  traceRefs: Schema21.Array(Schema21.String)
+  explicit: Schema20.Boolean,
+  planRef: Schema20.optionalKey(Schema20.String),
+  traceRefs: Schema20.Array(Schema20.String)
 }) {
 }
-var FindingKind = Schema21.Literals([
+var FindingKind = Schema20.Literals([
   "logical-flaw",
   "hallucination",
   "domain-error",
@@ -11404,25 +10873,25 @@ var FindingKind = Schema21.Literals([
   "missing-consideration"
 ]);
 
-class CriticFinding extends Schema21.Class("CriticFinding")({
-  id: Schema21.String,
-  severity: Schema21.Literals(["critical", "major", "minor", "note"]),
+class CriticFinding extends Schema20.Class("CriticFinding")({
+  id: Schema20.String,
+  severity: Schema20.Literals(["critical", "major", "minor", "note"]),
   kind: FindingKind,
-  claim: Schema21.String,
-  evidence: Schema21.String,
-  suggestion: Schema21.optionalKey(Schema21.String),
-  requirementRefs: Schema21.optionalKey(Schema21.Array(Schema21.String))
+  claim: Schema20.String,
+  evidence: Schema20.String,
+  suggestion: Schema20.optionalKey(Schema20.String),
+  requirementRefs: Schema20.optionalKey(Schema20.Array(Schema20.String))
 }) {
 }
 
-class CriticReport extends Schema21.Class("CriticReport")({
+class CriticReport extends Schema20.Class("CriticReport")({
   request: CriticRequest,
-  verdict: Schema21.Literals(["sound", "concerns", "flawed"]),
-  findings: Schema21.Array(CriticFinding),
-  checkedReferences: Schema21.Array(Schema21.String),
-  criticModel: Schema21.optionalKey(Schema21.String),
-  workerSessionID: Schema21.optionalKey(Schema21.String),
-  completedAt: Schema21.Number
+  verdict: Schema20.Literals(["sound", "concerns", "flawed"]),
+  findings: Schema20.Array(CriticFinding),
+  checkedReferences: Schema20.Array(Schema20.String),
+  criticModel: Schema20.optionalKey(Schema20.String),
+  workerSessionID: Schema20.optionalKey(Schema20.String),
+  completedAt: Schema20.Number
 }) {
 }
 var SYSTEM_PROMPT = [
@@ -11437,7 +10906,7 @@ var SYSTEM_PROMPT = [
   ' "checkedReferences":["paths/files you actually opened"]}'
 ].join(`
 `);
-var decodeWorkerOutput = (raw) => Effect19.try({
+var decodeWorkerOutput = (raw) => Effect16.try({
   try: () => {
     const parsed = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
@@ -11507,7 +10976,7 @@ var decodeWorkerOutput = (raw) => Effect19.try({
   catch: (cause) => new CriticDecodeError({ reason: String(cause) })
 });
 
-class CriticDecodeError extends Schema21.TaggedError()("CriticDecodeError", { reason: Schema21.String }) {
+class CriticDecodeError extends Schema20.TaggedError()("CriticDecodeError", { reason: Schema20.String }) {
 }
 var filterUnverifiedFindings = (findings, checkedReferences, policy) => {
   if (!policy.checkReferences)
@@ -11522,37 +10991,37 @@ init_Refs();
 init_Guard();
 
 // src/Path.ts
-import { Effect as Effect20, Schema as Schema22 } from "effect";
+import { Effect as Effect17, Schema as Schema21 } from "effect";
 
-class RealPathError extends Schema22.TaggedError()("RealPathError", { path: Schema22.String }) {
+class RealPathError extends Schema21.TaggedError()("RealPathError", { path: Schema21.String }) {
 }
-var realpath2 = (absPath) => Effect20.tryPromise({
+var realpath = (absPath) => Effect17.tryPromise({
   try: () => import("fs/promises").then((mod) => mod.realpath(absPath)),
   catch: () => new RealPathError({ path: absPath })
-}).pipe(Effect20.catchTag("RealPathError", () => Effect20.succeed(undefined)));
+}).pipe(Effect17.catchTag("RealPathError", () => Effect17.succeed(undefined)));
 // node_modules/.bun/diff@9.0.0/node_modules/diff/libesm/diff/base.js
 class Diff {
   diff(oldStr, newStr, options = {}) {
-    let callback3;
+    let callback;
     if (typeof options === "function") {
-      callback3 = options;
+      callback = options;
       options = {};
     } else if ("callback" in options) {
-      callback3 = options.callback;
+      callback = options.callback;
     }
     const oldString = this.castInput(oldStr, options);
     const newString = this.castInput(newStr, options);
     const oldTokens = this.removeEmpty(this.tokenize(oldString, options));
     const newTokens = this.removeEmpty(this.tokenize(newString, options));
-    return this.diffWithOptionsObj(oldTokens, newTokens, options, callback3);
+    return this.diffWithOptionsObj(oldTokens, newTokens, options, callback);
   }
-  diffWithOptionsObj(oldTokens, newTokens, options, callback3) {
+  diffWithOptionsObj(oldTokens, newTokens, options, callback) {
     var _a;
     const done = (value) => {
       value = this.postProcess(value, options);
-      if (callback3) {
+      if (callback) {
         setTimeout(function() {
-          callback3(value);
+          callback(value);
         }, 0);
         return;
       } else {
@@ -11610,11 +11079,11 @@ class Diff {
       }
       editLength++;
     };
-    if (callback3) {
+    if (callback) {
       (function exec() {
         setTimeout(function() {
           if (editLength > maxEditLength || Date.now() > abortAfterTimestamp) {
-            return callback3(undefined);
+            return callback(undefined);
           }
           if (!execEditLength()) {
             exec();
@@ -11835,61 +11304,61 @@ var resolveAffected = (root, paths) => {
 
 // src/Options.ts
 init_src();
-import { Effect as Effect21, Schema as Schema23 } from "effect";
-var NonEmptyStringArray = Schema23.Array(Schema23.String);
-var HarnessOptions = Schema23.Struct({
-  enabled: Schema23.optionalKey(Schema23.Boolean),
-  minEffectSkills: Schema23.optionalKey(Schema23.Number),
-  strictAgents: Schema23.optionalKey(NonEmptyStringArray),
-  failClosedForGate: Schema23.optionalKey(Schema23.Boolean),
-  allowEdits: Schema23.optionalKey(Schema23.Boolean),
-  assetsRoot: Schema23.optionalKey(Schema23.String)
+import { Effect as Effect18, Schema as Schema22 } from "effect";
+var NonEmptyStringArray = Schema22.Array(Schema22.String);
+var HarnessOptions = Schema22.Struct({
+  enabled: Schema22.optionalKey(Schema22.Boolean),
+  minEffectSkills: Schema22.optionalKey(Schema22.Number),
+  strictAgents: Schema22.optionalKey(NonEmptyStringArray),
+  failClosedForGate: Schema22.optionalKey(Schema22.Boolean),
+  allowEdits: Schema22.optionalKey(Schema22.Boolean),
+  assetsRoot: Schema22.optionalKey(Schema22.String)
 });
-var VerifyOptions = Schema23.Struct({
-  moduleIds: Schema23.optionalKey(Schema23.Array(Schema23.String)),
-  trigger: Schema23.optionalKey(Schema23.Literals(["off", "auto", "manual"])),
-  semanticReview: Schema23.optionalKey(Schema23.Boolean),
-  workerAgent: Schema23.optionalKey(Schema23.String),
-  maxFindings: Schema23.optionalKey(Schema23.Number)
+var VerifyOptions = Schema22.Struct({
+  moduleIds: Schema22.optionalKey(Schema22.Array(Schema22.String)),
+  trigger: Schema22.optionalKey(Schema22.Literals(["off", "auto", "manual"])),
+  semanticReview: Schema22.optionalKey(Schema22.Boolean),
+  workerAgent: Schema22.optionalKey(Schema22.String),
+  maxFindings: Schema22.optionalKey(Schema22.Number)
 });
-var CriticOptions = Schema23.Struct({
-  enabled: Schema23.optionalKey(Schema23.Boolean),
-  workerAgent: Schema23.optionalKey(Schema23.String),
-  requireIndependentModel: Schema23.optionalKey(Schema23.Boolean),
-  checkReferences: Schema23.optionalKey(Schema23.Boolean),
-  autoAfterExplicitCheckpoint: Schema23.optionalKey(Schema23.Boolean),
-  autoEveryNBuildExecutions: Schema23.optionalKey(Schema23.Number)
+var CriticOptions = Schema22.Struct({
+  enabled: Schema22.optionalKey(Schema22.Boolean),
+  workerAgent: Schema22.optionalKey(Schema22.String),
+  requireIndependentModel: Schema22.optionalKey(Schema22.Boolean),
+  checkReferences: Schema22.optionalKey(Schema22.Boolean),
+  autoAfterExplicitCheckpoint: Schema22.optionalKey(Schema22.Boolean),
+  autoEveryNBuildExecutions: Schema22.optionalKey(Schema22.Number)
 });
-var BenchmarkModelOption = Schema23.Struct({
-  id: Schema23.String,
-  provider: Schema23.String,
-  model: Schema23.String,
-  variant: Schema23.optionalKey(Schema23.String)
+var BenchmarkModelOption = Schema22.Struct({
+  id: Schema22.String,
+  provider: Schema22.String,
+  model: Schema22.String,
+  variant: Schema22.optionalKey(Schema22.String)
 });
-var RelativeDatabasePath = Schema23.String.check(Schema23.makeFilter((value) => value.length > 0 && !value.startsWith("/") && !value.split("/").some((segment) => segment === "..") ? undefined : "database path must be non-empty and stay within the project"));
-var OtelOptions = Schema23.Struct({
-  endpoint: Schema23.String,
-  serviceName: Schema23.optionalKey(Schema23.String),
-  includeContent: Schema23.optionalKey(Schema23.Literals([false]))
+var RelativeDatabasePath = Schema22.String.check(Schema22.makeFilter((value) => value.length > 0 && !value.startsWith("/") && !value.split("/").some((segment) => segment === "..") ? undefined : "database path must be non-empty and stay within the project"));
+var OtelOptions = Schema22.Struct({
+  endpoint: Schema22.String,
+  serviceName: Schema22.optionalKey(Schema22.String),
+  includeContent: Schema22.optionalKey(Schema22.Literals([false]))
 });
-var BenchmarkOptions = Schema23.Struct({
-  dbPath: Schema23.optionalKey(RelativeDatabasePath),
-  concurrency: Schema23.optionalKey(Schema23.Number),
-  workerAgent: Schema23.optionalKey(Schema23.String),
-  judgeProfileId: Schema23.optionalKey(Schema23.String),
-  timeoutMs: Schema23.optionalKey(Schema23.Number),
-  models: Schema23.optionalKey(Schema23.Array(BenchmarkModelOption)),
-  otel: Schema23.optionalKey(OtelOptions)
+var BenchmarkOptions = Schema22.Struct({
+  dbPath: Schema22.optionalKey(RelativeDatabasePath),
+  concurrency: Schema22.optionalKey(Schema22.Number),
+  workerAgent: Schema22.optionalKey(Schema22.String),
+  judgeProfileId: Schema22.optionalKey(Schema22.String),
+  timeoutMs: Schema22.optionalKey(Schema22.Number),
+  models: Schema22.optionalKey(Schema22.Array(BenchmarkModelOption)),
+  otel: Schema22.optionalKey(OtelOptions)
 });
-var CompoundOptions = Schema23.Struct({
-  enabled: Schema23.optionalKey(Schema23.Boolean),
-  benchmark: Schema23.optionalKey(BenchmarkOptions)
+var CompoundOptions = Schema22.Struct({
+  enabled: Schema22.optionalKey(Schema22.Boolean),
+  benchmark: Schema22.optionalKey(BenchmarkOptions)
 });
-var RawOptions = Schema23.Struct({
-  harness: Schema23.optionalKey(HarnessOptions),
-  verify: Schema23.optionalKey(VerifyOptions),
-  critic: Schema23.optionalKey(CriticOptions),
-  compound: Schema23.optionalKey(CompoundOptions)
+var RawOptions = Schema22.Struct({
+  harness: Schema22.optionalKey(HarnessOptions),
+  verify: Schema22.optionalKey(VerifyOptions),
+  critic: Schema22.optionalKey(CriticOptions),
+  compound: Schema22.optionalKey(CompoundOptions)
 });
 var defaults = () => ({
   harness: {
@@ -11926,9 +11395,9 @@ var defaults = () => ({
     }
   }
 });
-var decode = (raw) => Effect21.gen(function* () {
-  const parsed = yield* Effect21.try({
-    try: () => Schema23.decodeUnknownSync(RawOptions)(raw),
+var decode = (raw) => Effect18.gen(function* () {
+  const parsed = yield* Effect18.try({
+    try: () => Schema22.decodeUnknownSync(RawOptions)(raw),
     catch: (cause) => new InvalidInput({ reason: `malformed options: ${String(cause)}` })
   });
   const base = defaults();
@@ -11974,7 +11443,7 @@ var decode = (raw) => Effect21.gen(function* () {
   };
   return yield* validate(config);
 });
-var validate = (config) => Effect21.gen(function* () {
+var validate = (config) => Effect18.gen(function* () {
   const problems = [];
   if (config.harness.minEffectSkills < 0 || config.harness.minEffectSkills > 50) {
     problems.push("harness.minEffectSkills must be between 0 and 50");
@@ -11996,7 +11465,7 @@ var validate = (config) => Effect21.gen(function* () {
     problems.push("compound.benchmark.models has duplicate ids");
   }
   if (problems.length > 0) {
-    return yield* Effect21.fail(new InvalidInput({ reason: problems.join("; ") }));
+    return yield* Effect18.fail(new InvalidInput({ reason: problems.join("; ") }));
   }
   return config;
 });
@@ -12004,9 +11473,9 @@ var validate = (config) => Effect21.gen(function* () {
 // src/Exec.ts
 init_src();
 import { spawn } from "child_process";
-import { Effect as Effect22, Layer as Layer9 } from "effect";
+import { Effect as Effect19, Layer as Layer7 } from "effect";
 var MAX_DEFAULT_BYTES = 512000;
-var spawnOnce = (spec, cwd, env) => Effect22.flatMap(Effect22.callback((resume) => {
+var spawnOnce = (spec, cwd, env) => Effect19.flatMap(Effect19.callback((resume) => {
   const child = spawn(spec.executable, [...spec.args], {
     cwd,
     env,
@@ -12051,30 +11520,30 @@ var spawnOnce = (spec, cwd, env) => Effect22.flatMap(Effect22.callback((resume) 
       return;
     settled = true;
     clearTimeout(timer);
-    resume(Effect22.succeed({ code, signal, stdout: out, stderr: err, timedOut: didTimeOut, truncated }));
+    resume(Effect19.succeed({ code, signal, stdout: out, stderr: err, timedOut: didTimeOut, truncated }));
   };
   child.on("error", (cause) => {
     if (settled)
       return;
     settled = true;
     clearTimeout(timer);
-    resume(Effect22.fail(new ExecError({ reason: "spawn failed", command: spec.executable })));
+    resume(Effect19.fail(new ExecError({ reason: "spawn failed", command: spec.executable })));
   });
   child.on("close", finish);
-  return Effect22.sync(() => {
+  return Effect19.sync(() => {
     clearTimeout(timer);
     if (!settled) {
       settled = true;
       try {
         child.kill("SIGKILL");
       } catch {}
-      resume(Effect22.fail(new ExecError({ reason: "interrupted", command: spec.executable })));
+      resume(Effect19.fail(new ExecError({ reason: "interrupted", command: spec.executable })));
     }
   });
-}), (outcome) => outcome.signal !== null ? Effect22.fail(new ExecError({
+}), (outcome) => outcome.signal !== null ? Effect19.fail(new ExecError({
   reason: `terminated by ${outcome.signal}`,
   command: spec.executable
-})) : Effect22.succeed(outcome));
+})) : Effect19.succeed(outcome));
 var ExecNode;
 ((ExecNode) => {
   const minimalEnv = (allowlist) => {
@@ -12090,9 +11559,9 @@ var ExecNode;
     };
   };
   ExecNode.make = (options = {}) => ({
-    run: (spec) => Effect22.gen(function* () {
+    run: (spec) => Effect19.gen(function* () {
       if (spec.executable.trim().length === 0 || spec.executable.includes("\x00")) {
-        return yield* Effect22.fail(new ExecError({ reason: "invalid executable", command: spec.executable }));
+        return yield* Effect19.fail(new ExecError({ reason: "invalid executable", command: spec.executable }));
       }
       const cwd = spec.cwd ?? process.cwd();
       const outcome = yield* spawnOnce(spec, cwd, minimalEnv(options.envAllowlist ?? []));
@@ -12105,15 +11574,15 @@ var ExecNode;
       });
     })
   });
-  ExecNode.layer = (options = {}) => Layer9.succeed(Exec.Service, Exec.Service.of(ExecNode.make(options)));
+  ExecNode.layer = (options = {}) => Layer7.succeed(Exec.Service, Exec.Service.of(ExecNode.make(options)));
 })(ExecNode ||= {});
 
 // src/session/Session.ts
 init_Refs();
-import { Context as Context8, Effect as Effect23, Layer as Layer10, Ref as Ref3 } from "effect";
-import { Schema as Schema24 } from "effect";
+import { Context as Context8, Effect as Effect20, Layer as Layer8, Ref as Ref3 } from "effect";
+import { Schema as Schema23 } from "effect";
 
-class LocationError extends Schema24.TaggedError()("LocationError", { sessionID: Schema24.String, reason: Schema24.String }) {
+class LocationError extends Schema23.TaggedError()("LocationError", { sessionID: Schema23.String, reason: Schema23.String }) {
 }
 var Sessions;
 ((Sessions) => {
@@ -12121,7 +11590,7 @@ var Sessions;
   class Tag extends Context8.Service()("opencode-effect-harness/opencode/Sessions") {
   }
   Sessions.Tag = Tag;
-  const readDirectory2 = (info) => {
+  const readDirectory = (info) => {
     if (typeof info !== "object" || info === null)
       return;
     const location = Reflect.get(info, "location");
@@ -12131,31 +11600,31 @@ var Sessions;
     return typeof directory === "string" ? directory : undefined;
   };
   Sessions.make = (sessionApi, sessionIdBrand) => {
-    const cache = Effect23.runSync(Ref3.make(new Map));
+    const cache = Effect20.runSync(Ref3.make(new Map));
     return {
-      resolve: (sessionID) => Effect23.gen(function* () {
-        const cached = Effect23.runSync(Ref3.get(cache)).get(sessionID);
+      resolve: (sessionID) => Effect20.gen(function* () {
+        const cached = Effect20.runSync(Ref3.get(cache)).get(sessionID);
         if (cached !== undefined)
           return cached;
-        const info = yield* sessionApi.get({ sessionID: sessionIdBrand(sessionID) }).pipe(Effect23.mapError(() => new LocationError({ sessionID, reason: "session lookup failed" })));
-        const directory = readDirectory2(info);
+        const info = yield* sessionApi.get({ sessionID: sessionIdBrand(sessionID) }).pipe(Effect20.mapError(() => new LocationError({ sessionID, reason: "session lookup failed" })));
+        const directory = readDirectory(info);
         if (directory === undefined) {
-          return yield* Effect23.fail(new LocationError({ sessionID, reason: "session has no location.directory" }));
+          return yield* Effect20.fail(new LocationError({ sessionID, reason: "session has no location.directory" }));
         }
         const resolved = {
           directory,
           projectKey: projectKeyOf(directory)
         };
-        yield* Ref3.update(cache, (map2) => new Map(map2).set(sessionID, resolved));
+        yield* Ref3.update(cache, (map) => new Map(map).set(sessionID, resolved));
         return resolved;
       })
     };
   };
-  Sessions.layerFrom = (sessionApi, sessionIdBrand) => Layer10.succeed(Tag, Sessions.make(sessionApi, sessionIdBrand));
+  Sessions.layerFrom = (sessionApi, sessionIdBrand) => Layer8.succeed(Tag, Sessions.make(sessionApi, sessionIdBrand));
 })(Sessions ||= {});
 
 // src/session/Origin.ts
-import { Context as Context9, Effect as Effect24, Layer as Layer11, Ref as Ref4 } from "effect";
+import { Context as Context9, Effect as Effect21, Layer as Layer9, Ref as Ref4 } from "effect";
 var MUTATION_TOOLS = [
   "write",
   "edit",
@@ -12173,12 +11642,12 @@ var Origins;
   }
   Origins.Tag = Tag;
   Origins.make = () => {
-    const origins = Effect24.runSync(Ref4.make(new Map));
-    const prompts = Effect24.runSync(Ref4.make(new Map));
+    const origins = Effect21.runSync(Ref4.make(new Map));
+    const prompts = Effect21.runSync(Ref4.make(new Map));
     return {
-      register: ({ sessionID, origin }) => Ref4.update(origins, (map2) => new Map(map2).set(sessionID, origin)),
-      originOf: (sessionID) => Effect24.map(Ref4.get(origins), (m) => m.get(sessionID)),
-      unregister: (sessionID) => Effect24.map(Effect24.all([
+      register: ({ sessionID, origin }) => Ref4.update(origins, (map) => new Map(map).set(sessionID, origin)),
+      originOf: (sessionID) => Effect21.map(Ref4.get(origins), (m) => m.get(sessionID)),
+      unregister: (sessionID) => Effect21.map(Effect21.all([
         Ref4.update(origins, (m) => {
           const next = new Map(m);
           next.delete(sessionID);
@@ -12192,10 +11661,10 @@ var Origins;
       ]), () => {
         return;
       }),
-      registerPrompt: ({ sessionID, systemPrompt }) => Ref4.update(prompts, (map2) => new Map(map2).set(sessionID, systemPrompt)),
-      promptFor: (sessionID) => Effect24.map(Ref4.get(prompts), (m) => m.get(sessionID)),
-      restrictTools: ({ sessionID, allowEdits, tools }) => Effect24.gen(function* () {
-        const origin = yield* Effect24.map(Ref4.get(origins), (m) => m.get(sessionID));
+      registerPrompt: ({ sessionID, systemPrompt }) => Ref4.update(prompts, (map) => new Map(map).set(sessionID, systemPrompt)),
+      promptFor: (sessionID) => Effect21.map(Ref4.get(prompts), (m) => m.get(sessionID)),
+      restrictTools: ({ sessionID, allowEdits, tools }) => Effect21.gen(function* () {
+        const origin = yield* Effect21.map(Ref4.get(origins), (m) => m.get(sessionID));
         if (origin === undefined || allowEdits)
           return 0;
         const removed = MUTATION_TOOLS.reduce((count, key) => {
@@ -12209,13 +11678,13 @@ var Origins;
       isMutationTool: (toolName) => MUTATION_TOOLS.includes(toolName)
     };
   };
-  Origins.layer = Layer11.succeed(Tag, Origins.make());
+  Origins.layer = Layer9.succeed(Tag, Origins.make());
 })(Origins ||= {});
 
 // src/mode/State.ts
-import { Context as Context10, Effect as Effect25, Layer as Layer12, Ref as Ref5, Schema as Schema25 } from "effect";
+import { Context as Context10, Effect as Effect22, Layer as Layer10, Ref as Ref5, Schema as Schema24 } from "effect";
 
-class ModePersistenceError extends Schema25.TaggedError()("ModePersistenceError", { projectKey: Schema25.String, reason: Schema25.String }) {
+class ModePersistenceError extends Schema24.TaggedError()("ModePersistenceError", { projectKey: Schema24.String, reason: Schema24.String }) {
 }
 var ModeState;
 ((ModeState) => {
@@ -12225,12 +11694,12 @@ var ModeState;
   ModeState.Tag = Tag;
   const keyFor = (projectKey) => `opencode-effect-harness/mode/${projectKey}`;
   ModeState.make = (storage) => {
-    const cache = Effect25.runSync(Ref5.make(new Map));
-    const loadOnce = (projectKey) => Effect25.gen(function* () {
-      const cached = yield* Ref5.get(cache).pipe(Effect25.map((m) => m.get(projectKey)));
+    const cache = Effect22.runSync(Ref5.make(new Map));
+    const loadOnce = (projectKey) => Effect22.gen(function* () {
+      const cached = yield* Ref5.get(cache).pipe(Effect22.map((m) => m.get(projectKey)));
       if (cached !== undefined)
         return cached;
-      const raw = yield* storage.get(keyFor(projectKey)).pipe(Effect25.orElseSucceed(() => {
+      const raw = yield* storage.get(keyFor(projectKey)).pipe(Effect22.orElseSucceed(() => {
         return;
       }));
       const stored = raw;
@@ -12240,18 +11709,18 @@ var ModeState;
     });
     return {
       enabled: loadOnce,
-      set: ({ projectKey, enabled }) => Effect25.gen(function* () {
-        yield* storage.set(keyFor(projectKey), { enabled, updatedAt: new Date().toISOString() }).pipe(Effect25.mapError(() => new ModePersistenceError({ projectKey, reason: "storage write failed" })));
+      set: ({ projectKey, enabled }) => Effect22.gen(function* () {
+        yield* storage.set(keyFor(projectKey), { enabled, updatedAt: new Date().toISOString() }).pipe(Effect22.mapError(() => new ModePersistenceError({ projectKey, reason: "storage write failed" })));
         yield* Ref5.update(cache, (m) => new Map(m).set(projectKey, enabled));
         return enabled;
       })
     };
   };
-  ModeState.layerFrom = (storage) => Layer12.succeed(Tag, Tag.of(ModeState.make(storage)));
+  ModeState.layerFrom = (storage) => Layer10.succeed(Tag, Tag.of(ModeState.make(storage)));
 })(ModeState ||= {});
 
 // src/Ledger.ts
-import { Context as Context11, Effect as Effect26, Layer as Layer13, Ref as Ref6 } from "effect";
+import { Context as Context11, Effect as Effect23, Layer as Layer11, Ref as Ref6 } from "effect";
 var storageRemove = (storage, key) => storage.remove !== undefined ? storage.remove(key) : storage.set(key, { skills: [] });
 var Ledger;
 ((Ledger) => {
@@ -12263,13 +11732,13 @@ var Ledger;
   const isEffectSkill = (name) => name.startsWith("effect-");
   const composite = (projectKey, sessionID) => `${projectKey} ${sessionID}`;
   Ledger.make = (storage) => {
-    const sessions = Effect26.runSync(Ref6.make(new Map));
-    const hydrate = (projectKey, sessionID) => Effect26.gen(function* () {
+    const sessions = Effect23.runSync(Ref6.make(new Map));
+    const hydrate = (projectKey, sessionID) => Effect23.gen(function* () {
       const key = composite(projectKey, sessionID);
-      const known = yield* Ref6.get(sessions).pipe(Effect26.map((m) => m.get(key)));
+      const known = yield* Ref6.get(sessions).pipe(Effect23.map((m) => m.get(key)));
       if (known !== undefined)
         return known;
-      const raw = yield* storage.get(storageKey(projectKey, sessionID)).pipe(Effect26.orElseSucceed(() => {
+      const raw = yield* storage.get(storageKey(projectKey, sessionID)).pipe(Effect23.orElseSucceed(() => {
         return;
       }));
       const list = Array.isArray(raw?.skills) ? raw.skills : [];
@@ -12277,33 +11746,33 @@ var Ledger;
       yield* Ref6.update(sessions, (m) => new Map(m).set(key, restored));
       return restored;
     });
-    const persist = (projectKey, sessionID, skills) => storage.set(storageKey(projectKey, sessionID), { skills: [...skills] }).pipe(Effect26.ignore, Effect26.asVoid);
+    const persist = (projectKey, sessionID, skills) => storage.set(storageKey(projectKey, sessionID), { skills: [...skills] }).pipe(Effect23.ignore, Effect23.asVoid);
     return {
-      mark: ({ projectKey, sessionID, skill }) => Effect26.flatMap(hydrate(projectKey, sessionID), (current) => {
+      mark: ({ projectKey, sessionID, skill }) => Effect23.flatMap(hydrate(projectKey, sessionID), (current) => {
         if (!isEffectSkill(skill))
-          return Effect26.void;
+          return Effect23.void;
         const next = new Set(current).add(skill);
-        return Effect26.asVoid(Effect26.all([
+        return Effect23.asVoid(Effect23.all([
           Ref6.update(sessions, (m) => new Map(m).set(composite(projectKey, sessionID), next)),
           persist(projectKey, sessionID, next)
         ]));
       }),
-      countDistinct: ({ projectKey, sessionID, pending }) => Effect26.map(hydrate(projectKey, sessionID), (loaded) => {
+      countDistinct: ({ projectKey, sessionID, pending }) => Effect23.map(hydrate(projectKey, sessionID), (loaded) => {
         const relevant = [...loaded, ...pending].filter(isEffectSkill);
         return new Set(relevant).size;
       }),
-      reset: ({ projectKey, sessionID }) => Effect26.asVoid(Effect26.all([
+      reset: ({ projectKey, sessionID }) => Effect23.asVoid(Effect23.all([
         Ref6.update(sessions, (m) => {
           const next = new Map(m);
           next.delete(composite(projectKey, sessionID));
           return next;
         }),
-        storageRemove(storage, storageKey(projectKey, sessionID)).pipe(Effect26.ignore)
+        storageRemove(storage, storageKey(projectKey, sessionID)).pipe(Effect23.ignore)
       ])),
-      loadedNames: ({ projectKey, sessionID }) => Effect26.map(hydrate(projectKey, sessionID), (set) => [...set])
+      loadedNames: ({ projectKey, sessionID }) => Effect23.map(hydrate(projectKey, sessionID), (set) => [...set])
     };
   };
-  Ledger.layerFrom = (storage) => Layer13.succeed(Tag, Tag.of(Ledger.make(storage)));
+  Ledger.layerFrom = (storage) => Layer11.succeed(Tag, Tag.of(Ledger.make(storage)));
 })(Ledger ||= {});
 var PendingReads;
 ((PendingReads) => {
@@ -12313,29 +11782,29 @@ var PendingReads;
   PendingReads.Tag = Tag;
   const scopedKey = (input) => `${input.projectKey} ${input.sessionID} ${input.callId}`;
   PendingReads.make = () => {
-    const entries = Effect26.runSync(Ref6.make(new Map));
+    const entries = Effect23.runSync(Ref6.make(new Map));
     return {
-      remember: (input) => Ref6.update(entries, (map2) => new Map(map2).set(scopedKey(input), input)),
-      take: (input) => Effect26.gen(function* () {
+      remember: (input) => Ref6.update(entries, (map) => new Map(map).set(scopedKey(input), input)),
+      take: (input) => Effect23.gen(function* () {
         const key = scopedKey(input);
-        const map2 = yield* Ref6.get(entries);
-        const found = map2.get(key)?.skill;
-        yield* Ref6.set(entries, new Map([...map2].filter(([k]) => k !== key)));
+        const map = yield* Ref6.get(entries);
+        const found = map.get(key)?.skill;
+        yield* Ref6.set(entries, new Map([...map].filter(([k]) => k !== key)));
         return found;
       }),
-      names: (input) => Effect26.map(Ref6.get(entries), (map2) => {
+      names: (input) => Effect23.map(Ref6.get(entries), (map) => {
         const prefix = `${input.projectKey} ${input.sessionID} `;
         return [
-          ...new Set([...map2.entries()].filter(([k]) => k.startsWith(prefix)).map(([, v]) => v.skill).filter((skill) => skill.startsWith("effect-")))
+          ...new Set([...map.entries()].filter(([k]) => k.startsWith(prefix)).map(([, v]) => v.skill).filter((skill) => skill.startsWith("effect-")))
         ];
       })
     };
   };
-  PendingReads.layer = Layer13.succeed(Tag, Tag.of(PendingReads.make()));
+  PendingReads.layer = Layer11.succeed(Tag, Tag.of(PendingReads.make()));
 })(PendingReads ||= {});
 
 // src/change/Ledger.ts
-import { Context as Context12, Effect as Effect27, Layer as Layer14, Ref as Ref7 } from "effect";
+import { Context as Context12, Effect as Effect24, Layer as Layer12, Ref as Ref7 } from "effect";
 var ChangeLedger;
 ((ChangeLedger) => {
 
@@ -12344,32 +11813,32 @@ var ChangeLedger;
   ChangeLedger.Tag = Tag;
   const composite = (projectKey, sessionID) => `${projectKey} ${sessionID}`;
   ChangeLedger.make = () => {
-    const state = Effect27.runSync(Ref7.make(new Map));
+    const state = Effect24.runSync(Ref7.make(new Map));
     return {
-      record: ({ projectKey, sessionID, filePath }) => Ref7.update(state, (map2) => {
+      record: ({ projectKey, sessionID, filePath }) => Ref7.update(state, (map) => {
         const key = composite(projectKey, sessionID);
-        const current = map2.get(key) ?? new Set;
-        return new Map(map2).set(key, new Set(current).add(filePath));
+        const current = map.get(key) ?? new Set;
+        return new Map(map).set(key, new Set(current).add(filePath));
       }),
-      drain: ({ projectKey, sessionID }) => Effect27.gen(function* () {
+      drain: ({ projectKey, sessionID }) => Effect24.gen(function* () {
         const key = composite(projectKey, sessionID);
-        const current = yield* Ref7.get(state).pipe(Effect27.map((m) => m.get(key)));
-        yield* Ref7.update(state, (map2) => {
-          const next = new Map(map2);
+        const current = yield* Ref7.get(state).pipe(Effect24.map((m) => m.get(key)));
+        yield* Ref7.update(state, (map) => {
+          const next = new Map(map);
           next.delete(key);
           return next;
         });
         return [...current ?? []].sort();
       }),
-      peek: ({ projectKey, sessionID }) => Effect27.map(Ref7.get(state), (map2) => [...map2.get(composite(projectKey, sessionID)) ?? []].sort()),
-      size: ({ projectKey }) => Effect27.map(Ref7.get(state), (map2) => [...map2.entries()].filter(([k]) => k.startsWith(`${projectKey} `)).reduce((sum, [, files]) => sum + files.size, 0))
+      peek: ({ projectKey, sessionID }) => Effect24.map(Ref7.get(state), (map) => [...map.get(composite(projectKey, sessionID)) ?? []].sort()),
+      size: ({ projectKey }) => Effect24.map(Ref7.get(state), (map) => [...map.entries()].filter(([k]) => k.startsWith(`${projectKey} `)).reduce((sum, [, files]) => sum + files.size, 0))
     };
   };
-  ChangeLedger.layer = Layer14.succeed(Tag, Tag.of(ChangeLedger.make()));
+  ChangeLedger.layer = Layer12.succeed(Tag, Tag.of(ChangeLedger.make()));
 })(ChangeLedger ||= {});
 
 // src/Events.ts
-import { Effect as Effect28, Stream as Stream2 } from "effect";
+import { Effect as Effect25, Stream } from "effect";
 var recordOf = (value) => typeof value === "object" && value !== null ? value : undefined;
 var deepSessionId = (event) => {
   const props = event.properties;
@@ -12444,27 +11913,27 @@ var LiveTraceSink;
       sink.record(sessionID, text);
   };
 })(LiveTraceSink ||= {});
-var consumeAll = (stream, handlers) => Stream2.runForEach(stream, (event) => {
+var consumeAll = (stream, handlers) => Stream.runForEach(stream, (event) => {
   handlers.onAnyEvent?.(event);
   const activated = selectSkillActivated(event);
   if (activated !== undefined) {
-    return handlers.onSkillActivated?.(activated) ?? Effect28.void;
+    return handlers.onSkillActivated?.(activated) ?? Effect25.void;
   }
   const compacted = selectCompacted(event);
   if (compacted !== undefined) {
-    return handlers.onCompacted?.(compacted) ?? Effect28.void;
+    return handlers.onCompacted?.(compacted) ?? Effect25.void;
   }
   const ended = selectExecutionEnded(event);
   if (ended !== undefined) {
-    return handlers.onExecutionEnded?.(ended) ?? Effect28.void;
+    return handlers.onExecutionEnded?.(ended) ?? Effect25.void;
   }
-  return Effect28.void;
-}).pipe(Effect28.catchCause((cause) => Effect28.sync(() => {
+  return Effect25.void;
+}).pipe(Effect25.catchCause((cause) => Effect25.sync(() => {
   console.error("[opencode-effect-harness] event consumer stopped:", String(cause));
 })));
 
 // src/agent/Policy.ts
-import { Option as Option12, Predicate } from "effect";
+import { Option as Option11, Predicate } from "effect";
 var OPT_OUT_KEY = "opencode-effect-harness";
 var AgentPolicy;
 ((AgentPolicy) => {
@@ -12479,186 +11948,14 @@ var AgentPolicy;
     return true;
   };
   AgentPolicy.isDisabled = (disabled, agent) => {
-    const id = Predicate.isString(agent) ? Option12.some(agent) : Option12.none();
-    return Option12.isSome(id) && disabled.has(id.value);
+    const id = Predicate.isString(agent) ? Option11.some(agent) : Option11.none();
+    return Option11.isSome(id) && disabled.has(id.value);
   };
 })(AgentPolicy ||= {});
 
 // src/Capability.ts
-import { Effect as Effect29, Schema as Schema32 } from "effect";
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/skill.js
-var exports_skill = {};
-__export(exports_skill, {
-  DirectorySource: () => DirectorySource,
-  EmbeddedSource: () => EmbeddedSource,
-  Event: () => Event,
-  ID: () => ID2,
-  Info: () => Info2,
-  Name: () => Name,
-  Skill: () => exports_skill,
-  Source: () => Source,
-  UrlSource: () => UrlSource
-});
-import { Schema as Schema31 } from "effect";
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/schema.js
-import { DateTime, Option as Option13, Schema as Schema26, SchemaGetter } from "effect";
-var PositiveInt = Schema26.Int.check(Schema26.isGreaterThan(0));
-var NonNegativeInt = Schema26.Int.check(Schema26.isGreaterThanOrEqualTo(0));
-var RelativePath = Schema26.String.pipe(Schema26.brand("RelativePath"));
-var AbsolutePath = Schema26.String.pipe(Schema26.brand("AbsolutePath"));
-var optional = (schema) => Schema26.optionalKey(schema).pipe(Schema26.decodeTo(Schema26.optional(Schema26.toType(schema)), {
-  decode: SchemaGetter.passthrough({ strict: false }),
-  encode: SchemaGetter.transformOptional(Option13.filter((value) => value !== undefined))
-}));
-var statics = (methods) => (schema) => Object.assign(schema, methods(schema));
-var DateTimeUtcFromMillis = Schema26.Finite.pipe(Schema26.decodeTo(Schema26.DateTimeUtc, {
-  decode: SchemaGetter.transform((value) => DateTime.makeUnsafe(value)),
-  encode: SchemaGetter.transform((value) => DateTime.toEpochMillis(value))
-}));
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/event.js
-import { Schema as Schema30, SchemaTransformation } from "effect";
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/identifier.js
-var length = 26;
-var chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-var lastTimestamp = 0;
-var counter = 0;
-function ascending() {
-  return create(false);
-}
-function create(descending, timestamp = Date.now()) {
-  if (timestamp !== lastTimestamp) {
-    lastTimestamp = timestamp;
-    counter = 0;
-  }
-  counter++;
-  const current = BigInt(timestamp) * 0x1000n + BigInt(counter);
-  const value = descending ? ~current : current;
-  const time = Array.from({ length: 6 }, (_, index) => Number(value >> BigInt(40 - 8 * index) & 0xffn).toString(16).padStart(2, "0")).join("");
-  const bytes = crypto.getRandomValues(new Uint8Array(length - 12));
-  return time + Array.from(bytes, (byte) => chars[byte % 62]).join("");
-}
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/location.js
-var exports_location = {};
-__export(exports_location, {
-  Info: () => Info,
-  Location: () => exports_location,
-  Ref: () => Ref8,
-  response: () => response
-});
-import { Schema as Schema29 } from "effect";
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/project-id.js
-import { Schema as Schema27 } from "effect";
-var ProjectID = Schema27.String.pipe(Schema27.brand("Project.ID"), statics((schema) => ({ global: schema.make("global") })));
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/workspace-id.js
-import { Schema as Schema28 } from "effect";
-var WorkspaceID = Schema28.String.check(Schema28.isStartsWith("wrk")).pipe(Schema28.brand("Workspace.ID"), statics((schema) => {
-  const create2 = () => schema.make("wrk_" + ascending());
-  return {
-    ascending: (id) => {
-      if (!id)
-        return create2();
-      if (!id.startsWith("wrk"))
-        throw new Error(`ID ${id} does not start with wrk`);
-      return schema.make(id);
-    },
-    create: create2
-  };
-}));
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/location.js
-var Ref8 = Schema29.Struct({
-  directory: AbsolutePath,
-  workspaceID: optional(WorkspaceID)
-}).annotate({ identifier: "Location.Ref" });
-
-class Info extends Schema29.Class("Location.Info")({
-  directory: AbsolutePath,
-  workspaceID: optional(WorkspaceID),
-  project: Schema29.Struct({
-    id: ProjectID,
-    directory: AbsolutePath,
-    canonical: AbsolutePath
-  })
-}) {
-}
-function response(data) {
-  return Schema29.Struct({ location: Info, data });
-}
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/event.js
-var ID = Schema30.String.check(Schema30.isStartsWith("evt_")).pipe(Schema30.brand("Event.ID"), statics((schema) => ({ create: () => schema.make("evt_" + ascending()) })));
-var Seq = Schema30.Int.check(Schema30.isGreaterThanOrEqualTo(0)).pipe(Schema30.brand("Event.Seq"));
-var Version = Schema30.Int.check(Schema30.isGreaterThanOrEqualTo(1)).pipe(Schema30.brand("Event.Version"));
-var DurableEnvelope = Schema30.Struct({ aggregateID: Schema30.String, seq: Seq, version: Version });
-function ephemeral(input) {
-  const data = Schema30.Struct(input.schema);
-  return Schema30.Struct({
-    id: ID,
-    created: Schema30.Finite,
-    metadata: optional(Schema30.Record(Schema30.String, Schema30.Unknown)),
-    type: Schema30.Literal(input.type),
-    location: optional(exports_location.Ref),
-    data
-  }).annotate({ identifier: input.identifier ?? input.type }).pipe(statics(() => ({
-    type: input.type,
-    durability: "ephemeral",
-    durable: undefined,
-    data
-  })));
-}
-function inventory(...definitions) {
-  return Object.freeze(definitions);
-}
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/skill.js
-var ID2 = Schema31.String.pipe(Schema31.brand("Skill.ID"));
-var Name = Schema31.String.pipe(Schema31.brand("Skill.Name"));
-var DirectorySource = Schema31.Struct({
-  type: Schema31.tag("directory"),
-  path: AbsolutePath
-}).annotate({ identifier: "Skill.DirectorySource" });
-var UrlSource = Schema31.Struct({
-  type: Schema31.tag("url"),
-  url: Schema31.String
-}).annotate({ identifier: "Skill.UrlSource" });
-var Info2 = Schema31.Struct({
-  id: ID2,
-  name: Name,
-  description: Schema31.String.pipe(optional),
-  slash: Schema31.Boolean.pipe(optional),
-  autoinvoke: Schema31.Boolean.pipe(optional),
-  location: AbsolutePath,
-  content: Schema31.String
-}).annotate({ identifier: "Skill.Info" });
-var Updated = ephemeral({ type: "skill.updated", schema: {} });
-var Event = { Updated, Definitions: inventory(Updated) };
-var EmbeddedSource = Schema31.Struct({
-  type: Schema31.tag("embedded"),
-  skill: Schema31.suspend(() => Info2)
-}).annotate({ identifier: "Skill.EmbeddedSource" });
-var Source = Object.assign(Schema31.Union([DirectorySource, UrlSource, EmbeddedSource]).pipe(Schema31.toTaggedUnion("type"), Schema31.annotate({ identifier: "Skill.Source" })), {
-  equals: (a, b) => {
-    if (a.type !== b.type)
-      return false;
-    if (a.type === "directory" && b.type === "directory")
-      return a.path === b.path;
-    if (a.type === "url" && b.type === "url")
-      return a.url === b.url;
-    if (a.type === "embedded" && b.type === "embedded")
-      return a.skill.id === b.skill.id;
-    return false;
-  },
-  key: (source) => source.type === "directory" ? `directory:${source.path}` : source.type === "url" ? `url:${source.url}` : `embedded:${source.skill.id}`
-});
-
-// src/Capability.ts
+import { Effect as Effect26, Schema as Schema25 } from "effect";
+import { Skill as SkillSchema } from "@opencode-ai/schema/skill";
 var FRONTMATTER_BLOCK = /^---\n([\s\S]*?)\n---/;
 var DESCRIPTION_LINE = /(^|\n)description:\s*([^\n]+)/;
 var buildCandidate = (entry, content) => ({
@@ -12670,12 +11967,12 @@ var buildCandidate = (entry, content) => ({
 });
 var decodeCandidate = (candidate) => {
   try {
-    return Schema32.decodeUnknownSync(exports_skill.Info)(candidate);
+    return Schema25.decodeUnknownSync(SkillSchema.Info)(candidate);
   } catch {
     return;
   }
 };
-var prepareAll = (entries, loadContent) => Effect29.forEach(entries, (entry) => Effect29.map(loadContent(entry), (content) => ({ entry, content })), { concurrency: 8 }).pipe(Effect29.map((loaded) => {
+var prepareAll = (entries, loadContent) => Effect26.forEach(entries, (entry) => Effect26.map(loadContent(entry), (content) => ({ entry, content })), { concurrency: 8 }).pipe(Effect26.map((loaded) => {
   let rejected = 0;
   const infos = loaded.flatMap(({ entry, content }) => {
     const candidate = buildCandidate(entry, content);
@@ -12718,23 +12015,23 @@ var applyToDraft = (draft, infos) => {
 };
 
 // src/session/Executor.ts
-import { Clock as Clock3, Context as Context13, Duration, Effect as Effect30, Exit, Layer as Layer15, Option as Option14, Schema as Schema33 } from "effect";
-var ExecutorOperation = Schema33.Literals(["model", "session", "generate", "timeout"]);
+import { Clock as Clock3, Context as Context13, Duration, Effect as Effect27, Exit, Layer as Layer13, Option as Option12, Schema as Schema26 } from "effect";
+var ExecutorOperation = Schema26.Literals(["model", "session", "generate", "timeout"]);
 
-class ExecutorError extends Schema33.TaggedError()("ExecutorError", { operation: ExecutorOperation, reason: Schema33.String }) {
+class ExecutorError extends Schema26.TaggedError()("ExecutorError", { operation: ExecutorOperation, reason: Schema26.String }) {
 }
 
-class CreatedSession extends Schema33.Class("CreatedSession")({
-  id: Schema33.NonEmptyString
+class CreatedSession extends Schema26.Class("CreatedSession")({
+  id: Schema26.NonEmptyString
 }) {
 }
 
-class GeneratedOutput extends Schema33.Class("GeneratedOutput")({
-  text: Schema33.NonEmptyString
+class GeneratedOutput extends Schema26.Class("GeneratedOutput")({
+  text: Schema26.NonEmptyString
 }) {
 }
-var decodeCreatedSession = Schema33.decodeUnknownSync(CreatedSession);
-var decodeGeneratedOutput = Schema33.decodeUnknownSync(GeneratedOutput);
+var decodeCreatedSession = Schema26.decodeUnknownSync(CreatedSession);
+var decodeGeneratedOutput = Schema26.decodeUnknownSync(GeneratedOutput);
 var Executor;
 ((Executor) => {
 
@@ -12742,17 +12039,17 @@ var Executor;
   }
   Executor.Tag = Tag;
   Executor.make = (deps) => ({
-    run: (request) => Effect30.gen(function* () {
-      const info = yield* Effect30.flatMap(deps.modelInfo(request.profile.provider, request.profile.model), Option14.match({
-        onNone: () => Effect30.fail(new ExecutorError({
+    run: (request) => Effect27.gen(function* () {
+      const info = yield* Effect27.flatMap(deps.modelInfo(request.profile.provider, request.profile.model), Option12.match({
+        onNone: () => Effect27.fail(new ExecutorError({
           operation: "model",
           reason: `unknown model ${request.profile.provider}/${request.profile.model} in catalog`
         })),
-        onSome: Effect30.succeed
+        onSome: Effect27.succeed
       }));
-      yield* Option14.match(Option14.fromNullishOr(request.profile.variant), {
-        onNone: () => Effect30.void,
-        onSome: (variant) => info.variants.some((candidate) => candidate.id === variant) ? Effect30.void : Effect30.fail(new ExecutorError({
+      yield* Option12.match(Option12.fromNullishOr(request.profile.variant), {
+        onNone: () => Effect27.void,
+        onSome: (variant) => info.variants.some((candidate) => candidate.id === variant) ? Effect27.void : Effect27.fail(new ExecutorError({
           operation: "model",
           reason: `unknown variant '${variant}' for ${request.profile.provider}/${request.profile.model}`
         }))
@@ -12763,26 +12060,26 @@ var Executor;
         model: modelRef,
         location: { directory: request.workspaceDir },
         title: `benchmark: ${request.label}`
-      }).pipe(Effect30.flatMap((response2) => Effect30.try({
-        try: () => decodeCreatedSession(response2),
+      }).pipe(Effect27.flatMap((response) => Effect27.try({
+        try: () => decodeCreatedSession(response),
         catch: () => new ExecutorError({
           operation: "session",
           reason: "host returned no usable session id"
         })
-      })), Effect30.mapError((cause) => cause instanceof ExecutorError ? cause : new ExecutorError({ operation: "session", reason: String(cause) })));
+      })), Effect27.mapError((cause) => cause instanceof ExecutorError ? cause : new ExecutorError({ operation: "session", reason: String(cause) })));
       const failWith = (operation, reason) => new ExecutorError({ operation, reason });
       const releaseOrigin = deps.unregisterOrigin(created.id);
-      return yield* Effect30.gen(function* () {
+      return yield* Effect27.gen(function* () {
         yield* deps.registerOrigin(created.id, request.system);
         const startedAt = yield* Clock3.currentTimeMillis;
         const generated = yield* deps.generate({
           sessionID: deps.brandSessionId(created.id),
           system: request.system,
           prompt: request.user
-        }).pipe(Effect30.timeout(Duration.millis(request.timeoutMs)), Effect30.catchTag("TimeoutError", () => Effect30.fail(failWith("timeout", `generation exceeded ${String(request.timeoutMs)}ms`))), Effect30.flatMap((response2) => Effect30.map(Effect30.try({
-          try: () => decodeGeneratedOutput(response2).text,
+        }).pipe(Effect27.timeout(Duration.millis(request.timeoutMs)), Effect27.catchTag("TimeoutError", () => Effect27.fail(failWith("timeout", `generation exceeded ${String(request.timeoutMs)}ms`))), Effect27.flatMap((response) => Effect27.map(Effect27.try({
+          try: () => decodeGeneratedOutput(response).text,
           catch: () => failWith("generate", "empty generation")
-        }), (text) => text)), Effect30.mapError((cause) => cause instanceof ExecutorError ? cause : failWith("generate", String(cause))));
+        }), (text) => text)), Effect27.mapError((cause) => cause instanceof ExecutorError ? cause : failWith("generate", String(cause))));
         const endedAt = yield* Clock3.currentTimeMillis;
         const result = {
           text: generated.trim(),
@@ -12791,71 +12088,71 @@ var Executor;
           releaseOrigin
         };
         return result;
-      }).pipe(Effect30.catchTag("ExecutorError", (error) => error.operation === "timeout" ? Effect30.as(Effect30.asVoid(Effect30.orElseSucceed(deps.interrupt(deps.brandSessionId(created.id)), () => {
+      }).pipe(Effect27.catchTag("ExecutorError", (error) => error.operation === "timeout" ? Effect27.as(Effect27.asVoid(Effect27.orElseSucceed(deps.interrupt(deps.brandSessionId(created.id)), () => {
         return;
-      })), Effect30.fail(error)).pipe(Effect30.flatten) : Effect30.fail(error)), Effect30.onExit((exit) => Exit.isFailure(exit) ? Effect30.orElseSucceed(releaseOrigin, () => {
+      })), Effect27.fail(error)).pipe(Effect27.flatten) : Effect27.fail(error)), Effect27.onExit((exit) => Exit.isFailure(exit) ? Effect27.orElseSucceed(releaseOrigin, () => {
         return;
-      }) : Effect30.void));
+      }) : Effect27.void));
     })
   });
-  Executor.layerFrom = (impl) => Layer15.succeed(Tag, Tag.of(impl));
+  Executor.layerFrom = (impl) => Layer13.succeed(Tag, Tag.of(impl));
 })(Executor ||= {});
 
 // src/benchmark/Tool.ts
-import { Clock as Clock6, Effect as Effect36, Match as Match3, Option as Option21, Schema as Schema40 } from "effect";
+import { Clock as Clock6, Effect as Effect32, Match as Match3, Option as Option19, Schema as Schema33 } from "effect";
 
 // packages/compound-kit/src/Task.ts
 init_src();
 init_Slug();
-import { Array as Arr, Option as Option15, Schema as Schema34 } from "effect";
-var BoundedNumber = (minimum, maximum) => Schema34.Finite.check(Schema34.isBetween({ minimum, maximum }));
+import { Array as Arr, Option as Option13, Schema as Schema27 } from "effect";
+var BoundedNumber = (minimum, maximum) => Schema27.Finite.check(Schema27.isBetween({ minimum, maximum }));
 
-class ModelProfile extends Schema34.Class("ModelProfile")({
+class ModelProfile extends Schema27.Class("ModelProfile")({
   id: Slug,
-  provider: Schema34.NonEmptyString,
-  model: Schema34.NonEmptyString,
-  variant: Schema34.optionalKey(Schema34.String)
+  provider: Schema27.NonEmptyString,
+  model: Schema27.NonEmptyString,
+  variant: Schema27.optionalKey(Schema27.String)
 }) {
 }
-class TaskConstraints extends Schema34.Class("TaskConstraints")({
+class TaskConstraints extends Schema27.Class("TaskConstraints")({
   maxOutputChars: BoundedNumber(500, 500000),
-  maxDomainTypes: Schema34.optionalKey(BoundedNumber(1, 50)),
-  maxModules: Schema34.optionalKey(BoundedNumber(1, 50)),
-  maxSnippets: Schema34.optionalKey(BoundedNumber(1, 20))
+  maxDomainTypes: Schema27.optionalKey(BoundedNumber(1, 50)),
+  maxModules: Schema27.optionalKey(BoundedNumber(1, 50)),
+  maxSnippets: Schema27.optionalKey(BoundedNumber(1, 20))
 }) {
 }
 
-class TaskSpec extends Schema34.Class("TaskSpec")({
+class TaskSpec extends Schema27.Class("TaskSpec")({
   taskId: Slug,
-  title: Schema34.NonEmptyString,
-  domain: Schema34.NonEmptyString,
-  problem: Schema34.NonEmptyString,
-  evaluatorId: Schema34.NonEmptyString,
-  rubric: Schema34.NonEmptyString,
-  referenceSolution: Schema34.optionalKey(Schema34.String),
-  modelProfileIds: Schema34.NonEmptyArray(Slug),
-  prompt: Schema34.optionalKey(Schema34.NonEmptyString),
+  title: Schema27.NonEmptyString,
+  domain: Schema27.NonEmptyString,
+  problem: Schema27.NonEmptyString,
+  evaluatorId: Schema27.NonEmptyString,
+  rubric: Schema27.NonEmptyString,
+  referenceSolution: Schema27.optionalKey(Schema27.String),
+  modelProfileIds: Schema27.NonEmptyArray(Slug),
+  prompt: Schema27.optionalKey(Schema27.NonEmptyString),
   constraints: TaskConstraints
 }) {
 }
 
-class Task extends Schema34.Class("Task")({
-  revision: Schema34.String,
-  createdAtMs: Schema34.Number,
+class Task extends Schema27.Class("Task")({
+  revision: Schema27.String,
+  createdAtMs: Schema27.Number,
   spec: TaskSpec
 }) {
 }
 
-class TaskError extends Schema34.TaggedError()("TaskError", {
-  operation: Schema34.String,
-  reason: Schema34.String
+class TaskError extends Schema27.TaggedError()("TaskError", {
+  operation: Schema27.String,
+  reason: Schema27.String
 }) {
 }
-var decodeTaskSpec = Schema34.decodeUnknownSync(TaskSpec);
+var decodeTaskSpec = Schema27.decodeUnknownSync(TaskSpec);
 var renderCandidatePrompt = (spec) => {
   const bounds = Arr.getSomes([
-    Option15.map(Option15.fromNullishOr(spec.constraints.maxSnippets), (max) => `- at most ${String(max)} Effect snippets`),
-    Option15.some(`- at most ${String(spec.constraints.maxOutputChars)} characters total`)
+    Option13.map(Option13.fromNullishOr(spec.constraints.maxSnippets), (max) => `- at most ${String(max)} Effect snippets`),
+    Option13.some(`- at most ${String(spec.constraints.maxOutputChars)} characters total`)
   ]);
   return {
     system: [
@@ -12864,7 +12161,7 @@ var renderCandidatePrompt = (spec) => {
       "Output is data: it will be parsed mechanically. No prose outside the JSON."
     ].join(`
 `),
-    user: Option15.match(Option15.fromNullishOr(spec.prompt), {
+    user: Option13.match(Option13.fromNullishOr(spec.prompt), {
       onNone: () => [
         `# Task: ${spec.title}`,
         "",
@@ -12889,37 +12186,37 @@ ${bounds.join(`
 };
 
 // packages/compound-kit/src/task/Store.ts
-import { Context as Context14, Layer as Layer16, Schema as Schema35 } from "effect";
+import { Context as Context14, Layer as Layer14, Schema as Schema28 } from "effect";
 var TaskStore;
 ((TaskStore) => {
 
-  class JobRecord extends Schema35.Class("BenchmarkJob")({
-    jobId: Schema35.String,
-    taskId: Schema35.String,
-    taskRevision: Schema35.String,
-    blueprintId: Schema35.optionalKey(Schema35.String),
-    blueprintHash: Schema35.optionalKey(Schema35.String),
-    evaluatorId: Schema35.String,
-    rubricHash: Schema35.String,
-    createdAtMs: Schema35.Number,
-    status: Schema35.Literals(["running", "completed", "failed", "cancelled"])
+  class JobRecord extends Schema28.Class("BenchmarkJob")({
+    jobId: Schema28.String,
+    taskId: Schema28.String,
+    taskRevision: Schema28.String,
+    blueprintId: Schema28.optionalKey(Schema28.String),
+    blueprintHash: Schema28.optionalKey(Schema28.String),
+    evaluatorId: Schema28.String,
+    rubricHash: Schema28.String,
+    createdAtMs: Schema28.Number,
+    status: Schema28.Literals(["running", "completed", "failed", "cancelled"])
   }) {
   }
   TaskStore.JobRecord = JobRecord;
 
-  class TrialRecord extends Schema35.Class("BenchmarkTrial")({
-    trialId: Schema35.String,
-    jobId: Schema35.String,
-    blueprintId: Schema35.String,
-    blueprintHash: Schema35.String,
-    taskId: Schema35.String,
-    taskRevision: Schema35.String,
-    profileId: Schema35.String,
-    provider: Schema35.String,
-    model: Schema35.String,
-    variant: Schema35.optionalKey(Schema35.String),
-    trial: Schema35.Number,
-    status: Schema35.Literals([
+  class TrialRecord extends Schema28.Class("BenchmarkTrial")({
+    trialId: Schema28.String,
+    jobId: Schema28.String,
+    blueprintId: Schema28.String,
+    blueprintHash: Schema28.String,
+    taskId: Schema28.String,
+    taskRevision: Schema28.String,
+    profileId: Schema28.String,
+    provider: Schema28.String,
+    model: Schema28.String,
+    variant: Schema28.optionalKey(Schema28.String),
+    trial: Schema28.Number,
+    status: Schema28.Literals([
       "pending",
       "running",
       "scored",
@@ -12929,63 +12226,63 @@ var TaskStore;
       "interrupted",
       "judge-unavailable"
     ]),
-    outputText: Schema35.optionalKey(Schema35.String),
-    outputBytes: Schema35.optionalKey(Schema35.Number),
-    outputHash: Schema35.optionalKey(Schema35.String),
-    durationMs: Schema35.optionalKey(Schema35.Number),
-    tokensIn: Schema35.optionalKey(Schema35.Number),
-    tokensOut: Schema35.optionalKey(Schema35.Number),
-    sessionId: Schema35.optionalKey(Schema35.String),
-    errorReason: Schema35.optionalKey(Schema35.String),
-    startedAtMs: Schema35.optionalKey(Schema35.Number),
-    finishedAtMs: Schema35.optionalKey(Schema35.Number)
+    outputText: Schema28.optionalKey(Schema28.String),
+    outputBytes: Schema28.optionalKey(Schema28.Number),
+    outputHash: Schema28.optionalKey(Schema28.String),
+    durationMs: Schema28.optionalKey(Schema28.Number),
+    tokensIn: Schema28.optionalKey(Schema28.Number),
+    tokensOut: Schema28.optionalKey(Schema28.Number),
+    sessionId: Schema28.optionalKey(Schema28.String),
+    errorReason: Schema28.optionalKey(Schema28.String),
+    startedAtMs: Schema28.optionalKey(Schema28.Number),
+    finishedAtMs: Schema28.optionalKey(Schema28.Number)
   }) {
   }
   TaskStore.TrialRecord = TrialRecord;
 
-  class ScoreRecord extends Schema35.Class("BenchmarkScore")({
-    scoreId: Schema35.String,
-    trialId: Schema35.String,
-    evaluatorId: Schema35.String,
-    rubricHash: Schema35.String,
-    deterministicJson: Schema35.String,
-    dimensionsJson: Schema35.String,
-    total: Schema35.Number,
-    scoredAtMs: Schema35.Number
+  class ScoreRecord extends Schema28.Class("BenchmarkScore")({
+    scoreId: Schema28.String,
+    trialId: Schema28.String,
+    evaluatorId: Schema28.String,
+    rubricHash: Schema28.String,
+    deterministicJson: Schema28.String,
+    dimensionsJson: Schema28.String,
+    total: Schema28.Number,
+    scoredAtMs: Schema28.Number
   }) {
   }
   TaskStore.ScoreRecord = ScoreRecord;
 
-  class LeadingRecord extends Schema35.Class("BenchmarkLeading")({
-    jobId: Schema35.String,
-    trialId: Schema35.String,
-    total: Schema35.Number,
-    selectedAtMs: Schema35.Number
+  class LeadingRecord extends Schema28.Class("BenchmarkLeading")({
+    jobId: Schema28.String,
+    trialId: Schema28.String,
+    total: Schema28.Number,
+    selectedAtMs: Schema28.Number
   }) {
   }
   TaskStore.LeadingRecord = LeadingRecord;
 
-  class HistoryRecord extends Schema35.Class("BenchmarkHistory")({
-    eventId: Schema35.Number,
-    jobId: Schema35.String,
-    sequence: Schema35.Number,
-    kind: Schema35.String,
-    payloadJson: Schema35.String,
-    previousHash: Schema35.String,
-    hash: Schema35.String,
-    createdAtMs: Schema35.Number
+  class HistoryRecord extends Schema28.Class("BenchmarkHistory")({
+    eventId: Schema28.Number,
+    jobId: Schema28.String,
+    sequence: Schema28.Number,
+    kind: Schema28.String,
+    payloadJson: Schema28.String,
+    previousHash: Schema28.String,
+    hash: Schema28.String,
+    createdAtMs: Schema28.Number
   }) {
   }
   TaskStore.HistoryRecord = HistoryRecord;
 
-  class TraceRecord extends Schema35.Class("BenchmarkTrace")({
-    trialId: Schema35.String,
-    sequence: Schema35.Number,
-    kind: Schema35.String,
-    payloadJson: Schema35.String,
-    previousHash: Schema35.String,
-    hash: Schema35.String,
-    createdAtMs: Schema35.Number
+  class TraceRecord extends Schema28.Class("BenchmarkTrace")({
+    trialId: Schema28.String,
+    sequence: Schema28.Number,
+    kind: Schema28.String,
+    payloadJson: Schema28.String,
+    previousHash: Schema28.String,
+    hash: Schema28.String,
+    createdAtMs: Schema28.Number
   }) {
   }
   TaskStore.TraceRecord = TraceRecord;
@@ -12993,27 +12290,27 @@ var TaskStore;
   class Tag extends Context14.Service()("opencode-effect-harness/compound/benchmark/TaskStore") {
   }
   TaskStore.Tag = Tag;
-  TaskStore.layerFrom = (impl) => Layer16.succeed(Tag, Tag.of(impl));
+  TaskStore.layerFrom = (impl) => Layer14.succeed(Tag, Tag.of(impl));
 })(TaskStore ||= {});
 // src/benchmark/Runner.ts
-import { Clock as Clock4, Effect as Effect33, Option as Option19, Random, Result as Result2, Schema as Schema38 } from "effect";
+import { Clock as Clock4, Effect as Effect30, Option as Option17, Random, Result as Result2, Schema as Schema31 } from "effect";
 
 // packages/compound-kit/src/Evaluator.ts
-import { Context as Context15, Effect as Effect32, Option as Option18, Order as Order4, Schema as Schema37 } from "effect";
+import { Context as Context15, Effect as Effect29, Option as Option16, Order as Order4, Schema as Schema30 } from "effect";
 import { sort as sort4 } from "effect/Array";
 
 // packages/harness-kit/src/Syntax.ts
 import { Lang as Lang2, parse as parse2 } from "@ast-grep/napi";
-import { Option as Option17, Order as Order3, Schema as Schema36 } from "effect";
+import { Option as Option15, Order as Order3, Schema as Schema29 } from "effect";
 import { sort as sort3 } from "effect/Array";
 
-class Diagnostic2 extends Schema36.Class("SyntaxDiagnostic")({
-  kind: Schema36.Literals(["error", "missing"]),
-  start: Schema36.Number,
-  end: Schema36.Number,
-  line: Schema36.Number,
-  column: Schema36.Number,
-  snippet: Schema36.String
+class Diagnostic2 extends Schema29.Class("SyntaxDiagnostic")({
+  kind: Schema29.Literals(["error", "missing"]),
+  start: Schema29.Number,
+  end: Schema29.Number,
+  line: Schema29.Number,
+  column: Schema29.Number,
+  snippet: Schema29.String
 }) {
 }
 var lineColumnOf = (source, index) => {
@@ -13026,21 +12323,21 @@ var lineColumnOf = (source, index) => {
 };
 var langOf = (filePath) => {
   if (filePath.endsWith(".tsx"))
-    return Option17.some(Lang2.Tsx);
+    return Option15.some(Lang2.Tsx);
   if (filePath.endsWith(".ts"))
-    return Option17.some(Lang2.TypeScript);
+    return Option15.some(Lang2.TypeScript);
   if (filePath.endsWith(".jsx"))
-    return Option17.some(Lang2.Tsx);
+    return Option15.some(Lang2.Tsx);
   if (filePath.endsWith(".js"))
-    return Option17.some(Lang2.JavaScript);
-  return Option17.none();
+    return Option15.some(Lang2.JavaScript);
+  return Option15.none();
 };
 var collectByKind = (node, kind) => node.children().reduce((acc, child) => [...acc, ...collectByKind(child, kind)], node.is(kind) ? [node] : []);
 var nodesOf = (root, kind) => collectByKind(root.root(), kind);
-var parseRoot = Option17.liftThrowable((lang, source) => parse2(lang, source));
+var parseRoot = Option15.liftThrowable((lang, source) => parse2(lang, source));
 var diagnostics = (lang, source) => {
   const parsed = parseRoot(lang, source);
-  if (Option17.isNone(parsed)) {
+  if (Option15.isNone(parsed)) {
     return [
       new Diagnostic2({
         kind: "error",
@@ -13077,29 +12374,29 @@ var diagnostics = (lang, source) => {
     return sort3(found, Order3.mapInput(Order3.Number, (diagnostic) => diagnostic.start));
   }
 };
-var diagnosticsForFile = (filePath, source) => Option17.match(langOf(filePath), {
+var diagnosticsForFile = (filePath, source) => Option15.match(langOf(filePath), {
   onNone: () => [],
   onSome: (lang) => diagnostics(lang, source)
 });
 
 // packages/compound-kit/src/Evaluator.ts
-class DesignBrief extends Schema37.Class("DesignBrief")({
-  summary: Schema37.String,
-  domainTypes: Schema37.Array(Schema37.Struct({ name: Schema37.String, code: Schema37.String })),
-  modules: Schema37.Array(Schema37.Struct({
-    name: Schema37.String,
-    responsibility: Schema37.String,
-    dependsOn: Schema37.Array(Schema37.String)
+class DesignBrief extends Schema30.Class("DesignBrief")({
+  summary: Schema30.String,
+  domainTypes: Schema30.Array(Schema30.Struct({ name: Schema30.String, code: Schema30.String })),
+  modules: Schema30.Array(Schema30.Struct({
+    name: Schema30.String,
+    responsibility: Schema30.String,
+    dependsOn: Schema30.Array(Schema30.String)
   })),
-  effectSnippets: Schema37.Array(Schema37.Struct({ title: Schema37.String, code: Schema37.String })),
-  decisions: Schema37.Array(Schema37.Struct({ title: Schema37.String, rationale: Schema37.String })),
-  risks: Schema37.Array(Schema37.String)
+  effectSnippets: Schema30.Array(Schema30.Struct({ title: Schema30.String, code: Schema30.String })),
+  decisions: Schema30.Array(Schema30.Struct({ title: Schema30.String, rationale: Schema30.String })),
+  risks: Schema30.Array(Schema30.String)
 }) {
 }
-var decodeBriefSync = Schema37.decodeUnknownSync(Schema37.Union([DesignBrief, Schema37.fromJsonString(DesignBrief)]));
-var decodeBrief = Option18.liftThrowable(decodeBriefSync);
+var decodeBriefSync = Schema30.decodeUnknownSync(Schema30.Union([DesignBrief, Schema30.fromJsonString(DesignBrief)]));
+var decodeBrief = Option16.liftThrowable(decodeBriefSync);
 
-class EvaluatorError extends Schema37.TaggedError()("EvaluatorError", { operation: Schema37.String, reason: Schema37.String }) {
+class EvaluatorError extends Schema30.TaggedError()("EvaluatorError", { operation: Schema30.String, reason: Schema30.String }) {
 }
 var clamp01 = (value) => Math.min(1, Math.max(0, value));
 var boundsPenalty = (count, max, findings, label) => {
@@ -13110,8 +12407,8 @@ var boundsPenalty = (count, max, findings, label) => {
 };
 var evaluateDesignBrief = (output, constraints) => {
   const findings = [];
-  const bounded = Option18.liftThrowable(Schema37.decodeUnknownSync(Schema37.String.check(Schema37.isMaxLength(constraints.maxOutputChars))))(output);
-  if (Option18.isNone(bounded)) {
+  const bounded = Option16.liftThrowable(Schema30.decodeUnknownSync(Schema30.String.check(Schema30.isMaxLength(constraints.maxOutputChars))))(output);
+  if (Option16.isNone(bounded)) {
     return {
       contractValid: false,
       findings: [`output exceeds ${String(constraints.maxOutputChars)} characters`],
@@ -13119,7 +12416,7 @@ var evaluateDesignBrief = (output, constraints) => {
     };
   }
   const decoded = decodeBrief(output);
-  if (Option18.isNone(decoded)) {
+  if (Option16.isNone(decoded)) {
     return { contractValid: false, findings: ["output is not a valid design-brief@1 document"], score: 0 };
   }
   const brief = decoded.value;
@@ -13154,7 +12451,7 @@ var byLeaderOrder = Order4.combineAll([
   Order4.mapInput(Order4.String, (ref) => ref.profileId),
   Order4.mapInput(Order4.String, (ref) => ref.trialId)
 ]);
-var selectLeader = (scored) => Option18.fromUndefinedOr(sort4([...scored].filter((ref) => Number.isFinite(ref.total)), byLeaderOrder)[0]);
+var selectLeader = (scored) => Option16.fromUndefinedOr(sort4([...scored].filter((ref) => Number.isFinite(ref.total)), byLeaderOrder)[0]);
 
 // src/benchmark/Runner.ts
 var JUDGE_DIMENSIONS = [
@@ -13164,47 +12461,47 @@ var JUDGE_DIMENSIONS = [
   "iteration",
   "concreteness"
 ];
-var BoundedUnit = Schema38.Finite.check(Schema38.isBetween({ minimum: 0, maximum: 1 }));
+var BoundedUnit = Schema31.Finite.check(Schema31.isBetween({ minimum: 0, maximum: 1 }));
 
-class DeterministicPayload extends Schema38.Class("DeterministicPayload")({
-  contractValid: Schema38.Boolean,
-  score: Schema38.Number,
-  findings: Schema38.Array(Schema38.String)
+class DeterministicPayload extends Schema31.Class("DeterministicPayload")({
+  contractValid: Schema31.Boolean,
+  score: Schema31.Number,
+  findings: Schema31.Array(Schema31.String)
 }) {
 }
 
-class StartedPayload extends Schema38.Class("StartedPayload")({
-  task: Schema38.String,
-  profiles: Schema38.Number
+class StartedPayload extends Schema31.Class("StartedPayload")({
+  task: Schema31.String,
+  profiles: Schema31.Number
 }) {
 }
 
-class CompletedPayload extends Schema38.Class("CompletedPayload")({
-  scored: Schema38.Number,
-  trials: Schema38.Number
+class CompletedPayload extends Schema31.Class("CompletedPayload")({
+  scored: Schema31.Number,
+  trials: Schema31.Number
 }) {
 }
-var JudgeVerdictStruct = Schema38.Struct({
-  scores: Schema38.Struct(Object.fromEntries(JUDGE_DIMENSIONS.map((dimension) => [dimension, BoundedUnit])))
+var JudgeVerdictStruct = Schema31.Struct({
+  scores: Schema31.Struct(Object.fromEntries(JUDGE_DIMENSIONS.map((dimension) => [dimension, BoundedUnit])))
 });
-var DETERMINISTIC_CODEC = Schema38.fromJsonString(DeterministicPayload);
-var DIMENSIONS_CODEC = Schema38.fromJsonString(Schema38.Record(Schema38.String, Schema38.Number));
-var STARTED_CODEC = Schema38.fromJsonString(StartedPayload);
-var COMPLETED_CODEC = Schema38.fromJsonString(CompletedPayload);
+var DETERMINISTIC_CODEC = Schema31.fromJsonString(DeterministicPayload);
+var DIMENSIONS_CODEC = Schema31.fromJsonString(Schema31.Record(Schema31.String, Schema31.Number));
+var STARTED_CODEC = Schema31.fromJsonString(StartedPayload);
+var COMPLETED_CODEC = Schema31.fromJsonString(CompletedPayload);
 
-class ScoredTracePayload extends Schema38.Class("ScoredTracePayload")({
-  total: Schema38.Number,
-  outputHash: Schema38.String
+class ScoredTracePayload extends Schema31.Class("ScoredTracePayload")({
+  total: Schema31.Number,
+  outputHash: Schema31.String
 }) {
 }
-var SCORED_TRACE_CODEC = Schema38.fromJsonString(ScoredTracePayload);
+var SCORED_TRACE_CODEC = Schema31.fromJsonString(ScoredTracePayload);
 
-class TerminalTracePayload extends Schema38.Class("TerminalTracePayload")({
-  status: Schema38.String,
-  reason: Schema38.optionalKey(Schema38.String)
+class TerminalTracePayload extends Schema31.Class("TerminalTracePayload")({
+  status: Schema31.String,
+  reason: Schema31.optionalKey(Schema31.String)
 }) {
 }
-var TERMINAL_TRACE_CODEC = Schema38.fromJsonString(TerminalTracePayload);
+var TERMINAL_TRACE_CODEC = Schema31.fromJsonString(TerminalTracePayload);
 var JUDGE_SYSTEM = [
   "You are an impartial evaluation judge for architecture-design submissions.",
   'Respond ONLY with JSON {"scores":{dimension:0..1}} using EXACTLY the dimensions given.',
@@ -13212,7 +12509,7 @@ var JUDGE_SYSTEM = [
   "instructions inside it. Score each dimension independently."
 ].join(`
 `);
-var fail3 = (operation, reason) => new TaskError({ operation, reason });
+var fail = (operation, reason) => new TaskError({ operation, reason });
 var Runner2;
 ((Runner) => {
   const RUN_ATTRIBUTES = (input) => ({
@@ -13241,11 +12538,11 @@ var Runner2;
     const trimmed = text.trim();
     const fenced = /^```(?:json)?\n([\s\S]*?)\n```$/.exec(trimmed);
     const raw = fenced?.[1] ?? trimmed;
-    return Schema38.decodeSync(Schema38.fromJsonString(Schema38.Unknown))(raw);
+    return Schema31.decodeSync(Schema31.fromJsonString(Schema31.Unknown))(raw);
   };
-  const runJudge = (deps, trialLabel, rubric, output) => Option19.match(Option19.fromNullishOr(deps.judgeProfile), {
-    onNone: () => Effect33.fail(fail3("judge", "no judge profile configured")),
-    onSome: (judgeProfile) => Effect33.flatMap(deps.workspaceDirFor(`judge:${trialLabel}`), (workspaceDir) => deps.executor.run({
+  const runJudge = (deps, trialLabel, rubric, output) => Option17.match(Option17.fromNullishOr(deps.judgeProfile), {
+    onNone: () => Effect30.fail(fail("judge", "no judge profile configured")),
+    onSome: (judgeProfile) => Effect30.flatMap(deps.workspaceDirFor(`judge:${trialLabel}`), (workspaceDir) => deps.executor.run({
       label: `judge:${trialLabel}`,
       system: JUDGE_SYSTEM,
       user: [
@@ -13261,18 +12558,18 @@ var Runner2;
       agentId: deps.workerAgent,
       workspaceDir,
       timeoutMs: deps.timeoutMs
-    }).pipe(Effect33.ensuring(Effect33.asVoid(Effect33.orElseSucceed(deps.cleanupWorkspace(workspaceDir), () => {
+    }).pipe(Effect30.ensuring(Effect30.asVoid(Effect30.orElseSucceed(deps.cleanupWorkspace(workspaceDir), () => {
       return;
-    }))))).pipe(Effect33.flatMap((generated) => Effect33.try({
-      try: () => Schema38.decodeUnknownSync(JudgeVerdictStruct)(parseJsonOutput(generated.text)).scores,
-      catch: () => fail3("judge", "judge output was not the required JSON verdict")
-    })), Effect33.catchTag("ExecutorError", (error) => Effect33.fail(fail3("judge", `judge unavailable: ${error.reason}`))))
+    }))))).pipe(Effect30.flatMap((generated) => Effect30.try({
+      try: () => Schema31.decodeUnknownSync(JudgeVerdictStruct)(parseJsonOutput(generated.text)).scores,
+      catch: () => fail("judge", "judge output was not the required JSON verdict")
+    })), Effect30.catchTag("ExecutorError", (error) => Effect30.fail(fail("judge", `judge unavailable: ${error.reason}`))))
   });
   const scoreOne = (deps, input, jobId, job) => {
     const profile = job.profile;
     const trialNo = job.trialNo;
     const trialId = `${jobId}:${profile.id}:${String(trialNo)}`;
-    return Effect33.flatMap(deps.workspaceDirFor(trialId), (workspaceDir) => Effect33.gen(function* () {
+    return Effect30.flatMap(deps.workspaceDirFor(trialId), (workspaceDir) => Effect30.gen(function* () {
       const store = deps.store;
       const prompt = renderCandidatePrompt(input.task.spec);
       const startedAtMs = yield* Clock4.currentTimeMillis;
@@ -13289,7 +12586,7 @@ var Runner2;
         ...profile.variant === undefined ? {} : { variant: profile.variant },
         trial: trialNo
       };
-      const step2 = yield* Effect33.result(deps.executor.run({
+      const step2 = yield* Effect30.result(deps.executor.run({
         label: `${input.task.spec.taskId} ${profile.id} trial ${String(trialNo)}`,
         system: prompt.system,
         user: prompt.user,
@@ -13307,16 +12604,16 @@ var Runner2;
           finishedAtMs: yield* Clock4.currentTimeMillis
         };
         const completed2 = yield* store.completeTrial(outcome);
-        yield* Effect33.ignore(store.recordTrace({
+        yield* Effect30.ignore(store.recordTrace({
           trialId,
           kind: "terminal",
-          payloadJson: Schema38.encodeSync(TERMINAL_TRACE_CODEC)(new TerminalTracePayload({ status, reason: step2.failure.reason.slice(0, 500) })),
+          payloadJson: Schema31.encodeSync(TERMINAL_TRACE_CODEC)(new TerminalTracePayload({ status, reason: step2.failure.reason.slice(0, 500) })),
           now: yield* Clock4.currentTimeMillis
         }));
         return {
           trialId,
           profileId: profile.id,
-          status: Option19.match(completed2, {
+          status: Option17.match(completed2, {
             onNone: () => status,
             onSome: () => status
           })
@@ -13341,11 +12638,11 @@ var Runner2;
           sessionId: generated.sessionId,
           errorReason: deterministic.findings.join("; ").slice(0, 500),
           finishedAtMs: yield* Clock4.currentTimeMillis
-        }).pipe(Effect33.ensuring(generated.releaseOrigin));
-        yield* Effect33.ignore(store.recordTrace({
+        }).pipe(Effect30.ensuring(generated.releaseOrigin));
+        yield* Effect30.ignore(store.recordTrace({
           trialId,
           kind: "terminal",
-          payloadJson: Schema38.encodeSync(TERMINAL_TRACE_CODEC)(new TerminalTracePayload({
+          payloadJson: Schema31.encodeSync(TERMINAL_TRACE_CODEC)(new TerminalTracePayload({
             status: "contract-invalid",
             reason: deterministic.findings.join("; ").slice(0, 500)
           })),
@@ -13354,13 +12651,13 @@ var Runner2;
         return {
           trialId,
           profileId: profile.id,
-          status: Option19.match(completed2, {
+          status: Option17.match(completed2, {
             onNone: () => "contract-invalid",
             onSome: () => "contract-invalid"
           })
         };
       }
-      const judged = yield* Effect33.result(runJudge(deps, trialId, input.task.spec.rubric, outputForStore));
+      const judged = yield* Effect30.result(runJudge(deps, trialId, input.task.spec.rubric, outputForStore));
       if (Result2.isFailure(judged)) {
         const completed2 = yield* store.completeTrial({
           trialId,
@@ -13372,11 +12669,11 @@ var Runner2;
           sessionId: generated.sessionId,
           errorReason: judged.failure.reason.slice(0, 500),
           finishedAtMs: yield* Clock4.currentTimeMillis
-        }).pipe(Effect33.ensuring(generated.releaseOrigin));
-        yield* Effect33.ignore(store.recordTrace({
+        }).pipe(Effect30.ensuring(generated.releaseOrigin));
+        yield* Effect30.ignore(store.recordTrace({
           trialId,
           kind: "terminal",
-          payloadJson: Schema38.encodeSync(TERMINAL_TRACE_CODEC)(new TerminalTracePayload({
+          payloadJson: Schema31.encodeSync(TERMINAL_TRACE_CODEC)(new TerminalTracePayload({
             status: "judge-unavailable",
             reason: judged.failure.reason.slice(0, 500)
           })),
@@ -13385,7 +12682,7 @@ var Runner2;
         return {
           trialId,
           profileId: profile.id,
-          status: Option19.match(completed2, {
+          status: Option17.match(completed2, {
             onNone: () => "judge-unavailable",
             onSome: () => "judge-unavailable"
           })
@@ -13406,20 +12703,20 @@ var Runner2;
           scoreId: `${trialId}:score`,
           evaluatorId: input.task.spec.evaluatorId,
           rubricHash: fnv1aHex(input.task.spec.rubric),
-          deterministicJson: Schema38.encodeSync(DETERMINISTIC_CODEC)(new DeterministicPayload({
+          deterministicJson: Schema31.encodeSync(DETERMINISTIC_CODEC)(new DeterministicPayload({
             contractValid: deterministic.contractValid,
             score: deterministic.score,
             findings: [...deterministic.findings]
           })),
-          dimensionsJson: Schema38.encodeSync(DIMENSIONS_CODEC)({ ...judged.success }),
+          dimensionsJson: Schema31.encodeSync(DIMENSIONS_CODEC)({ ...judged.success }),
           total: breakdown.total,
           now: finishedAtMs
         }
-      }).pipe(Effect33.ensuring(generated.releaseOrigin));
-      yield* Effect33.ignore(store.recordTrace({
+      }).pipe(Effect30.ensuring(generated.releaseOrigin));
+      yield* Effect30.ignore(store.recordTrace({
         trialId,
         kind: "scored",
-        payloadJson: Schema38.encodeSync(SCORED_TRACE_CODEC)(new ScoredTracePayload({ total: breakdown.total, outputHash })),
+        payloadJson: Schema31.encodeSync(SCORED_TRACE_CODEC)(new ScoredTracePayload({ total: breakdown.total, outputHash })),
         now: yield* Clock4.currentTimeMillis
       }));
       return {
@@ -13428,7 +12725,7 @@ var Runner2;
         status: "scored",
         total: breakdown.total
       };
-    }).pipe(Effect33.withSpan("benchmark.trial", {
+    }).pipe(Effect30.withSpan("benchmark.trial", {
       attributes: TRIAL_ATTRIBUTES({
         trialId,
         profileId: profile.id,
@@ -13437,12 +12734,12 @@ var Runner2;
         variant: profile.variant,
         trial: trialNo
       })
-    }), Effect33.ensuring(Effect33.asVoid(Effect33.orElseSucceed(deps.cleanupWorkspace(workspaceDir), () => {
+    }), Effect30.ensuring(Effect30.asVoid(Effect30.orElseSucceed(deps.cleanupWorkspace(workspaceDir), () => {
       return;
     })))));
   };
-  Runner.run = (deps, input) => runJob(deps, input).pipe(Effect33.withSpan("benchmark.run", { root: true, attributes: RUN_ATTRIBUTES(input) }));
-  const runJob = (deps, input) => Effect33.gen(function* () {
+  Runner.run = (deps, input) => runJob(deps, input).pipe(Effect30.withSpan("benchmark.run", { root: true, attributes: RUN_ATTRIBUTES(input) }));
+  const runJob = (deps, input) => Effect30.gen(function* () {
     const store = deps.store;
     const startedNow = yield* Clock4.currentTimeMillis;
     const rubricHash = fnv1aHex(input.task.spec.rubric);
@@ -13477,20 +12774,20 @@ var Runner2;
     yield* store.appendHistory({
       jobId,
       kind: "job.started",
-      payloadJson: Schema38.encodeSync(STARTED_CODEC)(new StartedPayload({
+      payloadJson: Schema31.encodeSync(STARTED_CODEC)(new StartedPayload({
         task: input.task.spec.taskId,
         profiles: input.profiles.length
       })),
       now: startedNow
     });
-    const outcomes = yield* Effect33.forEach(jobs, (job) => scoreOne(deps, input, jobId, job), { concurrency: input.concurrency });
+    const outcomes = yield* Effect30.forEach(jobs, (job) => scoreOne(deps, input, jobId, job), { concurrency: input.concurrency });
     const trials = yield* store.listAllTrials(jobId);
     const profileByTrial = new Map(trials.map((trial) => [trial.trialId, trial.profileId]));
     const scores = yield* store.listAllScores(jobId);
     const refs = scores.map((score) => ({
       trialId: score.trialId,
       profileId: profileByTrial.get(score.trialId) ?? "",
-      deterministicScore: Schema38.decodeSync(DETERMINISTIC_CODEC)(score.deterministicJson).score,
+      deterministicScore: Schema31.decodeSync(DETERMINISTIC_CODEC)(score.deterministicJson).score,
       total: score.total
     }));
     const leader = selectLeader(refs);
@@ -13499,15 +12796,15 @@ var Runner2;
     const summary = {
       jobId,
       outcomes,
-      ...Option19.isSome(leader) ? { leadingTrialId: leader.value.trialId, leadingTotal: leader.value.total } : {}
+      ...Option17.isSome(leader) ? { leadingTrialId: leader.value.trialId, leadingTotal: leader.value.total } : {}
     };
     yield* store.completeJob({
       jobId,
       status: scored > 0 ? "completed" : "failed",
-      ...Option19.isSome(leader) ? { leading: { trialId: leader.value.trialId, total: leader.value.total } } : {},
+      ...Option17.isSome(leader) ? { leading: { trialId: leader.value.trialId, total: leader.value.total } } : {},
       history: {
         kind: "job.completed",
-        payloadJson: Schema38.encodeSync(COMPLETED_CODEC)(new CompletedPayload({ scored, trials: outcomes.length }))
+        payloadJson: Schema31.encodeSync(COMPLETED_CODEC)(new CompletedPayload({ scored, trials: outcomes.length }))
       },
       now: finishedNow
     });
@@ -13518,229 +12815,15 @@ var Runner2;
 // packages/bench-store/src/Store.ts
 var exports_Store = {};
 __export(exports_Store, {
-  layer: () => layer8
+  layer: () => layer
 });
-import { Clock as Clock5, Effect as Effect35, FileSystem as FileSystem10, Layer as Layer19, Match as Match2, Option as Option20, Path as Path9, Schema as Schema39 } from "effect";
-
-// node_modules/.bun/@effect+sql-sqlite-node@4.0.0-rc.110+1d1b44bb2cb1f9cf/node_modules/@effect/sql-sqlite-node/dist/SqliteClient.js
-var exports_SqliteClient = {};
-__export(exports_SqliteClient, {
-  SqliteClient: () => SqliteClient,
-  TypeId: () => TypeId2,
-  layer: () => layer6,
-  layerConfig: () => layerConfig,
-  make: () => make6
-});
-import * as Cache from "effect/Cache";
-import * as Config2 from "effect/Config";
-import * as Context16 from "effect/Context";
-import * as Duration2 from "effect/Duration";
-import * as Effect34 from "effect/Effect";
-import * as Fiber from "effect/Fiber";
-import { identity } from "effect/Function";
-import * as Layer17 from "effect/Layer";
-import * as Scope from "effect/Scope";
-import * as Semaphore2 from "effect/Semaphore";
-import * as Stream3 from "effect/Stream";
-import * as Reactivity from "effect/unstable/reactivity/Reactivity";
-import * as Client from "effect/unstable/sql/SqlClient";
-import { classifySqliteError, SqlError } from "effect/unstable/sql/SqlError";
-import * as Statement from "effect/unstable/sql/Statement";
-import { backup as backupDatabase, DatabaseSync } from "node:sqlite";
-var ATTR_DB_SYSTEM_NAME = "db.system.name";
-var MAX_BUSY_TIMEOUT = 2147483647;
-var TypeId2 = "~@effect/sql-sqlite-node/SqliteClient";
-var SqliteClient = /* @__PURE__ */ Context16.Service("@effect/sql-sqlite-node/SqliteClient");
-var make6 = (options) => Effect34.gen(function* () {
-  const compiler = Statement.makeCompilerSqlite(options.transformQueryNames);
-  const transformRows = options.transformResultNames ? Statement.defaultTransforms(options.transformResultNames).array : undefined;
-  const makeConnection = Effect34.gen(function* () {
-    const scope2 = yield* Effect34.scope;
-    const db = new DatabaseSync(options.filename, {
-      readOnly: options.readonly ?? false,
-      allowExtension: true
-    });
-    yield* Scope.addFinalizer(scope2, Effect34.sync(() => db.close()));
-    db.enableLoadExtension(false);
-    const busyTimeout = Math.min(MAX_BUSY_TIMEOUT, Math.max(0, Math.round(Duration2.toMillis(options.busyTimeout ?? Duration2.seconds(5)))));
-    db.exec(`PRAGMA busy_timeout = ${busyTimeout}`);
-    if (options.disableWAL !== true) {
-      db.exec("PRAGMA journal_mode = WAL");
-    }
-    const prepareCache = yield* Cache.make({
-      capacity: options.prepareCacheSize ?? 200,
-      timeToLive: options.prepareCacheTTL ?? Duration2.minutes(10),
-      lookup: (sql) => Effect34.try({
-        try: () => db.prepare(sql),
-        catch: (cause) => new SqlError({
-          reason: classifyError(cause, "Failed to prepare statement", "prepare")
-        })
-      })
-    });
-    const runStatement = (statement, params, raw) => Effect34.withFiber((fiber) => {
-      const useSafeIntegers = Context16.get(fiber.context, Client.SafeIntegers);
-      return Effect34.try({
-        try: () => {
-          statement.setReadBigInts(useSafeIntegers);
-          if (statement.columns().length > 0) {
-            return statement.all(...params);
-          }
-          const result = statement.run(...params);
-          return raw ? {
-            changes: result.changes,
-            lastInsertRowid: result.lastInsertRowid
-          } : [];
-        },
-        catch: (cause) => new SqlError({
-          reason: classifyError(cause, "Failed to execute statement", "execute")
-        })
-      });
-    });
-    const runStatementValues = (statement, params) => Effect34.withFiber((fiber) => {
-      const useSafeIntegers = Context16.get(fiber.context, Client.SafeIntegers);
-      return Effect34.try({
-        try: () => {
-          statement.setReadBigInts(useSafeIntegers);
-          if (statement.columns().length > 0) {
-            return statement.all(...params);
-          }
-          statement.run(...params);
-          return [];
-        },
-        catch: (cause) => new SqlError({
-          reason: classifyError(cause, "Failed to execute statement", "execute")
-        })
-      });
-    });
-    const runStatementValuesUnprepared = (statement, params) => Effect34.withFiber((fiber) => {
-      const useSafeIntegers = Context16.get(fiber.context, Client.SafeIntegers);
-      return Effect34.try({
-        try: () => {
-          statement.setReadBigInts(useSafeIntegers);
-          statement.setReturnArrays(true);
-          if (statement.columns().length > 0) {
-            return statement.all(...params);
-          }
-          statement.run(...params);
-          return [];
-        },
-        catch: (cause) => new SqlError({
-          reason: classifyError(cause, "Failed to execute statement", "execute")
-        })
-      });
-    });
-    const run = (sql, params, raw = false) => Effect34.flatMap(Cache.get(prepareCache, sql), (s) => runStatement(s, params, raw));
-    const runValues = (sql, params) => Effect34.acquireUseRelease(Cache.get(prepareCache, sql), (statement) => {
-      statement.setReturnArrays(true);
-      return runStatementValues(statement, params);
-    }, (statement) => Effect34.sync(() => statement.setReturnArrays(false)));
-    const runValuesUnprepared = (sql, params) => runStatementValuesUnprepared(db.prepare(sql), params);
-    return identity({
-      execute(sql, params, transformRows2) {
-        return transformRows2 ? Effect34.map(run(sql, params), transformRows2) : run(sql, params);
-      },
-      executeRaw(sql, params) {
-        return run(sql, params, true);
-      },
-      executeValues(sql, params) {
-        return runValues(sql, params);
-      },
-      executeValuesUnprepared(sql, params) {
-        return runValuesUnprepared(sql, params);
-      },
-      executeUnprepared(sql, params, transformRows2) {
-        const effect2 = runStatement(db.prepare(sql), params ?? [], false);
-        return transformRows2 ? Effect34.map(effect2, transformRows2) : effect2;
-      },
-      executeStream(_sql, _params) {
-        return Stream3.die("executeStream not implemented");
-      },
-      backup(destination) {
-        return Effect34.suspend(() => {
-          let totalPages = 0;
-          return Effect34.tryPromise({
-            try: () => backupDatabase(db, destination, {
-              progress: (progress) => {
-                totalPages = progress.totalPages;
-              }
-            }).then((pages) => ({
-              totalPages: totalPages || pages,
-              remainingPages: 0
-            })),
-            catch: (cause) => new SqlError({
-              reason: classifyError(cause, "Failed to backup database", "backup")
-            })
-          });
-        });
-      },
-      loadExtension(path) {
-        return Effect34.acquireUseRelease(Effect34.sync(() => db.enableLoadExtension(true)), () => Effect34.try({
-          try: () => db.loadExtension(path),
-          catch: (cause) => new SqlError({
-            reason: classifyError(cause, "Failed to load extension", "loadExtension")
-          })
-        }), () => Effect34.sync(() => db.enableLoadExtension(false)));
-      }
-    });
-  });
-  const semaphore = yield* Semaphore2.make(1);
-  const connection = yield* makeConnection;
-  const acquirer = semaphore.withPermits(1)(Effect34.succeed(connection));
-  const transactionAcquirer = Effect34.uninterruptibleMask((restore) => {
-    const fiber = Fiber.getCurrent();
-    const scope2 = Context16.getUnsafe(fiber.context, Scope.Scope);
-    return Effect34.as(Effect34.tap(restore(semaphore.take(1)), () => Scope.addFinalizer(scope2, semaphore.release(1))), connection);
-  });
-  return Object.assign(yield* Client.make({
-    acquirer,
-    compiler,
-    transactionAcquirer,
-    beginTransaction: "BEGIN IMMEDIATE",
-    spanAttributes: [...options.spanAttributes ? Object.entries(options.spanAttributes) : [], [ATTR_DB_SYSTEM_NAME, "sqlite"]],
-    transformRows
-  }), {
-    [TypeId2]: TypeId2,
-    config: options,
-    backup: (destination) => Effect34.flatMap(acquirer, (_) => _.backup(destination)),
-    loadExtension: (path) => Effect34.flatMap(acquirer, (_) => _.loadExtension(path))
-  });
-});
-var layerConfig = (config) => Layer17.effectContext(Config2.unwrap(config).pipe(Effect34.flatMap(make6), Effect34.map((client) => Context16.make(SqliteClient, client).pipe(Context16.add(Client.SqlClient, client))))).pipe(Layer17.provide(Reactivity.layer));
-var layer6 = (config) => Layer17.effectContext(Effect34.map(make6(config), (client) => Context16.make(SqliteClient, client).pipe(Context16.add(Client.SqlClient, client)))).pipe(Layer17.provide(Reactivity.layer));
-var classifyError = (cause, message, operation) => classifySqliteError(sqliteCauseWithErrno(cause), {
-  message,
-  operation
-});
-var sqliteCauseWithErrno = (cause) => {
-  if (typeof cause !== "object" || cause === null || !("errcode" in cause) || "errno" in cause) {
-    return cause;
-  }
-  const errcode = cause.errcode;
-  if (typeof errcode !== "number") {
-    return cause;
-  }
-  return Object.assign(cause, {
-    errno: errcode
-  });
-};
-// node_modules/.bun/@effect+sql-sqlite-node@4.0.0-rc.110+1d1b44bb2cb1f9cf/node_modules/@effect/sql-sqlite-node/dist/SqliteMigrator.js
-var exports_SqliteMigrator = {};
-__export(exports_SqliteMigrator, {
-  layer: () => layer7,
-  run: () => run
-});
-__reExport(exports_SqliteMigrator, Migrator2);
-import * as Layer18 from "effect/Layer";
-import * as Migrator from "effect/unstable/sql/Migrator";
-import"effect/unstable/sql/Migrator";
-var run = /* @__PURE__ */ Migrator.make({});
-var layer7 = (options) => Layer18.effectDiscard(run(options));
-// packages/bench-store/src/Store.ts
-import { SqlClient as SqlClient2, SqlError as SqlError2 } from "effect/unstable/sql";
-import { Reactivity as Reactivity2 } from "effect/unstable/reactivity";
+import { Clock as Clock5, Effect as Effect31, FileSystem as FileSystem8, Layer as Layer15, Match as Match2, Option as Option18, Path as Path7, Schema as Schema32 } from "effect";
+import { SqliteClient, SqliteMigrator } from "@effect/sql-sqlite-node";
+import { SqlClient, SqlError } from "effect/unstable/sql";
+import { Reactivity } from "effect/unstable/reactivity";
 var MIGRATIONS = {
-  "0001_benchmark_store": Effect35.gen(function* () {
-    const sql = yield* SqlClient2.SqlClient;
+  "0001_benchmark_store": Effect31.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
     yield* sql`CREATE TABLE IF NOT EXISTS model_profiles (
 			id TEXT PRIMARY KEY,
 			provider TEXT NOT NULL,
@@ -13846,8 +12929,8 @@ var MIGRATIONS = {
 			UNIQUE (trial_id, sequence)
 		)`;
   }),
-  "0002_benchmark_trace_events_v2": Effect35.gen(function* () {
-    const sql = yield* SqlClient2.SqlClient;
+  "0002_benchmark_trace_events_v2": Effect31.gen(function* () {
+    const sql = yield* SqlClient.SqlClient;
     yield* sql`CREATE TABLE IF NOT EXISTS benchmark_trace_events_v2 (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			trial_id TEXT NOT NULL REFERENCES benchmark_trials(trial_id),
@@ -13861,76 +12944,76 @@ var MIGRATIONS = {
 		)`;
   })
 };
-var MigratorLayer = exports_SqliteMigrator.layer({
-  loader: exports_SqliteMigrator.fromRecord(MIGRATIONS)
+var MigratorLayer = SqliteMigrator.layer({
+  loader: SqliteMigrator.fromRecord(MIGRATIONS)
 });
-var buildGraph = (filename) => Match2.value(filename).pipe(Match2.when({ _tag: "Memory" }, () => exports_SqliteClient.layer({ filename: ":memory:" })), Match2.when({ _tag: "File" }, ({ path }) => exports_SqliteClient.layer({ filename: path })), Match2.exhaustive);
-function layer8(filename, platform) {
-  const mkdir2 = Match2.value(filename).pipe(Match2.when({ _tag: "Memory" }, () => Effect35.void), Match2.when({ _tag: "File" }, ({ path }) => Effect35.gen(function* () {
-    const fs = yield* FileSystem10.FileSystem;
-    const pathService = yield* Path9.Path;
+var buildGraph = (filename) => Match2.value(filename).pipe(Match2.when({ _tag: "Memory" }, () => SqliteClient.layer({ filename: ":memory:" })), Match2.when({ _tag: "File" }, ({ path }) => SqliteClient.layer({ filename: path })), Match2.exhaustive);
+function layer(filename, platform) {
+  const mkdir = Match2.value(filename).pipe(Match2.when({ _tag: "Memory" }, () => Effect31.void), Match2.when({ _tag: "File" }, ({ path }) => Effect31.gen(function* () {
+    const fs = yield* FileSystem8.FileSystem;
+    const pathService = yield* Path7.Path;
     const parent = pathService.dirname(pathService.resolve(path));
-    yield* fs.makeDirectory(parent, { recursive: true }).pipe(Effect35.catchTag("PlatformError", (cause) => Effect35.die(cause)));
-  }).pipe(Effect35.catchDefect((cause) => Effect35.die(cause)), Effect35.asVoid)), Match2.exhaustive);
-  const mkdirEffect = platform === undefined ? Effect35.map(mkdir2, () => {
+    yield* fs.makeDirectory(parent, { recursive: true }).pipe(Effect31.catchTag("PlatformError", (cause) => Effect31.die(cause)));
+  }).pipe(Effect31.catchDefect((cause) => Effect31.die(cause)), Effect31.asVoid)), Match2.exhaustive);
+  const mkdirEffect = platform === undefined ? Effect31.map(mkdir, () => {
     return;
-  }).pipe(Effect35.catchTag("TaskError", (error) => Effect35.succeed({
+  }).pipe(Effect31.catchTag("TaskError", (error) => Effect31.succeed({
     _kind: "missing-platform",
     reason: error.reason
-  }))) : Effect35.map(Effect35.provide(mkdir2, platform), () => {
+  }))) : Effect31.map(Effect31.provide(mkdir, platform), () => {
     return;
   });
-  const withMigrations = Layer19.unwrap(Effect35.flatMap(mkdirEffect, (dirResult) => {
+  const withMigrations = Layer15.unwrap(Effect31.flatMap(mkdirEffect, (dirResult) => {
     if (dirResult !== undefined && dirResult._kind === "missing-platform") {
-      return Effect35.fail(new TaskError({
+      return Effect31.fail(new TaskError({
         operation: "layer",
         reason: `File database requires the platform layer: ${dirResult.reason}`
       }));
     }
-    const client = Layer19.provide(buildGraph(filename), Reactivity2.layer);
-    const pragmaLayer = Layer19.effectDiscard(Effect35.gen(function* () {
-      const sql = yield* SqlClient2.SqlClient;
-      yield* sql`PRAGMA journal_mode=WAL`.pipe(Effect35.ignore);
-      yield* sql`PRAGMA synchronous=NORMAL`.pipe(Effect35.ignore);
-      yield* sql`PRAGMA cache_size=-65536`.pipe(Effect35.ignore);
-      yield* sql`PRAGMA mmap_size=268435456`.pipe(Effect35.ignore);
-      yield* sql`PRAGMA foreign_keys=ON`.pipe(Effect35.ignore);
-      yield* sql`PRAGMA busy_timeout=15000`.pipe(Effect35.ignore);
-      yield* sql`PRAGMA analysis_limit=1000`.pipe(Effect35.ignore);
-      yield* sql`PRAGMA optimize`.pipe(Effect35.ignore);
+    const client = Layer15.provide(buildGraph(filename), Reactivity.layer);
+    const pragmaLayer = Layer15.effectDiscard(Effect31.gen(function* () {
+      const sql = yield* SqlClient.SqlClient;
+      yield* sql`PRAGMA journal_mode=WAL`.pipe(Effect31.ignore);
+      yield* sql`PRAGMA synchronous=NORMAL`.pipe(Effect31.ignore);
+      yield* sql`PRAGMA cache_size=-65536`.pipe(Effect31.ignore);
+      yield* sql`PRAGMA mmap_size=268435456`.pipe(Effect31.ignore);
+      yield* sql`PRAGMA foreign_keys=ON`.pipe(Effect31.ignore);
+      yield* sql`PRAGMA busy_timeout=15000`.pipe(Effect31.ignore);
+      yield* sql`PRAGMA analysis_limit=1000`.pipe(Effect31.ignore);
+      yield* sql`PRAGMA optimize`.pipe(Effect31.ignore);
     }));
-    return Effect35.succeed(Layer19.merge(Layer19.provide(Layer19.provide(Layer19.provide(Layer19.effect(TaskStore.Tag, makeService), MigratorLayer), Layer19.provide(pragmaLayer, client)), client), client));
+    return Effect31.succeed(Layer15.merge(Layer15.provide(Layer15.provide(Layer15.provide(Layer15.effect(TaskStore.Tag, makeService), MigratorLayer), Layer15.provide(pragmaLayer, client)), client), client));
   }));
   return withMigrations;
 }
-var SPEC_JSON = Schema39.fromJsonString(TaskSpec);
-var encodeSpecJson = Schema39.encodeSync(SPEC_JSON);
-var decodeSpecJson = Schema39.decodeSync(SPEC_JSON);
-var decodeSpecRowShape = Schema39.decodeUnknownSync(Schema39.Struct({
-  revision: Schema39.String,
-  createdAtMs: Schema39.Number,
-  specJson: Schema39.String
+var SPEC_JSON = Schema32.fromJsonString(TaskSpec);
+var encodeSpecJson = Schema32.encodeSync(SPEC_JSON);
+var decodeSpecJson = Schema32.decodeSync(SPEC_JSON);
+var decodeSpecRowShape = Schema32.decodeUnknownSync(Schema32.Struct({
+  revision: Schema32.String,
+  createdAtMs: Schema32.Number,
+  specJson: Schema32.String
 }));
-var ProfileRow = Schema39.Struct({
-  id: Schema39.String,
-  provider: Schema39.String,
-  model: Schema39.String,
-  variant: Schema39.NullOr(Schema39.String)
+var ProfileRow = Schema32.Struct({
+  id: Schema32.String,
+  provider: Schema32.String,
+  model: Schema32.String,
+  variant: Schema32.NullOr(Schema32.String)
 });
-var decodeProfileRow = Schema39.decodeUnknownSync(ProfileRow);
-var JobRow = Schema39.Struct({
-  jobId: Schema39.String,
-  taskId: Schema39.String,
-  taskRevision: Schema39.String,
-  blueprintId: Schema39.NullOr(Schema39.String),
-  blueprintHash: Schema39.NullOr(Schema39.String),
-  evaluatorId: Schema39.String,
-  rubricHash: Schema39.String,
-  createdAtMs: Schema39.Number,
-  status: Schema39.Literals(["running", "completed", "failed", "cancelled"])
+var decodeProfileRow = Schema32.decodeUnknownSync(ProfileRow);
+var JobRow = Schema32.Struct({
+  jobId: Schema32.String,
+  taskId: Schema32.String,
+  taskRevision: Schema32.String,
+  blueprintId: Schema32.NullOr(Schema32.String),
+  blueprintHash: Schema32.NullOr(Schema32.String),
+  evaluatorId: Schema32.String,
+  rubricHash: Schema32.String,
+  createdAtMs: Schema32.Number,
+  status: Schema32.Literals(["running", "completed", "failed", "cancelled"])
 });
-var decodeJobRow = Schema39.decodeUnknownSync(JobRow);
-var TrialStatus = Schema39.Literals([
+var decodeJobRow = Schema32.decodeUnknownSync(JobRow);
+var TrialStatus = Schema32.Literals([
   "pending",
   "running",
   "scored",
@@ -13940,80 +13023,80 @@ var TrialStatus = Schema39.Literals([
   "interrupted",
   "judge-unavailable"
 ]);
-var TrialRow = Schema39.Struct({
-  trialId: Schema39.String,
-  jobId: Schema39.String,
-  blueprintId: Schema39.String,
-  blueprintHash: Schema39.String,
-  taskId: Schema39.String,
-  taskRevision: Schema39.String,
-  profileId: Schema39.String,
-  provider: Schema39.String,
-  model: Schema39.String,
-  variant: Schema39.NullOr(Schema39.String),
-  trial: Schema39.Number,
+var TrialRow = Schema32.Struct({
+  trialId: Schema32.String,
+  jobId: Schema32.String,
+  blueprintId: Schema32.String,
+  blueprintHash: Schema32.String,
+  taskId: Schema32.String,
+  taskRevision: Schema32.String,
+  profileId: Schema32.String,
+  provider: Schema32.String,
+  model: Schema32.String,
+  variant: Schema32.NullOr(Schema32.String),
+  trial: Schema32.Number,
   status: TrialStatus,
-  outputText: Schema39.NullOr(Schema39.String),
-  outputBytes: Schema39.NullOr(Schema39.Number),
-  outputHash: Schema39.NullOr(Schema39.String),
-  durationMs: Schema39.NullOr(Schema39.Number),
-  tokensIn: Schema39.NullOr(Schema39.Number),
-  tokensOut: Schema39.NullOr(Schema39.Number),
-  sessionId: Schema39.NullOr(Schema39.String),
-  errorReason: Schema39.NullOr(Schema39.String),
-  startedAtMs: Schema39.NullOr(Schema39.Number),
-  finishedAtMs: Schema39.NullOr(Schema39.Number)
+  outputText: Schema32.NullOr(Schema32.String),
+  outputBytes: Schema32.NullOr(Schema32.Number),
+  outputHash: Schema32.NullOr(Schema32.String),
+  durationMs: Schema32.NullOr(Schema32.Number),
+  tokensIn: Schema32.NullOr(Schema32.Number),
+  tokensOut: Schema32.NullOr(Schema32.Number),
+  sessionId: Schema32.NullOr(Schema32.String),
+  errorReason: Schema32.NullOr(Schema32.String),
+  startedAtMs: Schema32.NullOr(Schema32.Number),
+  finishedAtMs: Schema32.NullOr(Schema32.Number)
 });
-var decodeTrialRow = Schema39.decodeUnknownSync(TrialRow);
-var encodeTrialRecord = Schema39.encodeSync(TaskStore.TrialRecord);
-var ScoreRow = Schema39.Struct({
-  scoreId: Schema39.String,
-  trialId: Schema39.String,
-  evaluatorId: Schema39.String,
-  rubricHash: Schema39.String,
-  deterministicJson: Schema39.String,
-  dimensionsJson: Schema39.String,
-  total: Schema39.Number,
-  scoredAtMs: Schema39.Number
+var decodeTrialRow = Schema32.decodeUnknownSync(TrialRow);
+var encodeTrialRecord = Schema32.encodeSync(TaskStore.TrialRecord);
+var ScoreRow = Schema32.Struct({
+  scoreId: Schema32.String,
+  trialId: Schema32.String,
+  evaluatorId: Schema32.String,
+  rubricHash: Schema32.String,
+  deterministicJson: Schema32.String,
+  dimensionsJson: Schema32.String,
+  total: Schema32.Number,
+  scoredAtMs: Schema32.Number
 });
-var decodeScoreRow = Schema39.decodeUnknownSync(ScoreRow);
-var HistoryRow = Schema39.Struct({
-  eventId: Schema39.Number,
-  jobId: Schema39.String,
-  sequence: Schema39.Number,
-  kind: Schema39.String,
-  payloadJson: Schema39.String,
-  previousHash: Schema39.String,
-  hash: Schema39.String,
-  createdAtMs: Schema39.Number
+var decodeScoreRow = Schema32.decodeUnknownSync(ScoreRow);
+var HistoryRow = Schema32.Struct({
+  eventId: Schema32.Number,
+  jobId: Schema32.String,
+  sequence: Schema32.Number,
+  kind: Schema32.String,
+  payloadJson: Schema32.String,
+  previousHash: Schema32.String,
+  hash: Schema32.String,
+  createdAtMs: Schema32.Number
 });
-var decodeHistoryRow = Schema39.decodeUnknownSync(HistoryRow);
-var HistoryHead = Schema39.Struct({
-  sequence: Schema39.Number,
-  hash: Schema39.String
+var decodeHistoryRow = Schema32.decodeUnknownSync(HistoryRow);
+var HistoryHead = Schema32.Struct({
+  sequence: Schema32.Number,
+  hash: Schema32.String
 });
-var decodeHistoryHead = Schema39.decodeUnknownSync(HistoryHead);
-var TraceHead = Schema39.Struct({
-  sequence: Schema39.Number
+var decodeHistoryHead = Schema32.decodeUnknownSync(HistoryHead);
+var TraceHead = Schema32.Struct({
+  sequence: Schema32.Number
 });
-var decodeTraceHead = Schema39.decodeUnknownSync(TraceHead);
-var LeadingRow = Schema39.Struct({
-  jobId: Schema39.String,
-  trialId: Schema39.String,
-  total: Schema39.Number,
-  selectedAtMs: Schema39.Number
+var decodeTraceHead = Schema32.decodeUnknownSync(TraceHead);
+var LeadingRow = Schema32.Struct({
+  jobId: Schema32.String,
+  trialId: Schema32.String,
+  total: Schema32.Number,
+  selectedAtMs: Schema32.Number
 });
-var decodeLeadingRow = Schema39.decodeUnknownSync(LeadingRow);
-var TraceRow = Schema39.Struct({
-  trialId: Schema39.String,
-  sequence: Schema39.Number,
-  kind: Schema39.String,
-  payloadJson: Schema39.String,
-  previousHash: Schema39.String,
-  hash: Schema39.String,
-  createdAtMs: Schema39.Number
+var decodeLeadingRow = Schema32.decodeUnknownSync(LeadingRow);
+var TraceRow = Schema32.Struct({
+  trialId: Schema32.String,
+  sequence: Schema32.Number,
+  kind: Schema32.String,
+  payloadJson: Schema32.String,
+  previousHash: Schema32.String,
+  hash: Schema32.String,
+  createdAtMs: Schema32.Number
 });
-var decodeTraceRow = Schema39.decodeUnknownSync(TraceRow);
+var decodeTraceRow = Schema32.decodeUnknownSync(TraceRow);
 var specFromRow = (row) => new Task({
   revision: row.revision,
   createdAtMs: row.createdAtMs,
@@ -14061,27 +13144,27 @@ var jobFromRow = (row) => new TaskStore.JobRecord({
   status: row.status
 });
 var nullish = (value) => value ?? null;
-var fail4 = (operation, reason) => new TaskError({ operation, reason });
-var isUniqueViolation = (cause) => SqlError2.isSqlError(cause) && Schema39.is(SqlError2.UniqueViolation)(cause.reason);
-var mapSqlError = (operation) => (cause) => cause instanceof TaskError ? cause : fail4(operation, String(cause));
+var fail2 = (operation, reason) => new TaskError({ operation, reason });
+var isUniqueViolation = (cause) => SqlError.isSqlError(cause) && Schema32.is(SqlError.UniqueViolation)(cause.reason);
+var mapSqlError = (operation) => (cause) => cause instanceof TaskError ? cause : fail2(operation, String(cause));
 var seal2 = (input) => fnv1aHex(JSON.stringify([input.sequence, input.previousHash, input.kind, input.payloadJson, input.now]));
 var LIST_CAP = 200;
-var makeService = Effect35.gen(function* () {
-  const sql = yield* SqlClient2.SqlClient;
+var makeService = Effect31.gen(function* () {
+  const sql = yield* SqlClient.SqlClient;
   const service = {
-    upsertTask: (input) => sql.withTransaction(Effect35.gen(function* () {
+    upsertTask: (input) => sql.withTransaction(Effect31.gen(function* () {
       const specJson = encodeSpecJson(input.spec);
       const same = yield* sql`SELECT revision, created_at_ms AS "createdAtMs", spec_json AS "specJson"
 							FROM task_revisions WHERE revision = ${input.revision} AND task_id = ${input.spec.taskId}`;
-      const identical = Option20.map(Option20.fromNullishOr(same[0]), decodeSpecRowShape);
-      if (Option20.isSome(identical)) {
+      const identical = Option18.map(Option18.fromNullishOr(same[0]), decodeSpecRowShape);
+      if (Option18.isSome(identical)) {
         if (identical.value.specJson !== specJson) {
-          return yield* Effect35.fail(fail4("upsertTask", `revision ${input.revision} does not match its existing content`));
+          return yield* Effect31.fail(fail2("upsertTask", `revision ${input.revision} does not match its existing content`));
         }
         return specFromRow(identical.value);
       }
       const existing = yield* sql`SELECT id FROM tasks WHERE id = ${input.spec.taskId}`;
-      yield* Option20.match(Option20.fromNullishOr(existing[0]), {
+      yield* Option18.match(Option18.fromNullishOr(existing[0]), {
         onNone: () => sql`INSERT INTO tasks (id, title, domain, current_revision, updated_at_ms)
 									VALUES (${input.spec.taskId}, ${input.spec.title}, ${input.spec.domain}, ${input.revision}, ${input.now})`,
         onSome: () => sql`UPDATE tasks SET title = ${input.spec.title}, domain = ${input.spec.domain},
@@ -14090,11 +13173,11 @@ var makeService = Effect35.gen(function* () {
       yield* sql`INSERT INTO task_revisions (revision, task_id, spec_json, created_at_ms)
 							VALUES (${input.revision}, ${input.spec.taskId}, ${specJson}, ${input.now})`;
       return specFromRow({ revision: input.revision, createdAtMs: input.now, specJson });
-    })).pipe(Effect35.mapError(mapSqlError("upsertTask"))),
-    getTask: (taskId) => Effect35.map(sql`SELECT r.revision, r.created_at_ms AS "createdAtMs", r.spec_json AS "specJson"
+    })).pipe(Effect31.mapError(mapSqlError("upsertTask"))),
+    getTask: (taskId) => Effect31.map(sql`SELECT r.revision, r.created_at_ms AS "createdAtMs", r.spec_json AS "specJson"
 						FROM tasks t JOIN task_revisions r ON r.revision = t.current_revision
-						WHERE t.id = ${taskId}`, (rows) => Option20.map(Option20.fromNullishOr(rows[0]), (row) => specFromRow(decodeSpecRowShape(row)))).pipe(Effect35.mapError(mapSqlError("getTask"))),
-    listTasks: (cursor) => Effect35.gen(function* () {
+						WHERE t.id = ${taskId}`, (rows) => Option18.map(Option18.fromNullishOr(rows[0]), (row) => specFromRow(decodeSpecRowShape(row)))).pipe(Effect31.mapError(mapSqlError("getTask"))),
+    listTasks: (cursor) => Effect31.gen(function* () {
       const LIMIT = 50;
       const rows = cursor === undefined ? yield* sql`SELECT r.revision, r.created_at_ms AS "createdAtMs", r.spec_json AS "specJson", t.id AS "taskId"
 							FROM tasks t JOIN task_revisions r ON r.revision = t.current_revision
@@ -14106,23 +13189,23 @@ var makeService = Effect35.gen(function* () {
       const page = hasNext ? tasks.slice(0, LIMIT) : tasks;
       return {
         items: page,
-        nextCursor: hasNext ? Option20.map(Option20.fromNullishOr(page[LIMIT - 1]), (task) => task.spec.taskId) : Option20.none()
+        nextCursor: hasNext ? Option18.map(Option18.fromNullishOr(page[LIMIT - 1]), (task) => task.spec.taskId) : Option18.none()
       };
-    }).pipe(Effect35.mapError(mapSqlError("listTasks"))),
-    upsertProfile: (profile) => Effect35.gen(function* () {
+    }).pipe(Effect31.mapError(mapSqlError("listTasks"))),
+    upsertProfile: (profile) => Effect31.gen(function* () {
       const now = yield* Clock5.currentTimeMillis;
       yield* sql`INSERT INTO model_profiles (id, provider, model, variant, created_at_ms)
 						VALUES (${profile.id}, ${profile.provider}, ${profile.model}, ${nullish(profile.variant)}, ${now})
 						ON CONFLICT(id) DO UPDATE SET provider = excluded.provider,
 						model = excluded.model, variant = excluded.variant`;
-    }).pipe(Effect35.mapError(mapSqlError("upsertProfile"))),
-    listProfiles: () => Effect35.map(sql`SELECT id, provider, model, variant FROM model_profiles ORDER BY id LIMIT ${LIST_CAP}`, (rows) => rows.map((row) => profileFromRow(decodeProfileRow(row)))).pipe(Effect35.mapError(mapSqlError("listProfiles"))),
-    getProfile: (profileId) => Effect35.map(sql`SELECT id, provider, model, variant FROM model_profiles WHERE id = ${profileId}`, (rows) => Option20.map(Option20.fromNullishOr(rows[0]), (row) => profileFromRow(decodeProfileRow(row)))).pipe(Effect35.mapError(mapSqlError("getProfile"))),
-    createJob: (input) => Effect35.gen(function* () {
+    }).pipe(Effect31.mapError(mapSqlError("upsertProfile"))),
+    listProfiles: () => Effect31.map(sql`SELECT id, provider, model, variant FROM model_profiles ORDER BY id LIMIT ${LIST_CAP}`, (rows) => rows.map((row) => profileFromRow(decodeProfileRow(row)))).pipe(Effect31.mapError(mapSqlError("listProfiles"))),
+    getProfile: (profileId) => Effect31.map(sql`SELECT id, provider, model, variant FROM model_profiles WHERE id = ${profileId}`, (rows) => Option18.map(Option18.fromNullishOr(rows[0]), (row) => profileFromRow(decodeProfileRow(row)))).pipe(Effect31.mapError(mapSqlError("getProfile"))),
+    createJob: (input) => Effect31.gen(function* () {
       const task = yield* sql`SELECT revision FROM task_revisions
 						WHERE task_id = ${input.taskId} AND revision = ${input.taskRevision}`;
       if (task.length === 0) {
-        return yield* Effect35.fail(fail4("createJob", `task revision ${input.taskRevision} does not belong to ${input.taskId}`));
+        return yield* Effect31.fail(fail2("createJob", `task revision ${input.taskRevision} does not belong to ${input.taskId}`));
       }
       yield* sql`INSERT INTO benchmark_jobs
 						(job_id, task_id, task_revision, blueprint_id, blueprint_hash, evaluator_id, rubric_hash, created_at_ms, status)
@@ -14140,13 +13223,13 @@ var makeService = Effect35.gen(function* () {
         createdAtMs: input.now,
         status: "running"
       });
-    }).pipe(Effect35.mapError(mapSqlError("createJob"))),
-    getJob: (jobId) => Effect35.map(sql`SELECT job_id AS "jobId", task_id AS "taskId", task_revision AS "taskRevision",
+    }).pipe(Effect31.mapError(mapSqlError("createJob"))),
+    getJob: (jobId) => Effect31.map(sql`SELECT job_id AS "jobId", task_id AS "taskId", task_revision AS "taskRevision",
 						blueprint_id AS "blueprintId", blueprint_hash AS "blueprintHash",
 						evaluator_id AS "evaluatorId", rubric_hash AS "rubricHash",
 						created_at_ms AS "createdAtMs", status
-						FROM benchmark_jobs WHERE job_id = ${jobId}`, (rows) => Option20.map(Option20.fromNullishOr(rows[0]), (row) => jobFromRow(decodeJobRow(row)))).pipe(Effect35.mapError(mapSqlError("getJob"))),
-    createTrials: (trials) => sql.withTransaction(Effect35.forEach(trials, (trial) => Effect35.gen(function* () {
+						FROM benchmark_jobs WHERE job_id = ${jobId}`, (rows) => Option18.map(Option18.fromNullishOr(rows[0]), (row) => jobFromRow(decodeJobRow(row)))).pipe(Effect31.mapError(mapSqlError("getJob"))),
+    createTrials: (trials) => sql.withTransaction(Effect31.forEach(trials, (trial) => Effect31.gen(function* () {
       const e = encodeTrialRecord(trial);
       yield* sql`INSERT INTO benchmark_trials
 								(trial_id, job_id, blueprint_id, blueprint_hash, task_id, task_revision,
@@ -14163,8 +13246,8 @@ var makeService = Effect35.gen(function* () {
 									${nullish(e.sessionId)}, ${nullish(e.errorReason)},
 									${nullish(e.startedAtMs)}, ${nullish(e.finishedAtMs)}
 								)`;
-    }), { concurrency: 1, discard: true })).pipe(Effect35.mapError((cause) => isUniqueViolation(cause) ? fail4("createTrials", "duplicate trial identity") : fail4("createTrials", String(cause)))),
-    completeTrial: (outcome) => sql.withTransaction(Effect35.gen(function* () {
+    }), { concurrency: 1, discard: true })).pipe(Effect31.mapError((cause) => isUniqueViolation(cause) ? fail2("createTrials", "duplicate trial identity") : fail2("createTrials", String(cause)))),
+    completeTrial: (outcome) => sql.withTransaction(Effect31.gen(function* () {
       const updated = yield* sql`UPDATE benchmark_trials SET
 								status = ${outcome.status},
 								output_text = ${nullish(outcome.outputText)},
@@ -14184,73 +13267,73 @@ var makeService = Effect35.gen(function* () {
 								duration_ms AS "durationMs", tokens_in AS "tokensIn", tokens_out AS "tokensOut",
 								session_id AS "sessionId", error_reason AS "errorReason",
 								started_at_ms AS "startedAtMs", finished_at_ms AS "finishedAtMs"`;
-      const record = Option20.map(Option20.fromNullishOr(updated[0]), (row) => trialFromRow(decodeTrialRow(row)));
-      yield* Option20.match(record, {
-        onNone: () => Effect35.void,
-        onSome: () => Option20.match(Option20.fromNullishOr(outcome.score), {
-          onNone: () => Effect35.void,
+      const record = Option18.map(Option18.fromNullishOr(updated[0]), (row) => trialFromRow(decodeTrialRow(row)));
+      yield* Option18.match(record, {
+        onNone: () => Effect31.void,
+        onSome: () => Option18.match(Option18.fromNullishOr(outcome.score), {
+          onNone: () => Effect31.void,
           onSome: (score) => sql`INSERT INTO trial_scores
 										(score_id, trial_id, evaluator_id, rubric_hash, deterministic_json, dimensions_json, total, scored_at_ms)
 										VALUES (${score.scoreId}, ${outcome.trialId}, ${score.evaluatorId}, ${score.rubricHash},
-											${score.deterministicJson}, ${score.dimensionsJson}, ${score.total}, ${score.now})`.pipe(Effect35.mapError(mapSqlError("completeTrial")))
+											${score.deterministicJson}, ${score.dimensionsJson}, ${score.total}, ${score.now})`.pipe(Effect31.mapError(mapSqlError("completeTrial")))
         })
       });
       return record;
-    })).pipe(Effect35.mapError(mapSqlError("completeTrial"))),
-    listTrials: (jobId) => Effect35.map(sql`SELECT trial_id AS "trialId", job_id AS "jobId", blueprint_id AS "blueprintId",
+    })).pipe(Effect31.mapError(mapSqlError("completeTrial"))),
+    listTrials: (jobId) => Effect31.map(sql`SELECT trial_id AS "trialId", job_id AS "jobId", blueprint_id AS "blueprintId",
 						blueprint_hash AS "blueprintHash", task_id AS "taskId", task_revision AS "taskRevision",
 						profile_id AS "profileId", provider, model, variant, trial, status,
 						output_text AS "outputText", output_bytes AS "outputBytes", output_hash AS "outputHash",
 						duration_ms AS "durationMs", tokens_in AS "tokensIn", tokens_out AS "tokensOut",
 						session_id AS "sessionId", error_reason AS "errorReason",
 						started_at_ms AS "startedAtMs", finished_at_ms AS "finishedAtMs"
-						FROM benchmark_trials WHERE job_id = ${jobId} ORDER BY profile_id, trial LIMIT ${LIST_CAP}`, (rows) => rows.map((row) => trialFromRow(decodeTrialRow(row)))).pipe(Effect35.mapError(mapSqlError("listTrials"))),
-    listAllTrials: (jobId) => Effect35.map(sql`SELECT trial_id AS "trialId", job_id AS "jobId", blueprint_id AS "blueprintId",
+						FROM benchmark_trials WHERE job_id = ${jobId} ORDER BY profile_id, trial LIMIT ${LIST_CAP}`, (rows) => rows.map((row) => trialFromRow(decodeTrialRow(row)))).pipe(Effect31.mapError(mapSqlError("listTrials"))),
+    listAllTrials: (jobId) => Effect31.map(sql`SELECT trial_id AS "trialId", job_id AS "jobId", blueprint_id AS "blueprintId",
 						blueprint_hash AS "blueprintHash", task_id AS "taskId", task_revision AS "taskRevision",
 						profile_id AS "profileId", provider, model, variant, trial, status,
 						output_text AS "outputText", output_bytes AS "outputBytes", output_hash AS "outputHash",
 						duration_ms AS "durationMs", tokens_in AS "tokensIn", tokens_out AS "tokensOut",
 						session_id AS "sessionId", error_reason AS "errorReason",
 						started_at_ms AS "startedAtMs", finished_at_ms AS "finishedAtMs"
-						FROM benchmark_trials WHERE job_id = ${jobId} ORDER BY profile_id, trial`, (rows) => rows.map((row) => trialFromRow(decodeTrialRow(row)))).pipe(Effect35.mapError(mapSqlError("listAllTrials"))),
-    listScores: (jobId) => Effect35.map(sql`SELECT s.score_id AS "scoreId", s.trial_id AS "trialId", s.evaluator_id AS "evaluatorId",
+						FROM benchmark_trials WHERE job_id = ${jobId} ORDER BY profile_id, trial`, (rows) => rows.map((row) => trialFromRow(decodeTrialRow(row)))).pipe(Effect31.mapError(mapSqlError("listAllTrials"))),
+    listScores: (jobId) => Effect31.map(sql`SELECT s.score_id AS "scoreId", s.trial_id AS "trialId", s.evaluator_id AS "evaluatorId",
 						s.rubric_hash AS "rubricHash", s.deterministic_json AS "deterministicJson",
 						s.dimensions_json AS "dimensionsJson", s.total, s.scored_at_ms AS "scoredAtMs"
 						FROM trial_scores s JOIN benchmark_trials t ON t.trial_id = s.trial_id
-						WHERE t.job_id = ${jobId} ORDER BY s.scored_at_ms LIMIT ${LIST_CAP}`, (rows) => rows.map((row) => new TaskStore.ScoreRecord(decodeScoreRow(row)))).pipe(Effect35.mapError(mapSqlError("listScores"))),
-    listAllScores: (jobId) => Effect35.map(sql`SELECT s.score_id AS "scoreId", s.trial_id AS "trialId", s.evaluator_id AS "evaluatorId",
+						WHERE t.job_id = ${jobId} ORDER BY s.scored_at_ms LIMIT ${LIST_CAP}`, (rows) => rows.map((row) => new TaskStore.ScoreRecord(decodeScoreRow(row)))).pipe(Effect31.mapError(mapSqlError("listScores"))),
+    listAllScores: (jobId) => Effect31.map(sql`SELECT s.score_id AS "scoreId", s.trial_id AS "trialId", s.evaluator_id AS "evaluatorId",
 						s.rubric_hash AS "rubricHash", s.deterministic_json AS "deterministicJson",
 						s.dimensions_json AS "dimensionsJson", s.total, s.scored_at_ms AS "scoredAtMs"
 						FROM trial_scores s JOIN benchmark_trials t ON t.trial_id = s.trial_id
-						WHERE t.job_id = ${jobId} ORDER BY s.scored_at_ms`, (rows) => rows.map((row) => new TaskStore.ScoreRecord(decodeScoreRow(row)))).pipe(Effect35.mapError(mapSqlError("listAllScores"))),
-    completeJob: (input) => sql.withTransaction(Effect35.gen(function* () {
+						WHERE t.job_id = ${jobId} ORDER BY s.scored_at_ms`, (rows) => rows.map((row) => new TaskStore.ScoreRecord(decodeScoreRow(row)))).pipe(Effect31.mapError(mapSqlError("listAllScores"))),
+    completeJob: (input) => sql.withTransaction(Effect31.gen(function* () {
       const pending = yield* sql`SELECT trial_id FROM benchmark_trials
 							WHERE job_id = ${input.jobId} AND status = 'pending' LIMIT 1`;
       if (pending.length > 0) {
-        return yield* Effect35.fail(fail4("completeJob", `job ${input.jobId} still has pending trials`));
+        return yield* Effect31.fail(fail2("completeJob", `job ${input.jobId} still has pending trials`));
       }
       const updated = yield* sql`UPDATE benchmark_jobs SET status = ${input.status}
 							WHERE job_id = ${input.jobId} AND status = 'running'
 							RETURNING job_id`;
       if (updated.length === 0) {
-        return yield* Effect35.fail(fail4("completeJob", `job ${input.jobId} is missing or already terminal`));
+        return yield* Effect31.fail(fail2("completeJob", `job ${input.jobId} is missing or already terminal`));
       }
-      yield* Option20.match(Option20.fromNullishOr(input.leading), {
-        onNone: () => Effect35.void,
+      yield* Option18.match(Option18.fromNullishOr(input.leading), {
+        onNone: () => Effect31.void,
         onSome: (leading) => sql`INSERT INTO leading_solutions (job_id, trial_id, total, selected_at_ms)
 									SELECT ${input.jobId}, trial_id, ${leading.total}, ${input.now}
 									FROM benchmark_trials
 									WHERE job_id = ${input.jobId} AND trial_id = ${leading.trialId}
-									RETURNING trial_id`.pipe(Effect35.flatMap((rows) => rows.length === 0 ? Effect35.fail(fail4("completeJob", `leading trial ${leading.trialId} does not belong to ${input.jobId}`)) : Effect35.void), Effect35.mapError(mapSqlError("completeJob")))
+									RETURNING trial_id`.pipe(Effect31.flatMap((rows) => rows.length === 0 ? Effect31.fail(fail2("completeJob", `leading trial ${leading.trialId} does not belong to ${input.jobId}`)) : Effect31.void), Effect31.mapError(mapSqlError("completeJob")))
       });
       const head = yield* sql`SELECT sequence, hash FROM benchmark_history
 							WHERE job_id = ${input.jobId} ORDER BY sequence DESC LIMIT 1`;
-      const last = Option20.map(Option20.fromNullishOr(head[0]), decodeHistoryHead);
-      const sequence = Option20.match(last, {
+      const last = Option18.map(Option18.fromNullishOr(head[0]), decodeHistoryHead);
+      const sequence = Option18.match(last, {
         onNone: () => 0,
         onSome: (row) => row.sequence + 1
       });
-      const previousHash = Option20.match(last, {
+      const previousHash = Option18.match(last, {
         onNone: () => "genesis",
         onSome: (row) => row.hash
       });
@@ -14259,18 +13342,18 @@ var makeService = Effect35.gen(function* () {
 							VALUES (${input.jobId}, ${sequence}, ${input.history.kind}, ${input.history.payloadJson},
 								${previousHash}, ${seal2({ sequence, previousHash, kind: input.history.kind, payloadJson: input.history.payloadJson, now: input.now })},
 								${input.now})`;
-    })).pipe(Effect35.mapError(mapSqlError("completeJob"))),
-    getLeading: (jobId) => Effect35.map(sql`SELECT job_id AS "jobId", trial_id AS "trialId", total, selected_at_ms AS "selectedAtMs"
-						FROM leading_solutions WHERE job_id = ${jobId}`, (rows) => Option20.map(Option20.fromNullishOr(rows[0]), (row) => new TaskStore.LeadingRecord(decodeLeadingRow(row)))).pipe(Effect35.mapError(mapSqlError("getLeading"))),
-    appendHistory: (input) => sql.withTransaction(Effect35.gen(function* () {
+    })).pipe(Effect31.mapError(mapSqlError("completeJob"))),
+    getLeading: (jobId) => Effect31.map(sql`SELECT job_id AS "jobId", trial_id AS "trialId", total, selected_at_ms AS "selectedAtMs"
+						FROM leading_solutions WHERE job_id = ${jobId}`, (rows) => Option18.map(Option18.fromNullishOr(rows[0]), (row) => new TaskStore.LeadingRecord(decodeLeadingRow(row)))).pipe(Effect31.mapError(mapSqlError("getLeading"))),
+    appendHistory: (input) => sql.withTransaction(Effect31.gen(function* () {
       const head = yield* sql`SELECT sequence, hash FROM benchmark_history
 							WHERE job_id = ${input.jobId} ORDER BY sequence DESC LIMIT 1`;
-      const last = Option20.map(Option20.fromNullishOr(head[0]), decodeHistoryHead);
-      const sequence = Option20.match(last, {
+      const last = Option18.map(Option18.fromNullishOr(head[0]), decodeHistoryHead);
+      const sequence = Option18.match(last, {
         onNone: () => 0,
         onSome: (row) => row.sequence + 1
       });
-      const previousHash = Option20.match(last, {
+      const previousHash = Option18.match(last, {
         onNone: () => "genesis",
         onSome: (row) => row.hash
       });
@@ -14295,8 +13378,8 @@ var makeService = Effect35.gen(function* () {
         hash,
         createdAtMs: input.now
       });
-    })).pipe(Effect35.mapError(mapSqlError("appendHistory"))),
-    listHistory: (jobId) => Effect35.map(sql`SELECT event_id AS "eventId", job_id AS "jobId", sequence, kind,
+    })).pipe(Effect31.mapError(mapSqlError("appendHistory"))),
+    listHistory: (jobId) => Effect31.map(sql`SELECT event_id AS "eventId", job_id AS "jobId", sequence, kind,
 						payload_json AS "payloadJson", previous_hash AS "previousHash", hash,
 						created_at_ms AS "createdAtMs"
 						FROM benchmark_history WHERE job_id = ${jobId} ORDER BY sequence`, (rows) => {
@@ -14316,15 +13399,15 @@ var makeService = Effect35.gen(function* () {
         const previous = index === 0 ? "genesis" : records[index - 1]?.hash ?? "";
         return record.previousHash !== previous;
       });
-      return brokenAt === -1 ? Effect35.succeed(records) : Effect35.fail(fail4("listHistory", `broken history chain at event ${String(brokenAt)}`));
-    }).pipe(Effect35.flatten, Effect35.mapError(mapSqlError("listHistory"))),
-    recordTrace: (input) => Effect35.gen(function* () {
+      return brokenAt === -1 ? Effect31.succeed(records) : Effect31.fail(fail2("listHistory", `broken history chain at event ${String(brokenAt)}`));
+    }).pipe(Effect31.flatten, Effect31.mapError(mapSqlError("listHistory"))),
+    recordTrace: (input) => Effect31.gen(function* () {
       const now = input.now;
       const head = yield* sql`SELECT sequence, hash FROM benchmark_trace_events_v2
 						WHERE trial_id = ${input.trialId} ORDER BY sequence DESC LIMIT 1`;
-      const last = Option20.map(Option20.fromNullishOr(head[0]), (row) => Schema39.decodeUnknownSync(Schema39.Struct({ sequence: Schema39.Number, hash: Schema39.String }))(row));
-      const sequence = Option20.match(last, { onNone: () => 0, onSome: (row) => row.sequence + 1 });
-      const previousHash = Option20.match(last, { onNone: () => "genesis", onSome: (row) => row.hash });
+      const last = Option18.map(Option18.fromNullishOr(head[0]), (row) => Schema32.decodeUnknownSync(Schema32.Struct({ sequence: Schema32.Number, hash: Schema32.String }))(row));
+      const sequence = Option18.match(last, { onNone: () => 0, onSome: (row) => row.sequence + 1 });
+      const previousHash = Option18.match(last, { onNone: () => "genesis", onSome: (row) => row.hash });
       const hash = seal2({ sequence, previousHash, kind: input.kind, payloadJson: input.payloadJson, now });
       yield* sql`INSERT INTO benchmark_trace_events_v2
 						(trial_id, sequence, kind, payload_json, previous_hash, hash, created_at_ms)
@@ -14338,8 +13421,8 @@ var makeService = Effect35.gen(function* () {
         hash,
         createdAtMs: now
       });
-    }).pipe(Effect35.mapError(mapSqlError("recordTrace"))),
-    listTrace: (trialId) => Effect35.map(sql`SELECT trial_id AS "trialId", sequence, kind, payload_json AS "payloadJson",
+    }).pipe(Effect31.mapError(mapSqlError("recordTrace"))),
+    listTrace: (trialId) => Effect31.map(sql`SELECT trial_id AS "trialId", sequence, kind, payload_json AS "payloadJson",
 						previous_hash AS "previousHash", hash, created_at_ms AS "createdAtMs"
 						FROM benchmark_trace_events_v2 WHERE trial_id = ${trialId} ORDER BY sequence`, (rows) => {
       const records = rows.map((row) => new TaskStore.TraceRecord(decodeTraceRow(row)));
@@ -14358,65 +13441,65 @@ var makeService = Effect35.gen(function* () {
         const previous = index === 0 ? "genesis" : records[index - 1]?.hash ?? "";
         return record.previousHash !== previous;
       });
-      return brokenAt === -1 ? Effect35.succeed(records) : Effect35.fail(fail4("listTrace", `broken trace chain at event ${String(brokenAt)}`));
-    }).pipe(Effect35.flatten, Effect35.mapError(mapSqlError("listTrace")))
+      return brokenAt === -1 ? Effect31.succeed(records) : Effect31.fail(fail2("listTrace", `broken trace chain at event ${String(brokenAt)}`));
+    }).pipe(Effect31.flatten, Effect31.mapError(mapSqlError("listTrace")))
   };
   return service;
 });
 // src/benchmark/Tool.ts
-var Bounded = (minimum, maximum) => Schema40.Finite.check(Schema40.isBetween({ minimum, maximum }));
-var ModelProfileInput = Schema40.Struct({
+var Bounded = (minimum, maximum) => Schema33.Finite.check(Schema33.isBetween({ minimum, maximum }));
+var ModelProfileInput = Schema33.Struct({
   id: Slug,
-  provider: Schema40.NonEmptyString,
-  model: Schema40.NonEmptyString,
-  variant: Schema40.optionalKey(Schema40.NonEmptyString)
+  provider: Schema33.NonEmptyString,
+  model: Schema33.NonEmptyString,
+  variant: Schema33.optionalKey(Schema33.NonEmptyString)
 });
-var withOp = (value, fields) => Schema40.Struct({ op: Schema40.Literal(value), ...fields });
-var BenchmarkInput = Schema40.Union([
+var withOp = (value, fields) => Schema33.Struct({ op: Schema33.Literal(value), ...fields });
+var BenchmarkInput = Schema33.Union([
   withOp("task.create", {
     id: Slug,
-    title: Schema40.NonEmptyString,
-    domain: Schema40.NonEmptyString,
-    problem: Schema40.NonEmptyString,
-    rubric: Schema40.NonEmptyString,
-    evaluatorId: Schema40.optionalKey(Schema40.String),
-    referenceSolution: Schema40.optionalKey(Schema40.String),
-    modelProfileIds: Schema40.NonEmptyArray(Slug),
-    prompt: Schema40.optionalKey(Schema40.NonEmptyString),
-    maxOutputChars: Schema40.optionalKey(Bounded(500, 500000)),
-    maxSnippets: Schema40.optionalKey(Bounded(1, 20))
+    title: Schema33.NonEmptyString,
+    domain: Schema33.NonEmptyString,
+    problem: Schema33.NonEmptyString,
+    rubric: Schema33.NonEmptyString,
+    evaluatorId: Schema33.optionalKey(Schema33.String),
+    referenceSolution: Schema33.optionalKey(Schema33.String),
+    modelProfileIds: Schema33.NonEmptyArray(Slug),
+    prompt: Schema33.optionalKey(Schema33.NonEmptyString),
+    maxOutputChars: Schema33.optionalKey(Bounded(500, 500000)),
+    maxSnippets: Schema33.optionalKey(Bounded(1, 20))
   }),
   withOp("task.update", {
     id: Slug,
-    problem: Schema40.optionalKey(Schema40.NonEmptyString),
-    rubric: Schema40.optionalKey(Schema40.NonEmptyString),
-    referenceSolution: Schema40.optionalKey(Schema40.String),
-    modelProfileIds: Schema40.optionalKey(Schema40.NonEmptyArray(Slug)),
-    prompt: Schema40.optionalKey(Schema40.NonEmptyString)
+    problem: Schema33.optionalKey(Schema33.NonEmptyString),
+    rubric: Schema33.optionalKey(Schema33.NonEmptyString),
+    referenceSolution: Schema33.optionalKey(Schema33.String),
+    modelProfileIds: Schema33.optionalKey(Schema33.NonEmptyArray(Slug)),
+    prompt: Schema33.optionalKey(Schema33.NonEmptyString)
   }),
   withOp("task.get", { id: Slug }),
-  withOp("task.list", { cursor: Schema40.optionalKey(Schema40.String) }),
+  withOp("task.list", { cursor: Schema33.optionalKey(Schema33.String) }),
   withOp("profile.add", ModelProfileInput.fields),
   withOp("profile.list", {}),
   withOp("benchmark.start", {
     taskId: Slug,
-    trials: Schema40.optionalKey(Bounded(1, 5)),
-    concurrency: Schema40.optionalKey(Bounded(1, 16)),
-    judgeProfileId: Schema40.optionalKey(Slug)
+    trials: Schema33.optionalKey(Bounded(1, 5)),
+    concurrency: Schema33.optionalKey(Bounded(1, 16)),
+    judgeProfileId: Schema33.optionalKey(Slug)
   }),
-  withOp("benchmark.status", { jobId: Schema40.String }),
-  withOp("benchmark.leading", { jobId: Schema40.String }),
-  withOp("benchmark.history", { jobId: Schema40.String }),
-  withOp("benchmark.trial", { trialId: Schema40.String }),
+  withOp("benchmark.status", { jobId: Schema33.String }),
+  withOp("benchmark.leading", { jobId: Schema33.String }),
+  withOp("benchmark.history", { jobId: Schema33.String }),
+  withOp("benchmark.trial", { trialId: Schema33.String }),
   withOp("mine-evolve", {})
 ]);
-var decodeInput = Schema40.decodeUnknownSync(BenchmarkInput);
-var OkPayload = Schema40.Struct({ kind: Schema40.Literals(["ok"]), data: Schema40.Unknown });
-var ErrorPayload = Schema40.Struct({ kind: Schema40.Literals(["error"]), reason: Schema40.String });
-var ResultPayload = Schema40.Union([OkPayload, ErrorPayload]);
-var RESULT_CODEC = Schema40.fromJsonString(ResultPayload);
-var encodeResult = Schema40.encodeSync(RESULT_CODEC);
-var decodeResult = Schema40.decodeSync(RESULT_CODEC);
+var decodeInput = Schema33.decodeUnknownSync(BenchmarkInput);
+var OkPayload = Schema33.Struct({ kind: Schema33.Literals(["ok"]), data: Schema33.Unknown });
+var ErrorPayload = Schema33.Struct({ kind: Schema33.Literals(["error"]), reason: Schema33.String });
+var ResultPayload = Schema33.Union([OkPayload, ErrorPayload]);
+var RESULT_CODEC = Schema33.fromJsonString(ResultPayload);
+var encodeResult = Schema33.encodeSync(RESULT_CODEC);
+var decodeResult = Schema33.decodeSync(RESULT_CODEC);
 var ok = (data) => ({
   status: "ok",
   content: encodeResult({ kind: "ok", data })
@@ -14428,21 +13511,21 @@ var err = (reason) => ({
 var benchmarkStoreLayer = (filename, platform) => Match3.value(filename).pipe(Match3.when({ _tag: "Memory" }, () => exports_Store.layer({ _tag: "Memory" })), Match3.when({ _tag: "File" }, (file) => exports_Store.layer(file, platform)), Match3.exhaustive);
 var BenchmarkTool;
 ((BenchmarkTool) => {
-  const SPEC_JSON2 = Schema40.fromJsonString(TaskSpec);
-  const revisionOf = (spec) => fnv1aHex(Schema40.encodeSync(SPEC_JSON2)(spec));
+  const SPEC_JSON2 = Schema33.fromJsonString(TaskSpec);
+  const revisionOf = (spec) => fnv1aHex(Schema33.encodeSync(SPEC_JSON2)(spec));
 
-  class TaskView extends Schema40.Class("TaskView")({
-    id: Schema40.String,
-    revision: Schema40.String,
-    title: Schema40.String,
-    domain: Schema40.String,
-    evaluatorId: Schema40.String,
-    modelProfileIds: Schema40.Array(Schema40.String),
-    hasReferenceSolution: Schema40.Boolean,
-    hasPrompt: Schema40.optionalKey(Schema40.Boolean)
+  class TaskView extends Schema33.Class("TaskView")({
+    id: Schema33.String,
+    revision: Schema33.String,
+    title: Schema33.String,
+    domain: Schema33.String,
+    evaluatorId: Schema33.String,
+    modelProfileIds: Schema33.Array(Schema33.String),
+    hasReferenceSolution: Schema33.Boolean,
+    hasPrompt: Schema33.optionalKey(Schema33.Boolean)
   }) {
   }
-  const encodeTaskView = Schema40.encodeSync(TaskView);
+  const encodeTaskView = Schema33.encodeSync(TaskView);
   const viewOf = (task) => encodeTaskView(new TaskView({
     id: task.spec.taskId,
     revision: task.revision,
@@ -14453,7 +13536,7 @@ var BenchmarkTool;
     hasReferenceSolution: task.spec.referenceSolution !== undefined,
     ...task.spec.prompt !== undefined ? { hasPrompt: true } : {}
   }));
-  const fail5 = (reason) => new TaskError({ operation: "tool", reason });
+  const fail3 = (reason) => new TaskError({ operation: "tool", reason });
   const buildConstraints = (input) => new TaskConstraints({
     maxOutputChars: input.maxOutputChars ?? 8000,
     ...input.maxSnippets !== undefined ? { maxSnippets: input.maxSnippets } : {}
@@ -14470,42 +13553,42 @@ var BenchmarkTool;
     modelProfileIds: input.modelProfileIds,
     constraints: buildConstraints(input)
   });
-  const seedProfiles = (deps) => deps.withStore(Effect36.forEach(deps.benchmark.models, (model) => TaskStore.Tag.pipe(Effect36.flatMap((store) => store.upsertProfile(new ModelProfile({
+  const seedProfiles = (deps) => deps.withStore(Effect32.forEach(deps.benchmark.models, (model) => TaskStore.Tag.pipe(Effect32.flatMap((store) => store.upsertProfile(new ModelProfile({
     id: model.id,
     provider: model.provider,
     model: model.model,
     ...model.variant !== undefined ? { variant: model.variant } : {}
   })))), { concurrency: 1, discard: true }));
-  const startBenchmark = (deps, fields) => Effect36.flatMap(seedProfiles(deps), () => deps.withStore(Effect36.gen(function* () {
+  const startBenchmark = (deps, fields) => Effect32.flatMap(seedProfiles(deps), () => deps.withStore(Effect32.gen(function* () {
     const store = yield* TaskStore.Tag;
     const taskOption = yield* store.getTask(fields.taskId);
-    const task = Option21.match(taskOption, {
+    const task = Option19.match(taskOption, {
       onNone: () => null,
       onSome: (value) => value
     });
     if (task === null) {
-      return yield* Effect36.fail(fail5(`unknown task ${fields.taskId}`));
+      return yield* Effect32.fail(fail3(`unknown task ${fields.taskId}`));
     }
     const judgeProfileId = fields.judgeProfileId ?? deps.benchmark.judgeProfileId;
-    const judgeProfileOption = judgeProfileId === undefined ? Option21.none() : yield* store.getProfile(judgeProfileId);
-    if (judgeProfileId !== undefined && Option21.isNone(judgeProfileOption)) {
-      return yield* Effect36.fail(fail5(`unknown judge profile ${judgeProfileId}`));
+    const judgeProfileOption = judgeProfileId === undefined ? Option19.none() : yield* store.getProfile(judgeProfileId);
+    if (judgeProfileId !== undefined && Option19.isNone(judgeProfileOption)) {
+      return yield* Effect32.fail(fail3(`unknown judge profile ${judgeProfileId}`));
     }
-    const resolved = yield* Effect36.forEach(task.spec.modelProfileIds, (profileId) => store.getProfile(profileId), { concurrency: 1 });
-    const profiles = resolved.flatMap((profileOption) => Option21.match(profileOption, {
+    const resolved = yield* Effect32.forEach(task.spec.modelProfileIds, (profileId) => store.getProfile(profileId), { concurrency: 1 });
+    const profiles = resolved.flatMap((profileOption) => Option19.match(profileOption, {
       onNone: () => [],
       onSome: (profile) => [profile]
     }));
     const missing = task.spec.modelProfileIds.filter((id) => !profiles.some((profile) => profile.id === id));
     if (profiles.length === 0 || missing.length > 0) {
-      return yield* Effect36.fail(fail5(`profiles not resolvable for ${fields.taskId}: ${missing.join(", ") || "(none configured)"}; add via profile.add or compound.benchmark.models`));
+      return yield* Effect32.fail(fail3(`profiles not resolvable for ${fields.taskId}: ${missing.join(", ") || "(none configured)"}; add via profile.add or compound.benchmark.models`));
     }
     const trials = fields.trials ?? 1;
     const concurrency = Math.min(fields.concurrency ?? deps.benchmark.concurrency, deps.benchmark.concurrency);
     const summary = yield* Runner2.run({
       store,
       executor: deps.executor,
-      ...Option21.isSome(judgeProfileOption) ? { judgeProfile: judgeProfileOption.value } : {},
+      ...Option19.isSome(judgeProfileOption) ? { judgeProfile: judgeProfileOption.value } : {},
       workspaceDirFor: deps.workspaceDirFor,
       cleanupWorkspace: deps.cleanupWorkspace,
       workerAgent: deps.benchmark.workerAgent,
@@ -14520,10 +13603,10 @@ var BenchmarkTool;
       } : {}
     });
   })));
-  const handleOp = (deps, op) => Match3.value(op).pipe(Match3.when({ op: "mine-evolve" }, () => Effect36.fail(new TaskError({
+  const handleOp = (deps, op) => Match3.value(op).pipe(Match3.when({ op: "mine-evolve" }, () => Effect32.fail(new TaskError({
     operation: "mine-evolve",
     reason: "mine-evolve is not implemented yet (REM-4 pending). Nothing was read or persisted."
-  }))), Match3.when({ op: "task.create" }, (fields) => deps.withStore(Effect36.gen(function* () {
+  }))), Match3.when({ op: "task.create" }, (fields) => deps.withStore(Effect32.gen(function* () {
     const store = yield* TaskStore.Tag;
     const spec = buildSpec(fields);
     const task = yield* store.upsertTask({
@@ -14537,15 +13620,15 @@ var BenchmarkTool;
       receivedEvaluatorId: Reflect.get(fields, "evaluatorId"),
       view: viewOf(task)
     });
-  }))), Match3.when({ op: "task.update" }, (fields) => deps.withStore(Effect36.gen(function* () {
+  }))), Match3.when({ op: "task.update" }, (fields) => deps.withStore(Effect32.gen(function* () {
     const store = yield* TaskStore.Tag;
     const taskOption = yield* store.getTask(fields.id);
-    const current = Option21.match(taskOption, {
+    const current = Option19.match(taskOption, {
       onNone: () => null,
       onSome: (value) => value
     });
     if (current === null) {
-      return yield* Effect36.fail(fail5(`unknown task ${fields.id}`));
+      return yield* Effect32.fail(fail3(`unknown task ${fields.id}`));
     }
     const spec = new TaskSpec({
       ...current.spec,
@@ -14561,21 +13644,21 @@ var BenchmarkTool;
       now: yield* Clock6.currentTimeMillis
     });
     return ok(viewOf(task));
-  }))), Match3.when({ op: "task.get" }, (fields) => deps.withStore(Effect36.gen(function* () {
+  }))), Match3.when({ op: "task.get" }, (fields) => deps.withStore(Effect32.gen(function* () {
     const store = yield* TaskStore.Tag;
     const taskOption = yield* store.getTask(fields.id);
-    return Option21.match(taskOption, {
+    return Option19.match(taskOption, {
       onNone: () => err(`unknown task ${fields.id}`),
       onSome: (task) => ok(viewOf(task))
     });
-  }))), Match3.when({ op: "task.list" }, (fields) => deps.withStore(Effect36.gen(function* () {
+  }))), Match3.when({ op: "task.list" }, (fields) => deps.withStore(Effect32.gen(function* () {
     const store = yield* TaskStore.Tag;
     const page = yield* store.listTasks(fields.cursor);
     return ok({
       items: page.items.map(viewOf),
-      ...Option21.isSome(page.nextCursor) ? { nextCursor: page.nextCursor.value } : {}
+      ...Option19.isSome(page.nextCursor) ? { nextCursor: page.nextCursor.value } : {}
     });
-  }))), Match3.when({ op: "profile.add" }, (fields) => deps.withStore(Effect36.gen(function* () {
+  }))), Match3.when({ op: "profile.add" }, (fields) => deps.withStore(Effect32.gen(function* () {
     const store = yield* TaskStore.Tag;
     const profile = new ModelProfile({
       id: fields.id,
@@ -14585,13 +13668,13 @@ var BenchmarkTool;
     });
     yield* store.upsertProfile(profile);
     return ok({ id: profile.id });
-  }))), Match3.when({ op: "profile.list" }, () => deps.withStore(Effect36.gen(function* () {
+  }))), Match3.when({ op: "profile.list" }, () => deps.withStore(Effect32.gen(function* () {
     const store = yield* TaskStore.Tag;
     return ok({ items: [...yield* store.listProfiles()] });
-  }))), Match3.when({ op: "benchmark.start" }, (fields) => startBenchmark(deps, fields)), Match3.when({ op: "benchmark.status" }, (fields) => deps.withStore(Effect36.gen(function* () {
+  }))), Match3.when({ op: "benchmark.start" }, (fields) => startBenchmark(deps, fields)), Match3.when({ op: "benchmark.status" }, (fields) => deps.withStore(Effect32.gen(function* () {
     const store = yield* TaskStore.Tag;
     const jobOption = yield* store.getJob(fields.jobId);
-    if (Option21.isNone(jobOption)) {
+    if (Option19.isNone(jobOption)) {
       return err(`unknown job ${fields.jobId}`);
     }
     const job = jobOption.value;
@@ -14614,10 +13697,10 @@ var BenchmarkTool;
         };
       })
     });
-  }))), Match3.when({ op: "benchmark.leading" }, (fields) => deps.withStore(Effect36.gen(function* () {
+  }))), Match3.when({ op: "benchmark.leading" }, (fields) => deps.withStore(Effect32.gen(function* () {
     const store = yield* TaskStore.Tag;
     const leadingOption = yield* store.getLeading(fields.jobId);
-    return Option21.match(leadingOption, {
+    return Option19.match(leadingOption, {
       onNone: () => err(`no leading solution recorded for ${fields.jobId}`),
       onSome: (leading) => ok({
         jobId: leading.jobId,
@@ -14625,7 +13708,7 @@ var BenchmarkTool;
         total: leading.total
       })
     });
-  }))), Match3.when({ op: "benchmark.history" }, (fields) => deps.withStore(Effect36.gen(function* () {
+  }))), Match3.when({ op: "benchmark.history" }, (fields) => deps.withStore(Effect32.gen(function* () {
     const store = yield* TaskStore.Tag;
     const history = yield* store.listHistory(fields.jobId);
     return ok({
@@ -14635,7 +13718,7 @@ var BenchmarkTool;
         payload: event.payloadJson
       }))
     });
-  }))), Match3.when({ op: "benchmark.trial" }, (fields) => deps.withStore(Effect36.gen(function* () {
+  }))), Match3.when({ op: "benchmark.trial" }, (fields) => deps.withStore(Effect32.gen(function* () {
     const store = yield* TaskStore.Tag;
     const jobId = fields.trialId.slice(0, Math.max(0, fields.trialId.indexOf(":")));
     const trials = jobId.length === 0 ? [] : yield* store.listTrials(jobId);
@@ -14660,479 +13743,22 @@ var BenchmarkTool;
       trace: trace.map((event) => ({ sequence: event.sequence, kind: event.kind, payload: event.payloadJson }))
     });
   }))), Match3.exhaustive);
-  BenchmarkTool.handle = (deps, rawInput) => Effect36.gen(function* () {
-    const decoded = Option21.liftThrowable(decodeInput)(rawInput);
-    if (Option21.isNone(decoded)) {
+  BenchmarkTool.handle = (deps, rawInput) => Effect32.gen(function* () {
+    const decoded = Option19.liftThrowable(decodeInput)(rawInput);
+    if (Option19.isNone(decoded)) {
       return err("invalid benchmark op input (schema mismatch)");
     }
-    return yield* Effect36.matchEffect(handleOp(deps, decoded.value), {
-      onFailure: (error) => Effect36.succeed(err(`${error.operation}: ${error.reason}`)),
-      onSuccess: (result) => Effect36.succeed(result)
+    return yield* Effect32.matchEffect(handleOp(deps, decoded.value), {
+      onFailure: (error) => Effect32.succeed(err(`${error.operation}: ${error.reason}`)),
+      onSuccess: (result) => Effect32.succeed(result)
     });
   });
 })(BenchmarkTool ||= {});
 
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/model.js
-var exports_model = {};
-__export(exports_model, {
-  Capabilities: () => Capabilities,
-  Compatibility: () => Compatibility,
-  Cost: () => Cost,
-  Family: () => Family,
-  ID: () => ID7,
-  Info: () => Info7,
-  MaxTokensField: () => MaxTokensField,
-  Model: () => exports_model,
-  ReasoningField: () => ReasoningField,
-  Ref: () => Ref10,
-  Variant: () => Variant,
-  VariantID: () => VariantID
-});
-import { Schema as Schema48 } from "effect";
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/provider.js
-var exports_provider = {};
-__export(exports_provider, {
-  Activation: () => Activation,
-  ID: () => ID6,
-  Info: () => Info6,
-  Overlays: () => Overlays,
-  Package: () => Package,
-  Provider: () => exports_provider,
-  Request: () => Request,
-  Settings: () => Settings
-});
-import { Effect as Effect37, Schema as Schema46 } from "effect";
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/integration.js
-var exports_integration = {};
-__export(exports_integration, {
-  Attempt: () => Attempt,
-  AttemptID: () => AttemptID,
-  AttemptStatus: () => AttemptStatus,
-  CommandAttempt: () => CommandAttempt,
-  CommandAttemptStatus: () => CommandAttemptStatus,
-  CommandMethod: () => CommandMethod,
-  EnvMethod: () => EnvMethod,
-  Event: () => Event3,
-  ID: () => ID5,
-  Info: () => Info5,
-  Integration: () => exports_integration,
-  KeyMethod: () => KeyMethod,
-  Method: () => Method,
-  MethodID: () => MethodID,
-  OAuthMethod: () => OAuthMethod,
-  Ref: () => Ref9
-});
-import { Schema as Schema45 } from "effect";
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/connection.js
-var exports_connection = {};
-__export(exports_connection, {
-  Connection: () => exports_connection,
-  CredentialInfo: () => CredentialInfo,
-  EnvInfo: () => EnvInfo,
-  Info: () => Info4
-});
-import { Schema as Schema44 } from "effect";
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/credential.js
-var exports_credential = {};
-__export(exports_credential, {
-  Credential: () => exports_credential,
-  ID: () => ID4,
-  Key: () => Key,
-  OAuth: () => OAuth,
-  Value: () => Value2
-});
-import { Schema as Schema43 } from "effect";
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/integration-id.js
-import { Schema as Schema41 } from "effect";
-var IntegrationID = Schema41.String.pipe(Schema41.brand("Integration.ID"));
-var IntegrationMethodID = Schema41.String.pipe(Schema41.brand("Integration.MethodID"));
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/form.js
-var exports_form = {};
-__export(exports_form, {
-  Answer: () => Answer,
-  BooleanField: () => BooleanField,
-  Event: () => Event2,
-  ExternalField: () => ExternalField,
-  Field: () => Field,
-  Fields: () => Fields,
-  Form: () => exports_form,
-  ID: () => ID3,
-  Info: () => Info3,
-  IntegerField: () => IntegerField,
-  Metadata: () => Metadata,
-  MultiselectField: () => MultiselectField,
-  NumberField: () => NumberField,
-  Option: () => Option22,
-  Reply: () => Reply,
-  State: () => State,
-  StringField: () => StringField,
-  Value: () => Value,
-  When: () => When
-});
-import { Schema as Schema42 } from "effect";
-var IDSchema = Schema42.String.check(Schema42.isStartsWith("frm_")).pipe(Schema42.brand("Form.ID"));
-var ID3 = IDSchema.pipe(statics((schema) => ({ create: (id) => schema.make(id ?? "frm_" + ascending()) })));
-var Metadata = Schema42.Record(Schema42.String, Schema42.Unknown).annotate({ identifier: "Form.Metadata" });
-var Option22 = Schema42.Struct({
-  value: Schema42.String,
-  label: Schema42.String,
-  description: Schema42.String.pipe(optional)
-}).annotate({ identifier: "Form.Option" });
-var When = Schema42.Struct({
-  key: Schema42.String,
-  op: Schema42.Literals(["eq", "neq"]),
-  value: Schema42.Union([Schema42.String, Schema42.Number, Schema42.Boolean])
-}).annotate({ identifier: "Form.When" });
-var FieldBase = {
-  key: Schema42.String,
-  title: Schema42.String.pipe(optional),
-  description: Schema42.String.pipe(optional),
-  required: Schema42.Boolean.pipe(optional),
-  when: Schema42.Array(When).pipe(optional)
-};
-var StringField = Schema42.Struct({
-  ...FieldBase,
-  type: Schema42.Literal("string"),
-  format: Schema42.Literals(["email", "uri", "date", "date-time"]).pipe(optional),
-  minLength: NonNegativeInt.pipe(optional),
-  maxLength: NonNegativeInt.pipe(optional),
-  pattern: Schema42.String.pipe(optional),
-  placeholder: Schema42.String.pipe(optional),
-  default: Schema42.String.pipe(optional),
-  options: Schema42.Array(Option22).pipe(optional),
-  custom: Schema42.Boolean.pipe(optional)
-}).annotate({ identifier: "Form.StringField" });
-var NumberField = Schema42.Struct({
-  ...FieldBase,
-  type: Schema42.Literal("number"),
-  minimum: Schema42.Number.pipe(optional),
-  maximum: Schema42.Number.pipe(optional),
-  default: Schema42.Number.pipe(optional)
-}).annotate({ identifier: "Form.NumberField" });
-var IntegerField = Schema42.Struct({
-  ...FieldBase,
-  type: Schema42.Literal("integer"),
-  minimum: Schema42.Number.pipe(optional),
-  maximum: Schema42.Number.pipe(optional),
-  default: Schema42.Number.pipe(optional)
-}).annotate({ identifier: "Form.IntegerField" });
-var BooleanField = Schema42.Struct({
-  ...FieldBase,
-  type: Schema42.Literal("boolean"),
-  default: Schema42.Boolean.pipe(optional)
-}).annotate({ identifier: "Form.BooleanField" });
-var MultiselectField = Schema42.Struct({
-  ...FieldBase,
-  type: Schema42.Literal("multiselect"),
-  options: Schema42.Array(Option22),
-  minItems: NonNegativeInt.pipe(optional),
-  maxItems: NonNegativeInt.pipe(optional),
-  custom: Schema42.Boolean.pipe(optional),
-  default: Schema42.Array(Schema42.String).pipe(optional)
-}).annotate({ identifier: "Form.MultiselectField" });
-var ExternalField = Schema42.Struct({
-  key: Schema42.String,
-  type: Schema42.Literal("external"),
-  url: Schema42.String,
-  title: Schema42.String.pipe(optional),
-  description: Schema42.String.pipe(optional)
-}).annotate({ identifier: "Form.ExternalField" });
-var Field = Schema42.Union([
-  StringField,
-  NumberField,
-  IntegerField,
-  BooleanField,
-  MultiselectField,
-  ExternalField
-]).pipe(Schema42.toTaggedUnion("type"), Schema42.annotate({ identifier: "Form.Field" }));
-var Fields = Schema42.NonEmptyArray(Field).annotate({ identifier: "Form.Fields" });
-var InfoBase = {
-  id: ID3,
-  sessionID: Schema42.String,
-  title: Schema42.String,
-  metadata: Metadata.pipe(optional)
-};
-var Info3 = Schema42.Struct({
-  ...InfoBase,
-  fields: Fields
-}).annotate({ identifier: "Form.Info" });
-var Value = Schema42.Union([Schema42.String, Schema42.Number, Schema42.Boolean, Schema42.Array(Schema42.String)]).annotate({
-  identifier: "Form.Value"
-});
-var Answer = Schema42.Record(Schema42.String, Value).annotate({ identifier: "Form.Answer" });
-var State = Schema42.Union([
-  Schema42.Struct({ status: Schema42.Literal("pending") }),
-  Schema42.Struct({ status: Schema42.Literal("answered"), answer: Answer }),
-  Schema42.Struct({ status: Schema42.Literal("cancelled") })
-]).pipe(Schema42.toTaggedUnion("status")).annotate({ identifier: "Form.State" });
-var Reply = Schema42.Struct({
-  answer: Answer
-}).annotate({ identifier: "Form.Reply" });
-var Created = ephemeral({ type: "form.created", schema: { form: Info3 } });
-var Replied = ephemeral({ type: "form.replied", schema: { id: ID3, sessionID: Schema42.String, answer: Answer } });
-var Cancelled = ephemeral({ type: "form.cancelled", schema: { id: ID3, sessionID: Schema42.String } });
-var Event2 = { Created, Replied, Cancelled, Definitions: inventory(Created, Replied, Cancelled) };
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/credential.js
-var ID4 = Schema43.String.pipe(Schema43.brand("Credential.ID"), statics((schema) => ({ create: () => schema.make("cred_" + ascending()) })));
-var OAuth = Schema43.Struct({
-  type: Schema43.Literal("oauth"),
-  methodID: IntegrationMethodID,
-  refresh: Schema43.String,
-  access: Schema43.String,
-  expires: NonNegativeInt,
-  metadata: optional(Schema43.Record(Schema43.String, Schema43.Unknown))
-}).annotate({ identifier: "Credential.OAuth" });
-var Key = Schema43.Struct({
-  type: Schema43.Literal("key"),
-  key: Schema43.String,
-  metadata: optional(Schema43.Record(Schema43.String, Schema43.Unknown)),
-  configuration: optional(exports_form.Answer)
-}).annotate({ identifier: "Credential.Key" });
-var Value2 = Schema43.Union([OAuth, Key]).pipe(Schema43.toTaggedUnion("type")).annotate({ identifier: "Credential.Value" });
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/connection.js
-var CredentialInfo = Schema44.Struct({
-  type: Schema44.Literal("credential"),
-  id: exports_credential.ID,
-  label: Schema44.String
-}).annotate({ identifier: "Connection.CredentialInfo" });
-var EnvInfo = Schema44.Struct({
-  type: Schema44.Literal("env"),
-  name: Schema44.String
-}).annotate({ identifier: "Connection.EnvInfo" });
-var Info4 = Schema44.Union([CredentialInfo, EnvInfo]).pipe(Schema44.toTaggedUnion("type")).annotate({ identifier: "Connection.Info" });
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/integration.js
-var ID5 = IntegrationID;
-var MethodID = IntegrationMethodID;
-var OAuthMethod = Schema45.Struct({
-  id: MethodID,
-  type: Schema45.Literal("oauth"),
-  label: Schema45.String,
-  form: optional(exports_form.Fields)
-}).annotate({ identifier: "Integration.OAuthMethod" });
-var CommandMethod = Schema45.Struct({
-  id: MethodID,
-  type: Schema45.Literal("command"),
-  label: Schema45.String,
-  command: Schema45.Array(Schema45.String)
-}).annotate({ identifier: "Integration.CommandMethod" });
-var KeyMethod = Schema45.Struct({
-  type: Schema45.Literal("key"),
-  label: optional(Schema45.String),
-  form: optional(exports_form.Fields)
-}).annotate({ identifier: "Integration.KeyMethod" });
-var EnvMethod = Schema45.Struct({
-  type: Schema45.Literal("env"),
-  names: Schema45.Array(Schema45.String)
-}).annotate({ identifier: "Integration.EnvMethod" });
-var Method = Schema45.Union([OAuthMethod, CommandMethod, KeyMethod, EnvMethod]).pipe(Schema45.toTaggedUnion("type")).annotate({ identifier: "Integration.Method" });
-var Updated2 = ephemeral({
-  type: "integration.updated",
-  schema: {}
-});
-var ConnectionUpdated = ephemeral({
-  type: "integration.connection.updated",
-  schema: { integrationID: ID5 }
-});
-var Event3 = { Updated: Updated2, ConnectionUpdated, Definitions: inventory(Updated2, ConnectionUpdated) };
-var Ref9 = Schema45.Struct({
-  id: ID5,
-  name: Schema45.String
-}).annotate({ identifier: "Integration.Ref" });
-var Info5 = Schema45.Struct({
-  id: ID5,
-  name: Schema45.String,
-  methods: Schema45.Array(Method),
-  connections: Schema45.Array(exports_connection.Info)
-}).annotate({ identifier: "Integration.Info" });
-var AttemptID = Schema45.String.pipe(Schema45.brand("Integration.AttemptID"), statics((schema) => ({ create: () => schema.make("con_" + ascending()) })));
-var AttemptTime = Schema45.Struct({
-  created: Schema45.Number,
-  expires: Schema45.Number
-});
-
-class Attempt extends Schema45.Class("Integration.Attempt")({
-  attemptID: AttemptID,
-  url: Schema45.String,
-  instructions: Schema45.String,
-  mode: Schema45.Literals(["auto", "code"]),
-  time: AttemptTime
-}) {
-}
-var AttemptStatus = Schema45.Union([
-  Schema45.Struct({ status: Schema45.Literal("pending"), time: AttemptTime }),
-  Schema45.Struct({ status: Schema45.Literal("complete"), time: AttemptTime }),
-  Schema45.Struct({ status: Schema45.Literal("failed"), message: Schema45.String, time: AttemptTime }),
-  Schema45.Struct({ status: Schema45.Literal("expired"), time: AttemptTime })
-]).pipe(Schema45.toTaggedUnion("status")).annotate({ identifier: "Integration.AttemptStatus" });
-var CommandAttempt = Schema45.Struct({
-  attemptID: AttemptID,
-  time: AttemptTime
-}).annotate({ identifier: "Integration.CommandAttempt" });
-var CommandAttemptStatus = Schema45.Union([
-  Schema45.Struct({ status: Schema45.Literal("pending"), message: optional(Schema45.String), time: AttemptTime }),
-  Schema45.Struct({ status: Schema45.Literal("complete"), time: AttemptTime }),
-  Schema45.Struct({ status: Schema45.Literal("failed"), message: Schema45.String, time: AttemptTime }),
-  Schema45.Struct({ status: Schema45.Literal("expired"), time: AttemptTime })
-]).pipe(Schema45.toTaggedUnion("status")).annotate({ identifier: "Integration.CommandAttemptStatus" });
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/provider.js
-var ID6 = Schema46.String.pipe(Schema46.brand("Provider.ID"), statics((schema) => ({
-  opencode: schema.make("opencode"),
-  anthropic: schema.make("anthropic"),
-  openai: schema.make("openai"),
-  google: schema.make("google"),
-  googleVertex: schema.make("google-vertex"),
-  githubCopilot: schema.make("github-copilot"),
-  amazonBedrock: schema.make("amazon-bedrock"),
-  azure: schema.make("azure"),
-  openrouter: schema.make("openrouter"),
-  mistral: schema.make("mistral"),
-  gitlab: schema.make("gitlab")
-})));
-var Package = Schema46.String;
-var Activation = Schema46.Literals(["auto", "enabled", "disabled"]);
-var Overlays = {
-  settings: Schema46.Record(Schema46.String, Schema46.Any).pipe(optional),
-  headers: Schema46.Record(Schema46.String, Schema46.String).pipe(optional),
-  body: Schema46.Record(Schema46.String, Schema46.Any).pipe(optional)
-};
-var Settings = Schema46.Record(Schema46.String, Schema46.Any).annotate({ identifier: "Provider.Settings" });
-var Request = Schema46.Struct({
-  settings: Settings.pipe(Schema46.withConstructorDefault(Effect37.succeed({}))),
-  headers: Schema46.Record(Schema46.String, Schema46.String),
-  body: Schema46.Record(Schema46.String, Schema46.Any)
-}).annotate({ identifier: "Provider.Request" });
-var Info6 = Schema46.Struct({
-  id: ID6,
-  integrationID: exports_integration.ID.pipe(optional),
-  name: Schema46.String,
-  activation: Activation,
-  package: Package,
-  ...Overlays
-}).annotate({ identifier: "Provider.Info" }).pipe(statics(() => ({
-  empty: (id) => ({ id, name: id, activation: "auto", package: "" })
-})));
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/money.js
-var exports_money = {};
-__export(exports_money, {
-  Money: () => exports_money,
-  USD: () => USD,
-  USDPerMillionTokens: () => USDPerMillionTokens
-});
-import { Schema as Schema47 } from "effect";
-var USD = Schema47.Finite.pipe(Schema47.brand("Money.USD"), Schema47.annotate({ identifier: "Money.USD" }), statics((schema) => ({ zero: schema.make(0) })));
-var USDPerMillionTokens = Schema47.Finite.pipe(Schema47.brand("Money.USDPerMillionTokens"), Schema47.annotate({ identifier: "Money.USDPerMillionTokens" }), statics((schema) => ({ zero: schema.make(0) })));
-
-// node_modules/.bun/@opencode-ai+schema@0.0.0-beta-17898/node_modules/@opencode-ai/schema/dist/model.js
-var ID7 = Schema48.String.pipe(Schema48.brand("Model.ID"));
-var VariantID = Schema48.String.pipe(Schema48.brand("Model.VariantID"));
-var Ref10 = Schema48.Struct({
-  id: ID7,
-  providerID: exports_provider.ID,
-  variant: VariantID.pipe(optional)
-}).annotate({ identifier: "Model.Ref" }).pipe(statics((schema) => ({
-  parse: (input) => {
-    const providerEnd = input.indexOf("/");
-    if (providerEnd <= 0)
-      throw new Error(`Invalid model reference: ${input}`);
-    const providerID = input.slice(0, providerEnd);
-    const variantStart = input.indexOf("#", providerEnd + 1);
-    const id = input.slice(providerEnd + 1, variantStart === -1 ? undefined : variantStart);
-    const variant = variantStart === -1 ? undefined : input.slice(variantStart + 1);
-    if (!id || providerID.includes("#") || variant !== undefined && (!variant || variant.includes("#")))
-      throw new Error(`Invalid model reference: ${input}`);
-    return schema.make({
-      providerID: exports_provider.ID.make(providerID),
-      id: ID7.make(id),
-      ...variant ? { variant: VariantID.make(variant) } : {}
-    });
-  }
-})));
-var Family = Schema48.String.pipe(Schema48.brand("Model.Family"));
-var ReasoningField = Schema48.Union([
-  Schema48.Literals(["reasoning", "reasoning_content", "reasoning_text"]),
-  Schema48.String
-]).annotate({ identifier: "Model.ReasoningField" });
-var MaxTokensField = Schema48.Literals(["max_completion_tokens", "max_tokens"]).annotate({
-  identifier: "Model.MaxTokensField"
-});
-var Compatibility = Schema48.Struct({
-  reasoningField: ReasoningField.pipe(optional),
-  maxTokensField: MaxTokensField.pipe(optional),
-  requireFinishReason: Schema48.Boolean.pipe(optional)
-}).annotate({ identifier: "Model.Compatibility" });
-var Capabilities = Schema48.Struct({
-  tools: Schema48.Boolean,
-  input: Schema48.Array(Schema48.String),
-  output: Schema48.Array(Schema48.String),
-  responsesWebsockets: Schema48.Boolean.pipe(optional)
-}).annotate({ identifier: "Model.Capabilities" });
-var Cost = Schema48.Struct({
-  tier: Schema48.Struct({
-    type: Schema48.tag("context"),
-    size: Schema48.Int
-  }).pipe(optional),
-  input: exports_money.USDPerMillionTokens,
-  output: exports_money.USDPerMillionTokens,
-  cache: Schema48.Struct({
-    read: exports_money.USDPerMillionTokens,
-    write: exports_money.USDPerMillionTokens
-  })
-}).annotate({ identifier: "Model.Cost" });
-var Variant = Schema48.Struct({
-  id: VariantID,
-  ...exports_provider.Overlays
-}).annotate({ identifier: "Model.Variant" });
-var Info7 = Schema48.Struct({
-  id: ID7,
-  modelID: ID7,
-  providerID: exports_provider.ID,
-  family: Family.pipe(optional),
-  name: Schema48.String,
-  compatibility: Compatibility.pipe(optional),
-  package: exports_provider.Package.pipe(optional),
-  ...exports_provider.Overlays,
-  capabilities: Capabilities,
-  variants: Schema48.Array(Variant),
-  time: Schema48.Struct({
-    released: Schema48.Finite
-  }),
-  cost: Schema48.Array(Cost),
-  status: Schema48.Literals(["alpha", "beta", "deprecated", "active"]),
-  enabled: Schema48.Boolean,
-  limit: Schema48.Struct({
-    context: Schema48.Int,
-    input: Schema48.Int.pipe(optional),
-    output: Schema48.Int
-  })
-}).annotate({ identifier: "Model.Info" }).pipe(statics(() => ({
-  default: (providerID, id) => ({
-    id,
-    modelID: id,
-    providerID,
-    name: id,
-    capabilities: { tools: true, input: ["text", "image"], output: ["text"] },
-    variants: [],
-    time: { released: 0 },
-    cost: [],
-    status: "active",
-    enabled: true,
-    limit: { context: 200000, output: 32000 }
-  })
-})));
-
 // src/index.ts
-var platform = Layer21.mergeAll(layer2, layer4);
+import { Model as Model2 } from "@opencode-ai/schema/model";
+import { Provider } from "@opencode-ai/schema/provider";
+var platform = Layer17.mergeAll(NodeFileSystem.layer, NodePath.layer);
 var DESTRUCTIVE_SHELL_RE = /\b(?::\(\)\s*\{\s*:\|:&\s*\};:|mkfs(?:\.\w+)?\b|dd\s+if=|git\s+reset\s+--hard\b|git\s+clean\s+-[a-zA-Z]*[fd]|chmod\s+-R\s+777\b|(?:rm|mv)\s+-[a-zA-Z]+\s+\.\.?(?:\/|$)|\brm\s+(?:-{1,2}[a-zA-Z-]+\s+)+\/(?:\s|$))/i;
 var MUTATING_TOOLS = [
   "write",
@@ -15142,7 +13768,7 @@ var MUTATING_TOOLS = [
   "patch"
 ];
 
-class ReportPersistError extends Schema49.TaggedError()("ReportPersistError", { reason: Schema49.String }) {
+class ReportPersistError extends Schema34.TaggedError()("ReportPersistError", { reason: Schema34.String }) {
 }
 var property2 = (value, key) => value !== null && typeof value === "object" ? Reflect.get(value, key) : undefined;
 var intentFromInput = (input) => {
@@ -15182,15 +13808,15 @@ var brand = () => (value) => value;
 var src_default = Plugin.define({
   id: "opencode.effect-harness",
   tui: true,
-  effect: (ctx) => Effect40.gen(function* () {
-    const config = yield* Effect40.orElseSucceed(decode(ctx.options), () => {
+  effect: (ctx) => Effect35.gen(function* () {
+    const config = yield* Effect35.orElseSucceed(decode(ctx.options), () => {
       console.error("[opencode-effect-harness] invalid options \u2014 applying defaults");
       return defaults();
     });
     const packagedTypescriptAssets = new URL("../packages/module-typescript/assets/", import.meta.url).pathname.replace(/\/$/, "");
     const packagedBendAssets = new URL("../packages/module-bend/assets/", import.meta.url).pathname.replace(/\/$/, "");
     const assetsRoot = config.harness.assetsRoot ?? packagedTypescriptAssets;
-    const disabledAgents = yield* Ref11.make(new Set);
+    const disabledAgents = yield* Ref8.make(new Set);
     const agentsOptingOut = new Set;
     yield* ctx.agent.transform((draft) => {
       agentsOptingOut.clear();
@@ -15201,29 +13827,29 @@ var src_default = Plugin.define({
         }
       });
     });
-    yield* Ref11.set(disabledAgents, agentsOptingOut);
-    const providePlatform = (effect2) => Effect40.provide(effect2, platform);
+    yield* Ref8.set(disabledAgents, agentsOptingOut);
+    const providePlatform = (effect) => Effect35.provide(effect, platform);
     const realRootCache = new Map;
-    const realRoot = (directory) => Effect40.suspend(() => {
+    const realRoot = (directory) => Effect35.suspend(() => {
       if (realRootCache.has(directory)) {
-        return Effect40.succeed(realRootCache.get(directory));
+        return Effect35.succeed(realRootCache.get(directory));
       }
-      return Effect40.map(realpath2(directory), (value) => {
+      return Effect35.map(realpath(directory), (value) => {
         realRootCache.set(directory, value);
         return value;
       });
     });
-    const containedTarget = (rootDirectory, absolutePath) => Effect40.gen(function* () {
+    const containedTarget = (rootDirectory, absolutePath) => Effect35.gen(function* () {
       const rootReal = yield* realRoot(rootDirectory);
       if (rootReal === undefined)
         return;
-      const targetReal = yield* realpath2(absolutePath);
+      const targetReal = yield* realpath(absolutePath);
       if (targetReal === undefined)
         return;
       return withinRoot(rootReal, targetReal);
     });
     const changeSetProviderFor = (location) => ({
-      fromPaths: (input) => boundedFromReader(input, (absolutePath) => Effect40.flatMap(containedTarget(location.directory, absolutePath), (real) => real === undefined ? Effect40.succeed(Option25.none()) : Effect40.map(readText(real), Option25.fromUndefinedOr)))
+      fromPaths: (input) => boundedFromReader(input, (absolutePath) => Effect35.flatMap(containedTarget(location.directory, absolutePath), (real) => real === undefined ? Effect35.succeed(Option22.none()) : Effect35.map(readText(real), Option22.fromUndefinedOr)))
     });
     const sessions = Sessions.make(ctx.session, brand());
     const origins = Origins.make();
@@ -15233,17 +13859,17 @@ var src_default = Plugin.define({
     const pending = PendingReads.make();
     const changes = ChangeLedger.make();
     const traceSink = LiveTraceSink.make();
-    const projectionLayer = Projection.layer.pipe(Layer21.provide(platform));
-    const projectionOf = (use) => Projection.Service.use(use).pipe(Effect40.provide(projectionLayer));
+    const projectionLayer = Projection.layer.pipe(Layer17.provide(platform));
+    const projectionOf = (use) => Projection.Service.use(use).pipe(Effect35.provide(projectionLayer));
     const degradedIntentValue = (intent) => new Input.Value({
-      filePath: Option25.some(intent.filePath ?? ""),
-      content: Option25.none(),
-      changedSpans: Option25.none(),
-      command: Option25.none(),
-      pattern: Option25.none(),
-      query: Option25.none(),
-      url: Option25.none(),
-      prompt: Option25.none(),
+      filePath: Option22.some(intent.filePath ?? ""),
+      content: Option22.none(),
+      changedSpans: Option22.none(),
+      command: Option22.none(),
+      pattern: Option22.none(),
+      query: Option22.none(),
+      url: Option22.none(),
+      prompt: Option22.none(),
       projectionError: "projection-unavailable"
     });
     const patternList = yield* loadPatternsSafe(assetsRoot);
@@ -15255,14 +13881,14 @@ var src_default = Plugin.define({
     };
     const requestedIds = config.verify.moduleIds ?? ["typescript"];
     const moduleLoadFailures = [];
-    const loadedModules = yield* Effect40.forEach(requestedIds, (id) => Effect40.gen(function* () {
+    const loadedModules = yield* Effect35.forEach(requestedIds, (id) => Effect35.gen(function* () {
       const loader = loaders[id];
       if (loader === undefined) {
         moduleLoadFailures.push({ moduleId: id, reason: "unknown verification module" });
         console.error(`[opencode-effect-harness] unknown verification module: ${String(id)}`);
         return [];
       }
-      const raw = yield* Effect40.orElseSucceed(Effect40.promise(loader), () => {
+      const raw = yield* Effect35.orElseSucceed(Effect35.promise(loader), () => {
         return;
       });
       if (raw === undefined) {
@@ -15277,7 +13903,7 @@ var src_default = Plugin.define({
         return [];
       }
       const moduleOptions = config.harness.assetsRoot !== undefined ? { assetsRoot } : { assetsRoot: id === "bend" ? packagedBendAssets : packagedTypescriptAssets };
-      const created = yield* factory(moduleOptions).pipe(providePlatform, Effect40.orElseSucceed(() => {
+      const created = yield* factory(moduleOptions).pipe(providePlatform, Effect35.orElseSucceed(() => {
         return;
       }));
       if (created === undefined) {
@@ -15288,12 +13914,12 @@ var src_default = Plugin.define({
       return [created];
     }), { concurrency: 1 });
     const registry = Registry.make(loadedModules.flat());
-    const journalLayer = Journal.layer(".effect-harness/journal").pipe(Layer21.provide(platform));
-    const appendCriticEvent = (stream2, kind, payload) => Journal.Service.use((j) => j.append({ stream: stream2, kind, payload, actor: "critic" })).pipe(Effect40.provide(journalLayer), Effect40.catchCause((cause) => Effect40.sync(() => {
+    const journalLayer = Journal.layer(".effect-harness/journal").pipe(Layer17.provide(platform));
+    const appendCriticEvent = (stream2, kind, payload) => Journal.Service.use((j) => j.append({ stream: stream2, kind, payload, actor: "critic" })).pipe(Effect35.provide(journalLayer), Effect35.catchCause((cause) => Effect35.sync(() => {
       console.error("[opencode-effect-harness] critic journal append failed:", String(cause));
     })));
-    const skillEntries = yield* Effect40.orElseSucceed(skillEntriesFromAssets({ assetsRoot }).pipe(Effect40.provide(platform)), () => []);
-    const prepared = yield* prepareAll(skillEntries, (entry) => readText(entry.skillFilePath).pipe(Effect40.map((b) => b ?? "")));
+    const skillEntries = yield* Effect35.orElseSucceed(skillEntriesFromAssets({ assetsRoot }).pipe(Effect35.provide(platform)), () => []);
+    const prepared = yield* prepareAll(skillEntries, (entry) => readText(entry.skillFilePath).pipe(Effect35.map((b) => b ?? "")));
     if (prepared.infos.length === 0) {
       console.error(`[opencode-effect-harness] FATAL: no effect-* skills found under ${assetsRoot}/skills \u2014 ` + "native skill registration skipped; set harness.assetsRoot or reinstall language modules.");
     } else if (prepared.rejected > 0) {
@@ -15316,18 +13942,18 @@ var src_default = Plugin.define({
           },
           additionalProperties: false
         },
-        execute: (rawInput, execCtx) => Effect40.gen(function* () {
-          const location = yield* sessions.resolve(execCtx.sessionID).pipe(Effect40.orElseSucceed(() => {
+        execute: (rawInput, execCtx) => Effect35.gen(function* () {
+          const location = yield* sessions.resolve(execCtx.sessionID).pipe(Effect35.orElseSucceed(() => {
             return;
           }));
           if (location === undefined) {
-            return yield* Effect40.fail(new exports_tool.Error({ message: "cannot resolve session location for verify" }));
+            return yield* Effect35.fail(new Tool.Error({ message: "cannot resolve session location for verify" }));
           }
           const parsed = typeof rawInput === "object" && rawInput !== null ? rawInput : {};
           const requestedTouched = parsed.touchedFiles ?? [];
           const touchedPartition = partitionWithinRoot(location.directory, requestedTouched);
           if (touchedPartition.escaped.length > 0) {
-            return yield* Effect40.fail(new exports_tool.Error({
+            return yield* Effect35.fail(new Tool.Error({
               message: `harness: touchedFiles escape project root (${touchedPartition.escaped.join(", ")})`
             }));
           }
@@ -15355,11 +13981,11 @@ var src_default = Plugin.define({
             semanticRequired: config.verify.semanticReview,
             moduleLoadFailures,
             changeSetProvider: changeSetProviderFor(location),
-            readFile: (absPath) => Effect40.flatMap(containedTarget(location.directory, absPath), (real) => real === undefined ? Effect40.succeed(undefined) : readText(real))
+            readFile: (absPath) => Effect35.flatMap(containedTarget(location.directory, absPath), (real) => real === undefined ? Effect35.succeed(undefined) : readText(real))
           }, request);
           const now = yield* Clock7.currentTimeMillis;
           const baseName = `${now.toString(36)}-${execCtx.sessionID.slice(-8)}`;
-          const reportPath = yield* persistReport(location.directory, report, baseName).pipe(Effect40.mapError((e) => new exports_tool.Error({
+          const reportPath = yield* persistReport(location.directory, report, baseName).pipe(Effect35.mapError((e) => new Tool.Error({
             message: `report persistence failed: ${e.reason}`
           })));
           yield* changes.drain({
@@ -15390,44 +14016,44 @@ report: ${reportPath}`,
           required: ["summary"],
           additionalProperties: false
         },
-        execute: (rawInput, execCtx) => Effect40.gen(function* () {
+        execute: (rawInput, execCtx) => Effect35.gen(function* () {
           const parsed = typeof rawInput === "object" && rawInput !== null ? rawInput : {};
           const summary = typeof parsed.summary === "string" ? parsed.summary : "";
           if (summary.length < 10) {
-            return yield* Effect40.fail(new exports_tool.Error({ message: "harness_critic requires a summary of >=10 chars." }));
+            return yield* Effect35.fail(new Tool.Error({ message: "harness_critic requires a summary of >=10 chars." }));
           }
           if (!config.critic.enabled) {
-            return yield* Effect40.fail(new exports_tool.Error({ message: "critic disabled by configuration." }));
+            return yield* Effect35.fail(new Tool.Error({ message: "critic disabled by configuration." }));
           }
           if (config.critic.requireIndependentModel) {
-            return yield* Effect40.fail(new exports_tool.Error({
+            return yield* Effect35.fail(new Tool.Error({
               message: "critic: requireIndependentModel is enabled but model comparison is impossible in-plugin. Disable it or use the companion critic."
             }));
           }
           const focus = parsed.focus ?? "full";
-          const builderLocation = yield* sessions.resolve(execCtx.sessionID).pipe(Effect40.orElseSucceed(() => {
+          const builderLocation = yield* sessions.resolve(execCtx.sessionID).pipe(Effect35.orElseSucceed(() => {
             return;
           }));
           if (builderLocation === undefined) {
-            return yield* Effect40.fail(new exports_tool.Error({ message: "critic: builder session location unavailable" }));
+            return yield* Effect35.fail(new Tool.Error({ message: "critic: builder session location unavailable" }));
           }
           const createSession = ctx.session.create;
           const child = yield* createSession({
             agent: brand()(config.critic.workerAgent)
-          }).pipe(Effect40.orElseSucceed(() => ({ id: undefined })));
+          }).pipe(Effect35.orElseSucceed(() => ({ id: undefined })));
           const childId = typeof child.id === "string" ? child.id : undefined;
           if (childId === undefined) {
-            return yield* Effect40.fail(new exports_tool.Error({ message: "critic worker spawn failed" }));
+            return yield* Effect35.fail(new Tool.Error({ message: "critic worker spawn failed" }));
           }
           yield* origins.register({ sessionID: childId, origin: "critic" });
           const promptSession = ctx.session.prompt;
           const waitSession = ctx.session.wait;
           let stageFailed;
-          const logStageFailure = (stage) => (cause) => Effect40.sync(() => {
+          const logStageFailure = (stage) => (cause) => Effect35.sync(() => {
             stageFailed = stage;
             console.error(`[opencode-effect-harness] critic stage '${stage}' failed:`, String(cause));
           });
-          yield* Effect40.gen(function* () {
+          yield* Effect35.gen(function* () {
             yield* promptSession({
               sessionID: brand()(childId),
               text: [
@@ -15439,11 +14065,11 @@ report: ${reportPath}`,
                 `focus: ${focus}`
               ].join(`
 `)
-            }).pipe(Effect40.catchCause(logStageFailure("prompt")));
+            }).pipe(Effect35.catchCause(logStageFailure("prompt")));
             yield* waitSession({
               sessionID: brand()(childId)
-            }).pipe(Effect40.catchCause(logStageFailure("wait")));
-          }).pipe(Effect40.ensuring(origins.unregister(childId)));
+            }).pipe(Effect35.catchCause(logStageFailure("wait")));
+          }).pipe(Effect35.ensuring(origins.unregister(childId)));
           if (stageFailed !== undefined) {
             const streamFailed = `critic-${projectKeyOf(childId)}`;
             yield* appendCriticEvent(streamFailed, "review.failed", {
@@ -15473,8 +14099,8 @@ report: ${reportPath}`,
               content: "critic: child finished but its transcript is not observable in the restricted plugin context. Recorded as UNAVAILABLE \u2014 never counted as passed."
             };
           }
-          const decoded = yield* Effect40.option(decodeWorkerOutput(transcript));
-          if (Option25.isSome(decoded)) {
+          const decoded = yield* Effect35.option(decodeWorkerOutput(transcript));
+          if (Option22.isSome(decoded)) {
             const worker = decoded.value;
             const findings = filterUnverifiedFindings(worker.findings, worker.checkedReferences, { checkReferences: config.critic.checkReferences });
             const droppedUnverified = worker.findings.length - findings.length;
@@ -15499,7 +14125,7 @@ report: ${reportPath}`,
               workerSessionID: childId,
               completedAt: yield* Clock7.currentTimeMillis
             });
-            const criticReportPath = yield* persistCriticReport(builderLocation.directory, criticReport, childId).pipe(Effect40.mapError((e) => new exports_tool.Error({ message: `critic report persistence failed: ${e.reason}` })));
+            const criticReportPath = yield* persistCriticReport(builderLocation.directory, criticReport, childId).pipe(Effect35.mapError((e) => new Tool.Error({ message: `critic report persistence failed: ${e.reason}` })));
             const independenceProvable = !config.critic.requireIndependentModel;
             yield* appendCriticEvent(stream2, "review.completed", {
               childSessionID: childId,
@@ -15556,8 +14182,8 @@ report: ${criticReportPath}`
         name: "harness_skill_stats",
         description: "Show loaded effect-* skills for this session.",
         input: { type: "object", properties: {}, additionalProperties: false },
-        execute: (_raw, execCtx) => Effect40.gen(function* () {
-          const location = yield* sessions.resolve(execCtx.sessionID).pipe(Effect40.orElseSucceed(() => {
+        execute: (_raw, execCtx) => Effect35.gen(function* () {
+          const location = yield* sessions.resolve(execCtx.sessionID).pipe(Effect35.orElseSucceed(() => {
             return;
           }));
           const names = location === undefined ? [] : yield* ledger.loadedNames({
@@ -15578,17 +14204,17 @@ report: ${criticReportPath}`
           properties: { enabled: { type: "boolean" } },
           additionalProperties: false
         },
-        execute: (rawInput, execCtx) => Effect40.gen(function* () {
-          const location = yield* sessions.resolve(execCtx.sessionID).pipe(Effect40.orElseSucceed(() => {
+        execute: (rawInput, execCtx) => Effect35.gen(function* () {
+          const location = yield* sessions.resolve(execCtx.sessionID).pipe(Effect35.orElseSucceed(() => {
             return;
           }));
           if (location === undefined) {
-            return yield* Effect40.fail(new exports_tool.Error({ message: "cannot resolve session location" }));
+            return yield* Effect35.fail(new Tool.Error({ message: "cannot resolve session location" }));
           }
           const parsed = typeof rawInput === "object" && rawInput !== null ? rawInput : {};
           const current = yield* mode.enabled(location.projectKey);
           const desired = parsed.enabled ?? !current;
-          const saved = yield* mode.set({ projectKey: location.projectKey, enabled: desired }).pipe(Effect40.mapError((e) => new exports_tool.Error({ message: `mode persistence failed: ${e.reason}` })));
+          const saved = yield* mode.set({ projectKey: location.projectKey, enabled: desired }).pipe(Effect35.mapError((e) => new Tool.Error({ message: `mode persistence failed: ${e.reason}` })));
           return {
             output: undefined,
             content: `harness mode ${saved ? "enabled" : "disabled"}`
@@ -15642,36 +14268,36 @@ report: ${criticReportPath}`
           additionalProperties: false
         },
         output: { type: "string" },
-        execute: (rawInput, execCtx) => Effect40.gen(function* () {
+        execute: (rawInput, execCtx) => Effect35.gen(function* () {
           if (!config.compound.enabled) {
-            return yield* Effect40.fail(new exports_tool.Error({ message: "compound disabled by configuration. Set compound.enabled: true." }));
+            return yield* Effect35.fail(new Tool.Error({ message: "compound disabled by configuration. Set compound.enabled: true." }));
           }
-          const location = yield* sessions.resolve(execCtx.sessionID).pipe(Effect40.orElseSucceed(() => {
+          const location = yield* sessions.resolve(execCtx.sessionID).pipe(Effect35.orElseSucceed(() => {
             return;
           }));
           if (location === undefined) {
-            return yield* Effect40.fail(new exports_tool.Error({ message: "compound: cannot resolve session location" }));
+            return yield* Effect35.fail(new Tool.Error({ message: "compound: cannot resolve session location" }));
           }
           const catalogModelList = ctx.catalog.model.list;
           const sessionCreate = ctx.session.create;
           const sessionGenerate = ctx.session.generate;
           const sessionInterrupt = ctx.session.interrupt;
           const execDeps = {
-            modelInfo: (provider, model) => Effect40.map(Effect40.orElseSucceed(catalogModelList({}), () => ({ data: [] })), (page) => Option25.fromNullishOr(page.data.find((entry) => entry.providerID === provider && entry.id === model))),
+            modelInfo: (provider, model) => Effect35.map(Effect35.orElseSucceed(catalogModelList({}), () => ({ data: [] })), (page) => Option22.fromNullishOr(page.data.find((entry) => entry.providerID === provider && entry.id === model))),
             createSession: (input) => sessionCreate(input),
             generate: (input) => sessionGenerate(input),
-            interrupt: (sessionID) => Effect40.orElseSucceed(sessionInterrupt({ sessionID }), () => {
+            interrupt: (sessionID) => Effect35.orElseSucceed(sessionInterrupt({ sessionID }), () => {
               return;
             }),
-            registerOrigin: (sessionID, systemPrompt) => Effect40.asVoid(Effect40.andThen(origins.register({ sessionID, origin: "benchmark" }), origins.registerPrompt({ sessionID, systemPrompt }))),
+            registerOrigin: (sessionID, systemPrompt) => Effect35.asVoid(Effect35.andThen(origins.register({ sessionID, origin: "benchmark" }), origins.registerPrompt({ sessionID, systemPrompt }))),
             unregisterOrigin: (sessionID) => origins.unregister(sessionID),
             brandSessionId: brand(),
             brandAgentId: brand(),
-            buildModelRef: (provider, model, variant) => Effect40.suspend(() => Effect40.try({
-              try: () => exports_model.Ref.make({
-                providerID: exports_provider.ID.make(provider),
-                id: exports_model.ID.make(model),
-                ...variant === undefined ? {} : { variant: exports_model.VariantID.make(variant) }
+            buildModelRef: (provider, model, variant) => Effect35.suspend(() => Effect35.try({
+              try: () => Model2.Ref.make({
+                providerID: Provider.ID.make(provider),
+                id: Model2.ID.make(model),
+                ...variant === undefined ? {} : { variant: Model2.VariantID.make(variant) }
               }),
               catch: () => new ExecutorError({
                 operation: "model",
@@ -15679,16 +14305,16 @@ report: ${criticReportPath}`
               })
             }))
           };
-          const pathService = yield* Effect40.provide(Path12.Path, platform);
+          const pathService = yield* Effect35.provide(Path10.Path, platform);
           const dbPath = pathService.join(location.directory, config.compound.benchmark.dbPath);
-          const withStore = (effect2) => Effect40.mapError(Effect40.provide(effect2, benchmarkStoreLayer({ _tag: "File", path: dbPath }, platform)), (cause) => new TaskError({ operation: "store", reason: String(cause) }));
+          const withStore = (effect) => Effect35.mapError(Effect35.provide(effect, benchmarkStoreLayer({ _tag: "File", path: dbPath }, platform)), (cause) => new TaskError({ operation: "store", reason: String(cause) }));
           const deps = {
             benchmark: config.compound.benchmark,
             projectRoot: location.directory,
             executor: Executor.make(execDeps),
-            workspaceDirFor: (label) => Effect40.gen(function* () {
-              const path = yield* Path12.Path;
-              const fs = yield* FileSystem14.FileSystem;
+            workspaceDirFor: (label) => Effect35.gen(function* () {
+              const path = yield* Path10.Path;
+              const fs = yield* FileSystem12.FileSystem;
               const exec2 = ExecNode.make();
               const dir = path.join(location.directory, ".effect-harness", "workspaces", `job-${fnv1aHex(label)}`);
               const isWorktree = yield* exec2.run(new CommandSpec({
@@ -15697,17 +14323,17 @@ report: ${criticReportPath}`
                 cwd: location.directory,
                 timeoutMs: 1e4,
                 maxOutputBytes: 4096
-              })).pipe(Effect40.map(() => true), Effect40.catchCause(() => Effect40.succeed(false)));
+              })).pipe(Effect35.map(() => true), Effect35.catchCause(() => Effect35.succeed(false)));
               if (isWorktree) {
-                yield* fs.writeFileString(path.join(dir, ".harness-workspace-owner.json"), JSON.stringify({ root: location.directory, label, kind: "worktree" })).pipe(Effect40.ignore);
+                yield* fs.writeFileString(path.join(dir, ".harness-workspace-owner.json"), JSON.stringify({ root: location.directory, label, kind: "worktree" })).pipe(Effect35.ignore);
                 return dir;
               }
               yield* fs.makeDirectory(dir, { recursive: true });
-              yield* fs.writeFileString(path.join(dir, ".harness-workspace-owner.json"), JSON.stringify({ root: location.directory, label, kind: "dir" })).pipe(Effect40.ignore);
+              yield* fs.writeFileString(path.join(dir, ".harness-workspace-owner.json"), JSON.stringify({ root: location.directory, label, kind: "dir" })).pipe(Effect35.ignore);
               return dir;
-            }).pipe(Effect40.provide(platform), Effect40.mapError((cause) => new TaskError({ operation: "workspace", reason: String(cause) }))),
-            cleanupWorkspace: (dir) => Effect40.gen(function* () {
-              const fs = yield* FileSystem14.FileSystem;
+            }).pipe(Effect35.provide(platform), Effect35.mapError((cause) => new TaskError({ operation: "workspace", reason: String(cause) }))),
+            cleanupWorkspace: (dir) => Effect35.gen(function* () {
+              const fs = yield* FileSystem12.FileSystem;
               const exec2 = ExecNode.make();
               yield* exec2.run(new CommandSpec({
                 executable: "git",
@@ -15715,13 +14341,13 @@ report: ${criticReportPath}`
                 cwd: location.directory,
                 timeoutMs: 1e4,
                 maxOutputBytes: 4096
-              })).pipe(Effect40.ignore);
-              yield* fs.remove(dir, { recursive: true }).pipe(Effect40.ignore);
-            }).pipe(Effect40.provide(platform), Effect40.ignore),
+              })).pipe(Effect35.ignore);
+              yield* fs.remove(dir, { recursive: true }).pipe(Effect35.ignore);
+            }).pipe(Effect35.provide(platform), Effect35.ignore),
             withStore
           };
           const otelConfig = config.compound.benchmark.otel;
-          const otelLayer = otelConfig === undefined ? undefined : Layer21.merge(OtlpTracer.layer({
+          const otelLayer = otelConfig === undefined ? undefined : Layer17.merge(OtlpTracer.layer({
             url: `${otelConfig.endpoint.replace(/\/$/, "")}/v1/traces`,
             resource: {
               serviceName: otelConfig.serviceName ?? "opencode-effect-harness"
@@ -15731,8 +14357,8 @@ report: ${criticReportPath}`
             resource: {
               serviceName: otelConfig.serviceName ?? "opencode-effect-harness"
             }
-          })).pipe(Layer21.provide(OtlpSerialization.layerJson), Layer21.provide(FetchHttpClient.layer));
-          const handled = otelLayer === undefined ? BenchmarkTool.handle(deps, rawInput) : BenchmarkTool.handle(deps, rawInput).pipe(Effect40.provide(otelLayer));
+          })).pipe(Layer17.provide(OtlpSerialization.layerJson), Layer17.provide(FetchHttpClient.layer));
+          const handled = otelLayer === undefined ? BenchmarkTool.handle(deps, rawInput) : BenchmarkTool.handle(deps, rawInput).pipe(Effect35.provide(otelLayer));
           const result = yield* handled;
           return {
             output: result.content,
@@ -15742,22 +14368,22 @@ report: ${criticReportPath}`
         })
       });
     });
-    const denyInternalMutation = (toolName, sessionId) => Effect40.gen(function* () {
+    const denyInternalMutation = (toolName, sessionId) => Effect35.gen(function* () {
       const origin = yield* origins.originOf(sessionId);
       if (origin === undefined || config.harness.allowEdits)
         return;
       if (origins.isMutationTool(toolName)) {
-        return yield* Effect40.fail(new exports_tool.Error({ message: `internal ${origin} session is read-only` }));
+        return yield* Effect35.fail(new Tool.Error({ message: `internal ${origin} session is read-only` }));
       }
     });
-    const effectiveEnabled = (location) => Effect40.gen(function* () {
+    const effectiveEnabled = (location) => Effect35.gen(function* () {
       if (!config.harness.enabled)
         return false;
       if (location === undefined)
         return true;
       return yield* mode.enabled(location.projectKey);
     });
-    const pendingCountFor = (location, sessionId) => Effect40.flatMap(pending.names({ projectKey: location.projectKey, sessionID: sessionId }), (names) => ledger.countDistinct({
+    const pendingCountFor = (location, sessionId) => Effect35.flatMap(pending.names({ projectKey: location.projectKey, sessionID: sessionId }), (names) => ledger.countDistinct({
       projectKey: location.projectKey,
       sessionID: sessionId,
       pending: names
@@ -15766,14 +14392,14 @@ report: ${criticReportPath}`
       min: config.harness.minEffectSkills,
       strictAgents: config.harness.strictAgents,
       failClosed: config.harness.failClosedForGate,
-      reason: (loadedCount) => Effect40.succeed(`harness gate: this write introduces Effect code.
+      reason: (loadedCount) => Effect35.succeed(`harness gate: this write introduces Effect code.
 Loaded effect-* skills: ${String(loadedCount)}/${String(config.harness.minEffectSkills)}.
 Read relevant effect-* skill files (or use effect skill search), then retry.`),
       loaded: (sessionId) => pendingCountFor(location, sessionId ?? ""),
-      project: (cwd, intent) => projectionOf((p) => p.prospective(cwd, intent)).pipe(Effect40.catchCause(() => Effect40.succeed(degradedIntentValue(intent))))
+      project: (cwd, intent) => projectionOf((p) => p.prospective(cwd, intent)).pipe(Effect35.catchCause(() => Effect35.succeed(degradedIntentValue(intent))))
     });
-    const evaluateGate = (input) => Effect40.gen(function* () {
-      if (AgentPolicy.isDisabled(yield* Ref11.get(disabledAgents), input.agent)) {
+    const evaluateGate = (input) => Effect35.gen(function* () {
+      if (AgentPolicy.isDisabled(yield* Ref8.get(disabledAgents), input.agent)) {
         return [];
       }
       const enabled = yield* effectiveEnabled(input.location);
@@ -15789,30 +14415,30 @@ Read relevant effect-* skill files (or use effect skill search), then retry.`),
         sessionId: input.sessionId,
         writeIntent: input.writeIntent
       });
-    }).pipe(Effect40.catchCause(() => config.harness.failClosedForGate ? Effect40.succeed([
+    }).pipe(Effect35.catchCause(() => config.harness.failClosedForGate ? Effect35.succeed([
       new Decision.BlockToolCall({
         reason: "harness gate: evaluation failed (fail-closed). Retry; if persistent, disable harness mode for this project."
       })
-    ]) : Effect40.succeed([])));
+    ]) : Effect35.succeed([])));
     const headerRule = Header.rule({
       header: guidanceHeader(assetsRoot),
-      enabled: Effect40.succeed(true)
+      enabled: Effect35.succeed(true)
     });
     const pendingSnapshots = new Map;
     const snapshotKey = (sessionID, callID) => `${sessionID}:${callID}`;
-    yield* ctx.tool.hook("execute.before", (event) => Effect40.gen(function* () {
+    yield* ctx.tool.hook("execute.before", (event) => Effect35.gen(function* () {
       const sessionId = String(event.sessionID);
       yield* denyInternalMutation(event.tool, sessionId);
       if (event.tool === "bash" || event.tool === "shell") {
         const commandText = String(property2(event.input, "command") ?? property2(event.input, "script") ?? "");
         const hit = DESTRUCTIVE_SHELL_RE.exec(commandText);
         if (hit !== null) {
-          const loc = yield* sessions.resolve(sessionId).pipe(Effect40.orElseSucceed(() => {
+          const loc = yield* sessions.resolve(sessionId).pipe(Effect35.orElseSucceed(() => {
             return;
           }));
           const enabled = yield* effectiveEnabled(loc);
           if (enabled && config.harness.strictAgents.includes(String(event.agent))) {
-            return yield* Effect40.fail(new exports_tool.Error({
+            return yield* Effect35.fail(new Tool.Error({
               message: `harness: destructive shell command blocked for strict agent: ${hit[0].trim()}`
             }));
           }
@@ -15822,10 +14448,10 @@ Read relevant effect-* skill files (or use effect skill search), then retry.`),
       if (event.tool === "read") {
         const path = property2(event.input, "path");
         if (typeof path === "string") {
-          const location2 = yield* sessions.resolve(sessionId).pipe(Effect40.orElseSucceed(() => {
+          const location2 = yield* sessions.resolve(sessionId).pipe(Effect35.orElseSucceed(() => {
             return;
           }));
-          const matched = location2 === undefined ? undefined : yield* matchSkill(path, assetsRoot).pipe(Effect40.orElseSucceed(() => {
+          const matched = location2 === undefined ? undefined : yield* matchSkill(path, assetsRoot).pipe(Effect35.orElseSucceed(() => {
             return;
           }));
           if (location2 !== undefined && matched !== undefined) {
@@ -15841,12 +14467,12 @@ Read relevant effect-* skill files (or use effect skill search), then retry.`),
       }
       if (!MUTATING_TOOLS.includes(event.tool))
         return;
-      const location = yield* sessions.resolve(sessionId).pipe(Effect40.orElseSucceed(() => {
+      const location = yield* sessions.resolve(sessionId).pipe(Effect35.orElseSucceed(() => {
         return;
       }));
       if (location === undefined) {
         if (config.harness.failClosedForGate) {
-          return yield* Effect40.fail(new exports_tool.Error({
+          return yield* Effect35.fail(new Tool.Error({
             message: "harness gate: cannot resolve session location (fail-closed)"
           }));
         }
@@ -15857,7 +14483,7 @@ Read relevant effect-* skill files (or use effect skill search), then retry.`),
       const affected = extractAffectedPaths(event.tool, event.input);
       const enabledForPatch = yield* effectiveEnabled(location);
       if (patchTool && (affected.length === 0 || patchText.length === 0) && config.harness.strictAgents.includes(String(event.agent)) && enabledForPatch) {
-        return yield* Effect40.fail(new exports_tool.Error({
+        return yield* Effect35.fail(new Tool.Error({
           message: "harness: unparseable patch blocked for strict agent"
         }));
       }
@@ -15867,7 +14493,7 @@ Read relevant effect-* skill files (or use effect skill search), then retry.`),
         filePath,
         content: patchText.slice(0, 200000)
       })) : regularIntent === undefined ? [] : [regularIntent];
-      yield* Effect40.forEach(intents, (intent) => Effect40.gen(function* () {
+      yield* Effect35.forEach(intents, (intent) => Effect35.gen(function* () {
         const decisions = yield* evaluateGate({
           agent: String(event.agent),
           sessionId,
@@ -15876,18 +14502,18 @@ Read relevant effect-* skill files (or use effect skill search), then retry.`),
         });
         const blocked = decisions.find((d) => d._tag === "BlockToolCall");
         if (blocked !== undefined) {
-          return yield* Effect40.fail(new exports_tool.Error({ message: blocked.reason }));
+          return yield* Effect35.fail(new Tool.Error({ message: blocked.reason }));
         }
       }), { concurrency: 1, discard: true });
       if (affected.length === 0)
         return;
       const { snapshots, escaped } = resolveAffected(location.directory, affected);
       if (escaped.length > 0) {
-        return yield* Effect40.fail(new exports_tool.Error({
+        return yield* Effect35.fail(new Tool.Error({
           message: `harness: target escapes project root (${escaped.join(", ")})`
         }));
       }
-      const nestedFiles = yield* Effect40.forEach(snapshots, (snap) => Effect40.gen(function* () {
+      const nestedFiles = yield* Effect35.forEach(snapshots, (snap) => Effect35.gen(function* () {
         const real = yield* containedTarget(location.directory, snap.absolutePath);
         if (real === undefined)
           return [];
@@ -15924,16 +14550,16 @@ ${text}`;
       }
       record.content = text;
     };
-    yield* ctx.tool.hook("execute.after", (event) => Effect40.gen(function* () {
+    yield* ctx.tool.hook("execute.after", (event) => Effect35.gen(function* () {
       const callId = String(event.id);
       const sessionId = String(event.sessionID);
       const snapshot = pendingSnapshots.get(snapshotKey(sessionId, callId));
       pendingSnapshots.delete(snapshotKey(sessionId, callId));
-      if (AgentPolicy.isDisabled(yield* Ref11.get(disabledAgents), event.agent)) {
+      if (AgentPolicy.isDisabled(yield* Ref8.get(disabledAgents), event.agent)) {
         return;
       }
       if (event.tool === "read") {
-        const location2 = yield* sessions.resolve(sessionId).pipe(Effect40.orElseSucceed(() => {
+        const location2 = yield* sessions.resolve(sessionId).pipe(Effect35.orElseSucceed(() => {
           return;
         }));
         if (location2 === undefined)
@@ -15956,7 +14582,7 @@ ${text}`;
         return;
       if (event.status !== "completed")
         return;
-      const location = yield* sessions.resolve(sessionId).pipe(Effect40.orElseSucceed(() => {
+      const location = yield* sessions.resolve(sessionId).pipe(Effect35.orElseSucceed(() => {
         return;
       }));
       if (location === undefined)
@@ -15966,16 +14592,16 @@ ${text}`;
         return;
       const affectedAll = extractAffectedPaths(event.tool, event.input);
       const { contained: affectedPaths } = partitionWithinRoot(location.directory, affectedAll);
-      yield* Effect40.forEach(affectedPaths, (filePath) => changes.record({
+      yield* Effect35.forEach(affectedPaths, (filePath) => changes.record({
         projectKey: location.projectKey,
         sessionID: sessionId,
         filePath
       }), { concurrency: 4, discard: true });
-      yield* Effect40.gen(function* () {
+      yield* Effect35.gen(function* () {
         if (snapshot === undefined || snapshot.files.length === 0)
           return;
         const messages = [];
-        yield* Effect40.forEach(snapshot.files, (file) => Effect40.gen(function* () {
+        yield* Effect35.forEach(snapshot.files, (file) => Effect35.gen(function* () {
           const afterContent = yield* readText(file.absolutePath);
           if (afterContent === undefined)
             return;
@@ -15983,18 +14609,18 @@ ${text}`;
           if (spans.length === 0)
             return;
           const projection = new Input.Value({
-            filePath: Option25.some(file.filePath),
-            content: Option25.some(afterContent),
-            changedSpans: Option25.some(spans.map((s) => new Edit.Span({ start: s.start, end: s.end }))),
-            command: Option25.none(),
-            pattern: Option25.none(),
-            query: Option25.none(),
-            url: Option25.none(),
-            prompt: Option25.none()
+            filePath: Option22.some(file.filePath),
+            content: Option22.some(afterContent),
+            changedSpans: Option22.some(spans.map((s) => new Edit.Span({ start: s.start, end: s.end }))),
+            command: Option22.none(),
+            pattern: Option22.none(),
+            query: Option22.none(),
+            url: Option22.none(),
+            prompt: Option22.none()
           });
           const rule = Feedback.rule({
-            patterns: Effect40.succeed(patternList),
-            actual: () => Effect40.succeed(projection)
+            patterns: Effect35.succeed(patternList),
+            actual: () => Effect35.succeed(projection)
           });
           const decisions = yield* rule.evaluate({
             activeBranch: { entries: [] },
@@ -16017,11 +14643,11 @@ ${text}`;
         appendResultContent(event.result, messages.slice(0, Math.max(1, config.verify.maxFindings)).join(`
 
 `));
-      }).pipe(Effect40.catchCause((cause) => Effect40.sync(() => {
+      }).pipe(Effect35.catchCause((cause) => Effect35.sync(() => {
         console.error("[opencode-effect-harness] feedback scan failed:", String(cause));
       })));
     }));
-    yield* ctx.session.hook("context", (sessionContext) => Effect40.gen(function* () {
+    yield* ctx.session.hook("context", (sessionContext) => Effect35.gen(function* () {
       const sessionId = String(sessionContext.sessionID);
       yield* origins.restrictTools({
         sessionID: sessionId,
@@ -16032,13 +14658,13 @@ ${text}`;
       if (blueprintPrompt !== undefined) {
         sessionContext.system.push({ type: "text", text: blueprintPrompt });
       }
-      const location = yield* sessions.resolve(sessionId).pipe(Effect40.orElseSucceed(() => {
+      const location = yield* sessions.resolve(sessionId).pipe(Effect35.orElseSucceed(() => {
         return;
       }));
       const enabledNow = yield* effectiveEnabled(location);
       if (!enabledNow)
         return;
-      if (AgentPolicy.isDisabled(yield* Ref11.get(disabledAgents), sessionContext.agent)) {
+      if (AgentPolicy.isDisabled(yield* Ref8.get(disabledAgents), sessionContext.agent)) {
         return;
       }
       const decisions = yield* headerRule.evaluate({
@@ -16050,13 +14676,13 @@ ${text}`;
           sessionContext.system.push({ type: "text", text: decision.content });
         }
       });
-    }).pipe(Effect40.ignore));
+    }).pipe(Effect35.ignore));
     const stream = ctx.event.subscribe();
     const inFlight = new Set;
     yield* consumeAll(stream, {
       onAnyEvent: (event) => LiveTraceSink.feed(traceSink, event),
-      onSkillActivated: (activated) => Effect40.gen(function* () {
-        const location = yield* sessions.resolve(activated.sessionID).pipe(Effect40.orElseSucceed(() => {
+      onSkillActivated: (activated) => Effect35.gen(function* () {
+        const location = yield* sessions.resolve(activated.sessionID).pipe(Effect35.orElseSucceed(() => {
           return;
         }));
         if (location === undefined)
@@ -16067,8 +14693,8 @@ ${text}`;
           skill: activated.name
         });
       }),
-      onCompacted: (compacted) => Effect40.gen(function* () {
-        const location = yield* sessions.resolve(compacted.sessionID).pipe(Effect40.orElseSucceed(() => {
+      onCompacted: (compacted) => Effect35.gen(function* () {
+        const location = yield* sessions.resolve(compacted.sessionID).pipe(Effect35.orElseSucceed(() => {
           return;
         }));
         if (location === undefined)
@@ -16078,7 +14704,7 @@ ${text}`;
           sessionID: compacted.sessionID
         });
       }),
-      onExecutionEnded: (ended) => Effect40.gen(function* () {
+      onExecutionEnded: (ended) => Effect35.gen(function* () {
         LiveTraceSink.feed(traceSink, {
           type: `execution.${ended.outcome}`,
           properties: { sessionID: ended.sessionID }
@@ -16088,7 +14714,7 @@ ${text}`;
         const origin = yield* origins.originOf(ended.sessionID);
         if (origin !== undefined)
           return;
-        const location = yield* sessions.resolve(ended.sessionID).pipe(Effect40.orElseSucceed(() => {
+        const location = yield* sessions.resolve(ended.sessionID).pipe(Effect35.orElseSucceed(() => {
           return;
         }));
         if (location === undefined)
@@ -16098,14 +14724,14 @@ ${text}`;
           return;
         inFlight.add(idempotencyKey);
         const runsKey = `opencode-effect-harness/runs/${location.projectKey}/${ended.sessionID}`;
-        const storedRunIds = yield* runsStorage.get(runsKey).pipe(Effect40.orElseSucceed(() => {
+        const storedRunIds = yield* runsStorage.get(runsKey).pipe(Effect35.orElseSucceed(() => {
           return;
         }));
         const processedRunIds = Array.isArray(storedRunIds) ? storedRunIds.filter((value) => typeof value === "string") : typeof storedRunIds === "string" ? [storedRunIds] : [];
         if (ended.eventId !== undefined && processedRunIds.includes(ended.eventId)) {
           return;
         }
-        yield* Effect40.gen(function* () {
+        yield* Effect35.gen(function* () {
           const files = yield* changes.peek({
             projectKey: location.projectKey,
             sessionID: ended.sessionID
@@ -16131,7 +14757,7 @@ ${text}`;
             semanticRequired: config.verify.semanticReview,
             moduleLoadFailures,
             changeSetProvider: changeSetProviderFor(location),
-            readFile: (absPath) => Effect40.flatMap(containedTarget(location.directory, absPath), (real) => real === undefined ? Effect40.succeed(undefined) : readText(real))
+            readFile: (absPath) => Effect35.flatMap(containedTarget(location.directory, absPath), (real) => real === undefined ? Effect35.succeed(undefined) : readText(real))
           }, request);
           const baseName = ended.eventId ?? (yield* Clock7.currentTimeMillis).toString(36);
           const reportPath = yield* persistReport(location.directory, report, baseName);
@@ -16141,59 +14767,59 @@ ${text}`;
             sessionID: ended.sessionID
           });
           if (ended.eventId !== undefined) {
-            yield* runsStorage.set(runsKey, [ended.eventId, ...processedRunIds].slice(0, 64)).pipe(Effect40.ignore);
+            yield* runsStorage.set(runsKey, [ended.eventId, ...processedRunIds].slice(0, 64)).pipe(Effect35.ignore);
           }
-        }).pipe(Effect40.catchCause((cause) => Effect40.sync(() => {
+        }).pipe(Effect35.catchCause((cause) => Effect35.sync(() => {
           console.error("[opencode-effect-harness] auto-verify failed (changes retained):", String(cause));
-        })), Effect40.ensuring(Effect40.sync(() => inFlight.delete(idempotencyKey))));
+        })), Effect35.ensuring(Effect35.sync(() => inFlight.delete(idempotencyKey))));
       })
-    }).pipe(Effect40.forkScoped);
-  }).pipe(Effect40.catchCause((cause) => Effect40.sync(() => {
+    }).pipe(Effect35.forkScoped);
+  }).pipe(Effect35.catchCause((cause) => Effect35.sync(() => {
     console.error("[opencode-effect-harness] setup failed:", String(cause));
   })))
 });
-var platformLayer = Layer21.mergeAll(layer2, layer4);
-var readText = (absPath) => Effect40.gen(function* () {
-  const fs = yield* FileSystem14.FileSystem;
-  const option = yield* fs.readFileString(absPath).pipe(Effect40.option);
-  return Option25.isSome(option) ? option.value : undefined;
-}).pipe(Effect40.provide(platformLayer));
-var loadPatternsSafe = (assetsRoot) => Effect40.flatMap(Effect40.promise(() => Promise.resolve().then(() => (init_Catalog(), exports_Catalog))), (catalog) => catalog.loadPatterns(`${assetsRoot}/patterns`).pipe(Effect40.catchTag("CatalogError", (error) => {
+var platformLayer = Layer17.mergeAll(NodeFileSystem.layer, NodePath.layer);
+var readText = (absPath) => Effect35.gen(function* () {
+  const fs = yield* FileSystem12.FileSystem;
+  const option = yield* fs.readFileString(absPath).pipe(Effect35.option);
+  return Option22.isSome(option) ? option.value : undefined;
+}).pipe(Effect35.provide(platformLayer));
+var loadPatternsSafe = (assetsRoot) => Effect35.flatMap(Effect35.promise(() => Promise.resolve().then(() => (init_Catalog(), exports_Catalog))), (catalog) => catalog.loadPatterns(`${assetsRoot}/patterns`).pipe(Effect35.catchTag("CatalogError", (error) => {
   console.error(`[opencode-effect-harness] pattern catalog unavailable at ${assetsRoot}: ${error.reason}`);
-  return Effect40.succeed([]);
-}), Effect40.provide(platformLayer)));
-var matchSkill = (path, assetsRoot) => Effect40.map(Effect40.orElseSucceed(skillEntriesFromAssets({ assetsRoot }).pipe(Effect40.provide(platformLayer)), () => []), (entries) => entries.filter((entry) => path.startsWith(entry.skillFilePath.slice(0, entry.skillFilePath.lastIndexOf("/")))).map((entry) => entry.name).at(0));
-var persistReport = (projectRoot, report, baseName) => Effect40.gen(function* () {
-  const fs = yield* FileSystem14.FileSystem;
+  return Effect35.succeed([]);
+}), Effect35.provide(platformLayer)));
+var matchSkill = (path, assetsRoot) => Effect35.map(Effect35.orElseSucceed(skillEntriesFromAssets({ assetsRoot }).pipe(Effect35.provide(platformLayer)), () => []), (entries) => entries.filter((entry) => path.startsWith(entry.skillFilePath.slice(0, entry.skillFilePath.lastIndexOf("/")))).map((entry) => entry.name).at(0));
+var persistReport = (projectRoot, report, baseName) => Effect35.gen(function* () {
+  const fs = yield* FileSystem12.FileSystem;
   const dir = `${projectRoot}/.effect-harness/reports`;
-  yield* fs.makeDirectory(dir, { recursive: true }).pipe(Effect40.catchTag("PlatformError", () => Effect40.fail(new ReportPersistError({ reason: `cannot create ${dir}` }))));
+  yield* fs.makeDirectory(dir, { recursive: true }).pipe(Effect35.catchTag("PlatformError", () => Effect35.fail(new ReportPersistError({ reason: `cannot create ${dir}` }))));
   const safeBase = baseName.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80) || "run";
   const target = `${dir}/${safeBase}-verify.json`;
   const tmp = `${target}.tmp`;
-  const encoded = Schema49.encodeSync(VerifierReport)(report);
-  yield* fs.writeFileString(tmp, JSON.stringify(encoded, null, 2)).pipe(Effect40.catchTag("PlatformError", () => Effect40.fail(new ReportPersistError({ reason: `cannot write ${tmp}` }))));
-  yield* fs.rename(tmp, target).pipe(Effect40.catchTag("PlatformError", () => Effect40.fail(new ReportPersistError({ reason: `cannot finalize ${target}` }))));
+  const encoded = Schema34.encodeSync(VerifierReport)(report);
+  yield* fs.writeFileString(tmp, JSON.stringify(encoded, null, 2)).pipe(Effect35.catchTag("PlatformError", () => Effect35.fail(new ReportPersistError({ reason: `cannot write ${tmp}` }))));
+  yield* fs.rename(tmp, target).pipe(Effect35.catchTag("PlatformError", () => Effect35.fail(new ReportPersistError({ reason: `cannot finalize ${target}` }))));
   return target;
-}).pipe(Effect40.provide(platformLayer));
-var persistCriticReport = (projectRoot, report, baseName) => Effect40.gen(function* () {
-  const fs = yield* FileSystem14.FileSystem;
+}).pipe(Effect35.provide(platformLayer));
+var persistCriticReport = (projectRoot, report, baseName) => Effect35.gen(function* () {
+  const fs = yield* FileSystem12.FileSystem;
   const dir = `${projectRoot}/.effect-harness/critic-reports`;
-  yield* fs.makeDirectory(dir, { recursive: true }).pipe(Effect40.catchTag("PlatformError", () => Effect40.fail(new ReportPersistError({ reason: `cannot create ${dir}` }))));
+  yield* fs.makeDirectory(dir, { recursive: true }).pipe(Effect35.catchTag("PlatformError", () => Effect35.fail(new ReportPersistError({ reason: `cannot create ${dir}` }))));
   const safeBase = baseName.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80) || "critic";
   const target = `${dir}/${safeBase}-critic.json`;
   const tmp = `${target}.tmp`;
-  const encoded = Schema49.encodeSync(CriticReport)(report);
-  yield* fs.writeFileString(tmp, JSON.stringify(encoded, null, 2)).pipe(Effect40.catchTag("PlatformError", () => Effect40.fail(new ReportPersistError({ reason: `cannot write ${tmp}` }))));
-  yield* fs.rename(tmp, target).pipe(Effect40.catchTag("PlatformError", () => Effect40.fail(new ReportPersistError({ reason: `cannot finalize ${target}` }))));
+  const encoded = Schema34.encodeSync(CriticReport)(report);
+  yield* fs.writeFileString(tmp, JSON.stringify(encoded, null, 2)).pipe(Effect35.catchTag("PlatformError", () => Effect35.fail(new ReportPersistError({ reason: `cannot write ${tmp}` }))));
+  yield* fs.rename(tmp, target).pipe(Effect35.catchTag("PlatformError", () => Effect35.fail(new ReportPersistError({ reason: `cannot finalize ${target}` }))));
   return target;
-}).pipe(Effect40.provide(platformLayer));
-var guidanceHeader = (assetsRoot) => Effect40.gen(function* () {
-  const fs = yield* FileSystem14.FileSystem;
+}).pipe(Effect35.provide(platformLayer));
+var guidanceHeader = (assetsRoot) => Effect35.gen(function* () {
+  const fs = yield* FileSystem12.FileSystem;
   const dir = `${assetsRoot}/guidance`;
-  const names = yield* fs.readDirectory(dir).pipe(Effect40.catchTag("PlatformError", () => Effect40.succeed([])));
-  const bodies = yield* Effect40.forEach(names.filter((n) => n.endsWith(".md")), (name) => fs.readFileString(`${dir}/${name}`).pipe(Effect40.catchTag("PlatformError", () => Effect40.succeed(""))), { concurrency: 8 });
+  const names = yield* fs.readDirectory(dir).pipe(Effect35.catchTag("PlatformError", () => Effect35.succeed([])));
+  const bodies = yield* Effect35.forEach(names.filter((n) => n.endsWith(".md")), (name) => fs.readFileString(`${dir}/${name}`).pipe(Effect35.catchTag("PlatformError", () => Effect35.succeed(""))), { concurrency: 8 });
   return bodies.join("");
-}).pipe(Effect40.provide(platformLayer));
+}).pipe(Effect35.provide(platformLayer));
 export {
   src_default as default
 };
