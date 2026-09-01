@@ -21,9 +21,9 @@ jobs:
       - run: bunx vitest run src/pattern/Scan.test.ts
       - run: bunx vitest run packages/harness-kit/src/Catalog.test.ts
 
-  # Optional npm publish on version tags — requires NPM_TOKEN secret
-  # GitHub-only install works without any token (bun add github:...)
-  publish:
+  # npmjs publish on version tags — requires NPM_TOKEN secret
+  # GitHub-only install works without any token (opencode2 plugin add github:...)
+  publish-npmjs:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: check
     runs-on: ubuntu-latest
@@ -42,3 +42,36 @@ jobs:
           npm publish --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # GitHub Packages (npm.pkg.github.com) publish on version tags.
+  # Requires a SCOPED package name: @lambdasolver2/opencode-effect-harness
+  # Auth: GITHUB_TOKEN with packages:write — no secret needed.
+  # Docs: https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-npm-registry
+  publish-gpr:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@lambdasolver2'
+      - name: Publish to GitHub Packages
+        run: |
+          node -e "
+            const fs = require('fs');
+            const p = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            delete p.private;
+            p.name = '@lambdasolver2/opencode-effect-harness';
+            p.publishConfig = { registry: 'https://npm.pkg.github.com' };
+            p.repository = { type: 'git', url: 'https://github.com/lambdasolver2/opencode-effect-harness.git' };
+            fs.writeFileSync('package.json', JSON.stringify(p, null, 2));
+          "
+          npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
