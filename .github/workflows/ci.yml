@@ -50,6 +50,15 @@ jobs:
           delete p.workspaces;
           delete p.catalog;
           delete p.overrides;
+          const catalog={"@ast-grep/napi":"^0.42.3","@effect/platform-node":"4.0.0-rc.110","effect":"4.0.0-rc.110"};
+          const bundled=["opencode-harness-kit","opencode-harness-shared","opencode-verify-kit","opencode-bench-store","opencode-compound-kit","@opencode-effect-harness/module-typescript","@opencode-effect-harness/module-bend"];
+          for(const sec of ['dependencies','devDependencies']){
+            if(!p[sec]) continue;
+            for(const [k,v] of Object.entries(p[sec])){
+              if(v==='catalog:' && catalog[k]) p[sec][k]=catalog[k];
+            }
+          }
+          for(const k of bundled) delete p.dependencies?.[k];
           fs.writeFileSync('package.json', JSON.stringify(p,null,2));
           JS
           npm publish --ignore-scripts
