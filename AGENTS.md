@@ -2,18 +2,21 @@
 
 ## Mandatory validation gates
 
-After EVERY change (even minor), run these **in order** from the repo root — no change is done until all four are green:
+After EVERY change, run gates 1-3 **in order** — then decide if gate 4 is needed from the change set:
 
 ```sh
 bunx tsgo --noEmit          # 1. Effect-aware typecheck (Go compiler) — MUST pass
 bunx tsc --noEmit           # 2. fallback typecheck — MUST pass
 bunx vitest run             # 3. full test suite — MUST pass
-# 4. effect-verified: call effect_harness_verify — MUST be overall:passed
+# 4. effect-verified (conditional): call effect_harness_verify — MUST be overall:passed when triggered
 ```
 
-4 is `effect_harness_verify` (`src/index.ts:389` → `Orchestrator.verify` `packages/verify-kit/src/Orchestrator.ts:86`): deterministic checkers + pattern scan (`findPatternMatches` on touched files) + `skillEvidence` + `overall` `packages/verify-kit/src/Report.ts:110`, persisted to `.effect-harness/reports/*-verify.json` `src/index.ts:1689`. Trigger it manually after 1-3 are green — `verify.trigger` is `manual` (`src/Options.ts:145`), so no auto-run. Omit `touchedFiles` to verify the session ledger; on `overall:failed|error` fix and re-call (ledger retained `src/index.ts:1614`). Do not claim done/push/PR without a `verify overall:passed` report path.
+**When to run gate 4:** call `effect_harness_verify` when the added/changed/deleted files make verification **likely needed**. Decide from `git status` / change ledger:
+- **Run:** any touch to `src/**`, `packages/**`, `*.ts`, `*.tsx`, `package.json`, `bun.lock`, `opencode.jsonc`, `vitest.config.*`, `tsconfig.*`, `assets/patterns/**`, `assets/skills/**` — or any write that introduced `Effect` code (`EFFECT_CODE_RE` `packages/harness-kit/src/Constants.ts:9`).
+- **Skip:** docs-only (`README.md`, `docs/**`, `*.md` without code) or `CHANGELOG.md`, `LICENSE` when no source changed — still run 1-3, skip 4.
+- **When in doubt, run 4.** `verify.trigger` is `manual` (`src/Options.ts:145`), so no auto-run — omit `touchedFiles` to verify the session ledger (`src/index.ts:428`), otherwise pass the git-changed list. On `overall:failed|error` fix and re-call (ledger retained `src/index.ts:1614`). Do not push/PR the feature without a recent `verify overall:passed` report (`.effect-harness/reports/*-verify.json` `src/index.ts:1689`).
 
-If any gate (1-4) fails, fix before continuing. Never skip or ignore failures. The per-write pattern advisory `src/index.ts:1419` is **advisory only** and does not replace gate 4.
+If any executed gate (1-3, and 4 when triggered) fails, fix before continuing. The per-write pattern advisory `src/index.ts:1419` is **advisory only** and does not replace gate 4.
 
 ## Pattern catalog self-check
 
@@ -83,8 +86,8 @@ Runs the full pipeline `packages/verify-kit/src/Orchestrator.ts:86`: applicable 
 
 Omit `touchedFiles` to verify the session's change ledger (`ChangeLedger` `src/index.ts:428` + `src/change/Ledger.ts`). Containment-checked — paths escaping the project root fail closed (`src/index.ts:415`).
 
-**When to call:**
-- After **every** validation gate pass (`tsgo`/`tsc`/`vitest` green) and before claiming a task is done.
+**When to call (conditional — decide from changed/added/deleted files):**
+- After gates 1-3 are green **when** the change set touched source (`src/**`, `packages/**`, `*.ts`/`*.tsx`, `package.json`/configs, `assets/patterns/**`) or introduced `Effect` code — and before claiming the task done.
 - After completing a feature, fix, or refactor that touches `src/` or `packages/`.
 - Before opening a PR or pushing — attach the `report:` path from the tool output.
 - On `overall:failed|error` — fix, then re-call (failed runs retain the ledger for retry `src/index.ts:1614`).
