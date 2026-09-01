@@ -43,6 +43,15 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run build
       - name: Publish to GitHub Packages
-        run: npm publish --ignore-scripts
+        run: |
+          node <<'JS'
+          const fs=require('fs');
+          const p=JSON.parse(fs.readFileSync('package.json','utf8'));
+          delete p.workspaces;
+          delete p.catalog;
+          delete p.overrides;
+          fs.writeFileSync('package.json', JSON.stringify(p,null,2));
+          JS
+          npm publish --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

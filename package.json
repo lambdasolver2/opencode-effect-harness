@@ -32,6 +32,9 @@
     "registry": "https://npm.pkg.github.com",
     "access": "public"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "engines": {
     "opencode": ">=1.17.1"
   },
