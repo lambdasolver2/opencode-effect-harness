@@ -11,16 +11,9 @@
         "@opencode-ai/client": "0.0.0-beta-17898",
         "@opencode-ai/plugin": "0.0.0-beta-17898",
         "@opencode-ai/schema": "0.0.0-beta-17898",
-        "@opencode-effect-harness/module-bend": "workspace:*",
-        "@opencode-effect-harness/module-typescript": "workspace:*",
         "@types/diff": "^8.0.0",
         "diff": "^9.0.0",
         "effect": "4.0.0-rc.110",
-        "opencode-bench-store": "workspace:*",
-        "opencode-compound-kit": "workspace:*",
-        "opencode-harness-kit": "workspace:*",
-        "opencode-harness-shared": "workspace:*",
-        "opencode-verify-kit": "workspace:*",
         "pdfjs-dist": "^6.3.289",
         "picomatch": "^4.0.4",
         "solid-js": "^1.9.0",
@@ -42,90 +35,8 @@
         "solid-js": "^1.9.0",
       },
     },
-    "packages/bench-store": {
-      "name": "opencode-bench-store",
-      "version": "0.2.0-alpha.1",
-      "dependencies": {
-        "@effect/platform-node": "4.0.0-rc.110",
-        "@effect/sql-sqlite-node": "4.0.0-rc.110",
-        "effect": "4.0.0-rc.110",
-        "opencode-compound-kit": "workspace:*",
-        "opencode-harness-shared": "workspace:*",
-      },
-    },
-    "packages/compound-kit": {
-      "name": "opencode-compound-kit",
-      "version": "0.2.0-alpha.1",
-      "dependencies": {
-        "@effect/platform-node": "4.0.0-rc.110",
-        "effect": "4.0.0-rc.110",
-        "opencode-harness-kit": "workspace:*",
-        "opencode-harness-shared": "workspace:*",
-      },
-    },
-    "packages/harness-kit": {
-      "name": "opencode-harness-kit",
-      "version": "0.2.0-alpha.1",
-      "dependencies": {
-        "@ast-grep/napi": "^0.42.3",
-        "@effect/platform-node": "4.0.0-rc.110",
-        "effect": "4.0.0-rc.110",
-        "opencode-harness-shared": "workspace:*",
-        "picomatch": "^4.0.4",
-        "yaml": "^2.9.0",
-      },
-    },
-    "packages/module-bend": {
-      "name": "@opencode-effect-harness/module-bend",
-      "version": "0.2.0-alpha.1",
-      "dependencies": {
-        "@effect/platform-node": "4.0.0-rc.110",
-        "effect": "4.0.0-rc.110",
-        "opencode-harness-kit": "workspace:*",
-        "opencode-harness-shared": "workspace:*",
-        "opencode-verify-kit": "workspace:*",
-      },
-    },
-    "packages/module-typescript": {
-      "name": "@opencode-effect-harness/module-typescript",
-      "version": "0.2.0-alpha.1",
-      "dependencies": {
-        "@effect/platform-node": "4.0.0-rc.110",
-        "effect": "4.0.0-rc.110",
-        "opencode-harness-kit": "workspace:*",
-        "opencode-harness-shared": "workspace:*",
-        "opencode-verify-kit": "workspace:*",
-      },
-    },
-    "packages/shared": {
-      "name": "opencode-harness-shared",
-      "version": "0.2.0-alpha.1",
-      "dependencies": {
-        "effect": "4.0.0-rc.110",
-      },
-      "devDependencies": {
-        "@effect/platform-node": "4.0.0-rc.110",
-        "@types/node": "^22.0.0",
-      },
-    },
-    "packages/verify-kit": {
-      "name": "opencode-verify-kit",
-      "version": "0.2.0-alpha.1",
-      "dependencies": {
-        "@effect/platform-node": "4.0.0-rc.110",
-        "effect": "4.0.0-rc.110",
-        "opencode-harness-kit": "workspace:*",
-        "opencode-harness-shared": "workspace:*",
-      },
-    },
   },
   "overrides": {
-    "effect": "4.0.0-rc.110",
-  },
-  "catalog": {
-    "@ast-grep/napi": "^0.42.3",
-    "@effect/platform-node": "4.0.0-rc.110",
-    "@effect/vitest": "4.0.0-rc.110",
     "effect": "4.0.0-rc.110",
   },
   "packages": {
@@ -296,10 +207,6 @@
     "@opencode-ai/schema": ["@opencode-ai/schema@0.0.0-beta-17898", "", { "dependencies": { "@standard-schema/spec": "1.1.0", "effect": "4.0.0-rc.110" } }, "sha512-/K0sAlwe4wmLD+5XrYal5OdrArlaWEI0NMmGsItj7pQhIfSHCXi1l99Z0R4Hu43xlM0ib/AG+c6n5LE06nobjg=="],
 
     "@opencode-ai/theme": ["@opencode-ai/theme@0.0.0-beta-17898", "", { "dependencies": { "@opentui/core": "0.5.6", "effect": "4.0.0-rc.110" } }, "sha512-BkDO8wyBEGVRDMnTVPBBavg5FccZXwFod+CYZBjXa8WKviC6rrB4FNU5dMBBQxtsh86CHDcjQTIm0iFQ/klMnw=="],
-
-    "@opencode-effect-harness/module-bend": ["@opencode-effect-harness/module-bend@workspace:packages/module-bend"],
-
-    "@opencode-effect-harness/module-typescript": ["@opencode-effect-harness/module-typescript@workspace:packages/module-typescript"],
 
     "@opentui/core": ["@opentui/core@0.4.5", "", { "dependencies": { "bun-ffi-structs": "0.2.4", "diff": "9.0.0", "marked": "17.0.1", "string-width": "7.2.0", "strip-ansi": "7.1.2" }, "optionalDependencies": { "@opentui/core-darwin-arm64": "0.4.5", "@opentui/core-darwin-x64": "0.4.5", "@opentui/core-linux-arm64": "0.4.5", "@opentui/core-linux-arm64-musl": "0.4.5", "@opentui/core-linux-x64": "0.4.5", "@opentui/core-linux-x64-musl": "0.4.5", "@opentui/core-win32-arm64": "0.4.5", "@opentui/core-win32-x64": "0.4.5" }, "peerDependencies": { "web-tree-sitter": "0.25.10" } }, "sha512-JsgRTPkA6e+Vxmumxai6SElOSlRQkbzNKHlCfemlArRiLhfC1IZ9RXJo2QH4xSu+uBOWAM90uss73/pPlkdEig=="],
 
@@ -628,16 +535,6 @@
     "node-releases": ["node-releases@2.0.54", "", {}, "sha512-YHs7BmmcsdAI5Ozuf8JZo6PT0mv2GIWC9vMfvUC3dp65M8hn7Ux8CPL+2oBI7juNuj9d0ndhTcznq2ODBps9cQ=="],
 
     "obug": ["obug@2.1.4", "", {}, "sha512-4a+OsYv9UktOJKE+l1A4OufDgdRF9PifWj+tJnHURo/P+WOxpG4GzUFL9qCalmWauao6ogiG+QvnCovwPoyAWA=="],
-
-    "opencode-bench-store": ["opencode-bench-store@workspace:packages/bench-store"],
-
-    "opencode-compound-kit": ["opencode-compound-kit@workspace:packages/compound-kit"],
-
-    "opencode-harness-kit": ["opencode-harness-kit@workspace:packages/harness-kit"],
-
-    "opencode-harness-shared": ["opencode-harness-shared@workspace:packages/shared"],
-
-    "opencode-verify-kit": ["opencode-verify-kit@workspace:packages/verify-kit"],
 
     "p-limit": ["p-limit@2.3.0", "", { "dependencies": { "p-try": "^2.0.0" } }, "sha512-//88mFWSJx8lxCzwdAABTJL2MyWB12+eIY7MDL2SqLmAkeKU9qxRvWuSyTjm3FUmpBEMuFfckAIqEaVGUDxb6w=="],
 

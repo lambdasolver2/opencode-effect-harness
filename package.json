@@ -32,9 +32,6 @@
     "registry": "https://npm.pkg.github.com",
     "access": "public"
   },
-  "workspaces": [
-    "packages/*"
-  ],
   "engines": {
     "opencode": ">=1.17.1"
   },
@@ -55,16 +52,9 @@
     "@opencode-ai/client": "0.0.0-beta-17898",
     "@opencode-ai/plugin": "0.0.0-beta-17898",
     "@opencode-ai/schema": "0.0.0-beta-17898",
-    "@opencode-effect-harness/module-bend": "workspace:*",
-    "@opencode-effect-harness/module-typescript": "workspace:*",
     "@types/diff": "^8.0.0",
     "diff": "^9.0.0",
     "effect": "4.0.0-rc.110",
-    "opencode-bench-store": "workspace:*",
-    "opencode-compound-kit": "workspace:*",
-    "opencode-harness-kit": "workspace:*",
-    "opencode-harness-shared": "workspace:*",
-    "opencode-verify-kit": "workspace:*",
     "pdfjs-dist": "^6.3.289",
     "picomatch": "^4.0.4",
     "solid-js": "^1.9.0",
