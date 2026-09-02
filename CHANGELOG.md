@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.0
+
+### Patch Changes
+
+- 2be77d1: Publish to public npm via trusted publishing. Align packaging with OpenCode V2 plugin conventions (`dist/index.js` + `dist/tui.js`).
+
 ## Unreleased
 
 ### Benchmark store (compound benchmark mode, spec 06)
