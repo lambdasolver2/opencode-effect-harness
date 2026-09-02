@@ -1,91 +1,78 @@
 /** @jsxImportSource @opentui/solid */
-import { createSignal, onCleanup, onMount } from "solid-js";
-import { usePlugin } from "@opencode-ai/plugin/tui";
-import type { Context } from "@opencode-ai/plugin/tui/context";
+import { Plugin } from "@opencode-ai/plugin/tui";
 
 /**
- * Minimal TUI for opencode-effect-harness — mirrors motel's architecture
- * (atoms + layout + keyboard) but keeps the surface small:
- * - header: harness mode + skill stats
- * - tabs: verify (last report) / benchmark (jobs)
- * - footer: key hints
+ * TUI companion for opencode-effect-harness.
  *
- * This satisfies `tui: true` + `exports["./tui"]` and the `01-architecture`
- * manifest. It is intentionally small and pure; data is fetched via
- * `FileSystem` + `TaskStore` (like motel's `CachedLoader` pattern) and
- * rendered with `@opentui/solid` primitives.
+ * V2 shape (matches azatakmyradov/opencode-plugins conventions):
+ * server entry `src/index.ts` + TUI entry `src/tui.tsx`, each a
+ * `Plugin.define`, built to `dist/index.js` + `dist/tui.js`.
+ * The server entrypoint automatically enables this matching TUI entrypoint.
  */
-export default function Tui() {
-	const ctx: Context = usePlugin();
-	const [tab, setTab] = createSignal<"verify" | "benchmark" | "skills">("verify");
-	const [status, setStatus] = createSignal("harness: checking…");
+export default Plugin.define({
+  id: "opencode.effect-harness",
+  setup(context) {
+    function AppExtensions() {
+      context.keymap.layer(() => ({
+        mode: "global",
+        priority: 10,
+        commands: [
+          {
+            id: "harness.toggle",
+            title: "Toggle Harness",
+            group: "Harness",
+            description: "Enable/disable the effect gate for this project (see harness_toggle tool for persistence).",
+            palette: true,
+            run: () => {
+              context.ui.toast.show({
+                title: "Harness",
+                message: "Use harness_toggle tool to persist mode per-project.",
+                variant: "info",
+              });
+            },
+          },
+          {
+            id: "harness.verify",
+            title: "Verify",
+            group: "Harness",
+            description: "Run deterministic checks + pattern scan (effect_harness_verify).",
+            palette: true,
+            run: () => {
+              context.ui.toast.show({
+                title: "Harness",
+                message: "Run effect_harness_verify, or see .effect-harness/reports/ for the last report.",
+                variant: "info",
+              });
+            },
+          },
+          {
+            id: "harness.benchmark",
+            title: "Benchmark",
+            group: "Harness",
+            description: "Benchmark store: .effect-harness/benchmark.sqlite (effect_harness_compound).",
+            palette: true,
+            run: () => {
+              context.ui.toast.show({
+                title: "Harness",
+                message: "Benchmark store: .effect-harness/benchmark.sqlite — use effect_harness_compound.",
+                variant: "info",
+              });
+            },
+          },
+        ],
+      }));
+      return <></>;
+    }
 
-	onMount(() => {
-		// Register keymap layer (like motel's `useKeyboardNav` central router)
-		ctx.keymap.layer(() => ({
-			commands: [
-				{
-					id: "harness:toggle",
-					title: "Toggle Harness",
-					description: "Enable/disable the effect gate for this project",
-					group: "harness",
-					run: () => {
-						setStatus("harness: toggled (see CLI `harness_toggle` for persistence)");
-					}
-				},
-				{
-					id: "harness:verify",
-					title: "Verify",
-					description: "Run deterministic checks + pattern scan",
-					group: "harness",
-					run: () => setTab("verify")
-				},
-				{
-					id: "harness:benchmark",
-					title: "Benchmark",
-					description: "Open benchmark view",
-					group: "harness",
-					run: () => setTab("benchmark")
-				}
-			],
-			bindings: ["harness:toggle", "harness:verify", "harness:benchmark"]
-		}));
+    const removeApp = context.ui.slot({ append: "app", render: AppExtensions });
+    const removeStatus = context.ui.slot({
+      append: "prompt.footer.status",
+      render: () => <text>● harness active</text>,
+    });
 
-		// Poll for mode/skill stats (like motel's `useTraceScreenData` data layer)
-		const timer = setInterval(() => {
-			setStatus(`harness: ${tab()} — ${new Date().toLocaleTimeString()}`);
-		}, 5000);
-		onCleanup(() => clearInterval(timer));
-	});
-
-	return (
-		<box style={{ flexDirection: "column", width: "100%", height: "100%" }}>
-			<box style={{ flexDirection: "row", justifyContent: "space-between", padding: 1 }}>
-				<text>{status()}</text>
-				<text>opencode-effect-harness</text>
-			</box>
-
-			<box style={{ flexDirection: "row", gap: 2, padding: 1 }}>
-				<text> [v]erify </text>
-				<text> [b]enchmark </text>
-				<text> [s]kills </text>
-			</box>
-
-			<box style={{ flexGrow: 1, padding: 1 }}>
-				{tab() === "verify" && (
-					<text>Last verify report: .effect-harness/reports/ — run `effect_harness_verify` or press `v`</text>
-				)}
-				{tab() === "benchmark" && (
-					<text>Benchmark store: .effect-harness/benchmark.sqlite — use `effect_harness_compound` or CLI `bench`</text>
-				)}
-				{tab() === "skills" && (
-					<text>Loaded effect-* skills: see `harness_skill_stats` — gate requires 4 before Effect writes</text>
-				)}
-			</box>
-
-			<box style={{ flexDirection: "row", padding: 1 }}>
-				<text>q: quit | tab: switch | v/b/s: tabs | h: help</text>
-			</box>
-		</box>
-	);
-}
+    return () => {
+      removeStatus();
+      removeApp();
+    };
+  },
+});

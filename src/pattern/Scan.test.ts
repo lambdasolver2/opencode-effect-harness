@@ -17,7 +17,11 @@ const SKIP_DIRS = new Set([
 	'.git',
 	'dist',
 	'coverage',
-	'.workspaces'
+	'.workspaces',
+	// Build-time Bun tooling (e.g. scripts/build.ts) runs outside the plugin
+	// host: Effect platform rules (FileSystem/Path/Console services, no
+	// node: imports) do not apply there. Runtime code lives in src/ + packages/.
+	'scripts'
 ]);
 const REPO_ROOT = new URL('../..', import.meta.url).pathname.replace(/\/$/, '');
 

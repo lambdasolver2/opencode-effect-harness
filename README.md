@@ -20,35 +20,27 @@ src/                   plugin composition root + OpenCode adapter
 src/companion/         headless CLI for session collection
 ```
 
-## Install (one-line)
+## Install
 
-### GitHub source
+Install from public npm (no registry auth needed):
 
-OpenCode's native installer installs the GitHub package and writes the plugin
-entry to the applicable `opencode.json(c)` automatically:
+```bash
+opencode2 plugin add @lambdasolver2/opencode-effect-harness
+opencode2 plugin list
+```
+
+The server entrypoint automatically enables its matching TUI entrypoint. Unversioned installs start with the cached version and check npm for updates in the background. The next service start activates any downloaded update:
+
+```bash
+opencode2 service restart
+```
+
+Use an exact package version for a reproducible install that does not update.
+
+### GitHub source (alternative)
 
 ```sh
 opencode2 plugin add github:lambdasolver2/opencode-effect-harness#main
-```
-
-No manual plugin configuration is needed. The repository includes the compiled
-`dist/index.js` entrypoint and the TypeScript/Bend catalogs required at runtime.
-
-### GitHub Packages
-
-Version tags publish the scoped npm package to GitHub Packages through the
-workflow's `GITHUB_TOKEN` (`packages: write`):
-
-```sh
-opencode2 plugin add @lambdasolver2/opencode-effect-harness
-```
-
-GitHub Packages requires npm registry authentication. Configure the scope with
-a classic GitHub token that has `read:packages` before using this form:
-
-```sh
-echo '@lambdasolver2:registry=https://npm.pkg.github.com' >> ~/.npmrc
-echo '//npm.pkg.github.com/:_authToken=YOUR_CLASSIC_PAT' >> ~/.npmrc
 ```
 
 ### Local clone (development)
@@ -56,6 +48,24 @@ echo '//npm.pkg.github.com/:_authToken=YOUR_CLASSIC_PAT' >> ~/.npmrc
 ```jsonc
 // opencode.jsonc
 { "plugins": ["./src/index.ts"] }
+```
+
+## Release
+
+Add a changeset, push it to `main`, and merge the release pull request created by GitHub Actions:
+
+```bash
+bun run changeset
+git push
+```
+
+Package publishing uses npm trusted publishing through GitHub Actions (`.github/workflows/release.yml`, `changeset publish`, no `NPM_TOKEN`).
+
+Bootstrap the package once with an authenticated npm account before enabling trusted publishing:
+
+```bash
+npm publish --access public
+npm trust github @lambdasolver2/opencode-effect-harness --file release.yml --repo lambdasolver2/opencode-effect-harness --allow-publish
 ```
 
 > Skills (`packages/module-typescript/assets/skills/*.md`) and guidance are **auto-registered** after the plugin loads (`src/index.ts:377` `ctx.skill.transform` + `src/index.ts:1758` `guidanceHeader` via `session.hook('context')`). `AGENTS.md` is not the plugin registration mechanism; it is project instruction context. The plugin package does not copy it into consumer repositories.

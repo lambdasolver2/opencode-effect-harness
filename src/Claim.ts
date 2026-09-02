@@ -1,5 +1,5 @@
 /**
- * claim-kernel — exclusive, time-bounded, tenant-isolated claim kernel
+ * Claim — exclusive, time-bounded, tenant-isolated claim kernel
  * Effect v4, Schema-first, Ref+HashMap atomic, Config/Random/DateTime via env
  * - acquire: first live wins; same holder refreshes expiry, different holder → AlreadyClaimed; expired → steal with new ClaimId
  * - heartbeat(claimId, holderId): extends expiry; distinct NotFound | NotHolder | ClaimExpired

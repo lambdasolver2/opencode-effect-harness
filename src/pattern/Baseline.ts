@@ -66,7 +66,6 @@ export const baseline: Readonly<Record<string, ReadonlyArray<string>>> = {
 	'packages/verify-kit/src/Orchestrator.ts': ['casting-awareness', 'prefer-option-over-null'],
 	'packages/verify-kit/src/Report.ts': ['prefer-schema-class'],
 	'src/Capability.ts': ['avoid-try-catch', 'casting-awareness', 'prefer-option-over-null'],
-	'src/change/Ledger.ts': ['effect-run-in-body', 'prefer-arr-sort'],
 	'src/Events.ts': ['casting-awareness', 'prefer-option-over-null', 'use-console-service'],
 	'src/Exec.ts': ['avoid-any', 'avoid-process-env', 'avoid-try-catch', 'casting-awareness', 'prefer-option-over-null', 'use-command-executor-service'],
 	'src/Ledger.ts': ['casting-awareness', 'effect-run-in-body', 'prefer-option-over-null', 'require-effect-concurrency'],
@@ -84,7 +83,6 @@ export const baseline: Readonly<Record<string, ReadonlyArray<string>>> = {
 	'src/benchmark/Tool.ts': ['prefer-option-over-null', 'prefer-schema-class'],
 	'src/session/Executor.ts': ['prefer-option-over-null'],
 	'src/session/Client.ts': ['prefer-schema-class'],
-	'src/tui.tsx': ['use-clock-service'],
 	'packages/bench-store/src/Store.ts': [
 		'avoid-direct-json',
 		'casting-awareness',

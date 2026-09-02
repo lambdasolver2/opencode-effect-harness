@@ -67,8 +67,7 @@ import { ExecNode } from './Exec.ts';
 import { Sessions } from './session/Session.ts';
 import { Origins } from './session/Origin.ts';
 import { ModeState } from './mode/State.ts';
-import { Ledger, PendingReads, type HostStorage } from './Ledger.ts';
-import { ChangeLedger } from './change/Ledger.ts';
+import { ChangeLedger, Ledger, PendingReads, type HostStorage } from './Ledger.ts';
 import * as Events from './Events.ts';
 import { LiveTraceSink } from './Events.ts';
 import { AgentPolicy } from './agent/Policy.ts';
@@ -162,7 +161,6 @@ const brand = <T>(): ((value: string) => T & string) =>
 
 export default Plugin.define({
 	id: 'opencode.effect-harness',
-	tui: true,
 	effect: (ctx) =>
 		Effect.gen(function* () {
 			const config = yield* Effect.orElseSucceed(decode(ctx.options), () => {
