@@ -399,6 +399,7 @@ export default Plugin.define({
 						},
 						additionalProperties: false
 					},
+					output: { type: 'string' },
 					execute: (rawInput: unknown, execCtx: { readonly sessionID: string }) =>
 						Effect.gen(function* () {
 							const location = yield* sessions.resolve(execCtx.sessionID).pipe(
@@ -482,11 +483,12 @@ export default Plugin.define({
 							});
 							const passed = report.checks.filter((c) => c.verdict === 'passed').length;
 
-							return {
-								output: undefined,
-								content:
+							const body =
 									`verify ${report.overall}: ${String(passed)}/${String(report.checks.length)} checks passed` +
-									(`\nreport: ${reportPath}`),
+									(`\nreport: ${reportPath}`);
+							return {
+								output: body,
+								content: body,
 								metadata: { overall: report.overall, reportPath }
 							} as never;
 						})
@@ -508,6 +510,7 @@ export default Plugin.define({
 						required: ['summary'],
 						additionalProperties: false
 					},
+					output: { type: 'string' },
 					execute: (rawInput: unknown, execCtx: { readonly sessionID: string }) =>
 						Effect.gen(function* () {
 							const parsed = (typeof rawInput === 'object' && rawInput !== null ? rawInput : {}) as {
@@ -593,14 +596,15 @@ let stageFailed: string | undefined;
 									reason: `${stageFailed}-failed`,
 									childSessionID: childId
 								});
+								const body = `critic: ${stageFailed} stage failed — recorded as UNAVAILABLE, never counted as passed.`;
 								return {
-									output: undefined,
+									output: body,
 									metadata: {
 										status: 'unavailable',
 										reason: `${stageFailed}-failed`,
 										workerSessionID: childId
 									},
-									content: `critic: ${stageFailed} stage failed — recorded as UNAVAILABLE, never counted as passed.`
+									content: body
 								} as never;
 							}
 
@@ -612,11 +616,12 @@ let stageFailed: string | undefined;
 									reason: 'traceUnavailable',
 									childSessionID: childId
 								});
+								const body =
+										'critic: child finished but its transcript is not observable in the restricted plugin context. Recorded as UNAVAILABLE — never counted as passed.';
 								return {
-									output: undefined,
+									output: body,
 									metadata: { status: 'unavailable', reason: 'traceUnavailable', workerSessionID: childId },
-									content:
-										'critic: child finished but its transcript is not observable in the restricted plugin context. Recorded as UNAVAILABLE — never counted as passed.'
+									content: body
 								} as never;
 							}
 
@@ -703,8 +708,14 @@ let stageFailed: string | undefined;
 										? []
 										: ['note: requireIndependentModel is on, but builder/critic models cannot be compared in-plugin — independence UNPROVEN'])
 								].join('\n');
+								const body =
+										header +
+										(sections.length > 0
+											? `\n\n${sections.join('\n\n')}\n\nreferences opened: ${String(worker.checkedReferences.length)}`
+											: '') +
+										`\nreport: ${criticReportPath}`;
 								return {
-									output: undefined,
+									output: body,
 									metadata: {
 										status: 'completed',
 										decoded: true,
@@ -712,12 +723,7 @@ let stageFailed: string | undefined;
 										findings: findings.length,
 										workerSessionID: childId
 									},
-									content:
-										header +
-										(sections.length > 0
-											? `\n\n${sections.join('\n\n')}\n\nreferences opened: ${String(worker.checkedReferences.length)}`
-											: '') +
-										`\nreport: ${criticReportPath}`
+									content: body
 								} as never;
 							}
 
@@ -727,12 +733,13 @@ let stageFailed: string | undefined;
 								decoded: false,
 								preview: transcript.slice(0, 2000)
 							});
-							return {
-								output: undefined,
-								metadata: { status: 'completed', decoded: false, workerSessionID: childId },
-								content:
+							const body =
 									'critic: worker output did not match the required JSON contract (raw transcript below). Treat as UNVERIFIED.\n\n' +
-									transcript.slice(0, 4000)
+									transcript.slice(0, 4000);
+							return {
+								output: body,
+								metadata: { status: 'completed', decoded: false, workerSessionID: childId },
+								content: body
 							} as never;
 						})
 				});
@@ -741,6 +748,7 @@ let stageFailed: string | undefined;
 					name: 'harness_skill_stats',
 					description: 'Show loaded effect-* skills for this session.',
 					input: { type: 'object', properties: {}, additionalProperties: false },
+					output: { type: 'string' },
 					execute: (_raw: unknown, execCtx: { readonly sessionID: string }) =>
 						Effect.gen(function* () {
 							const location = yield* sessions.resolve(execCtx.sessionID).pipe(
@@ -753,9 +761,10 @@ let stageFailed: string | undefined;
 										projectKey: location.projectKey,
 										sessionID: execCtx.sessionID
 									  });
+							const body = `loaded effect-* skills (${String(names.length)}): ${names.join(', ') || '(none)'}`;
 							return {
-								output: undefined,
-								content: `loaded effect-* skills (${String(names.length)}): ${names.join(', ') || '(none)'}`
+								output: body,
+								content: body
 							} as never;
 						})
 				});
@@ -768,6 +777,7 @@ let stageFailed: string | undefined;
 						properties: { enabled: { type: 'boolean' } },
 						additionalProperties: false
 					},
+					output: { type: 'string' },
 					execute: (rawInput: unknown, execCtx: { readonly sessionID: string }) =>
 						Effect.gen(function* () {
 							const location = yield* sessions.resolve(execCtx.sessionID).pipe(
@@ -786,9 +796,10 @@ let stageFailed: string | undefined;
 									new Tool.Error({ message: `mode persistence failed: ${e.reason}` })
 								)
 							);
+							const body = `harness mode ${saved ? 'enabled' : 'disabled'}`;
 							return {
-								output: undefined,
-								content: `harness mode ${saved ? 'enabled' : 'disabled'}`
+								output: body,
+								content: body
 							} as never;
 						})
 				});
