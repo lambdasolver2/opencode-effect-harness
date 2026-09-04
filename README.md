@@ -1,5 +1,7 @@
 # opencode-effect-harness
 
+[![npm version](https://img.shields.io/npm/v/@lambda-solver/opencode-effect-harness.svg)](https://www.npmjs.com/package/@lambda-solver/opencode-effect-harness)
+
 An [OpenCode v2](https://opencode.ai/v2/) plugin harness for Effect v4 development.
 
 ## Architecture
