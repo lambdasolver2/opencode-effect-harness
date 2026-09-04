@@ -1,7 +1,7 @@
 {
   "$schema": "https://www.schemastore.org/package.json",
   "name": "@lambda-solver/opencode-effect-harness",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "OpenCode v2 plugin: Effect v4 skill-gate enforcement, verification + critic, compound workflows.",
   "keywords": [
     "effect",
