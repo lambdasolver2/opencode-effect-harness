@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.2
+
+### Patch Changes
+
+- 85ef559: Declare `output` string schemas on all tools and return the summary as structured output instead of `undefined`, so schema-strict hosts (API/Code-Mode) accept tool results. Display behavior unchanged.
+
 ## 0.2.1
 
 ### Patch Changes
