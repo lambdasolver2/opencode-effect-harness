@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+### Patch Changes
+
+- aac22d8: Add npm version badge; first automated release through the trusted-publishing pipeline.
+
 ## 0.2.0
 
 ### Patch Changes
