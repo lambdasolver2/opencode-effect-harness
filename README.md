@@ -25,7 +25,7 @@ src/companion/         headless CLI for session collection
 Install from public npm (no registry auth needed):
 
 ```bash
-opencode2 plugin add @lambdasolver2/opencode-effect-harness
+opencode2 plugin add @lambda-solver/opencode-effect-harness
 opencode2 plugin list
 ```
 
@@ -65,7 +65,7 @@ Bootstrap the package once with an authenticated npm account before enabling tru
 
 ```bash
 npm publish --access public
-npm trust github @lambdasolver2/opencode-effect-harness --file release.yml --repo lambdasolver2/opencode-effect-harness --allow-publish
+npm trust github @lambda-solver/opencode-effect-harness --file release.yml --repo lambdasolver2/opencode-effect-harness --allow-publish
 ```
 
 > Skills (`packages/module-typescript/assets/skills/*.md`) and guidance are **auto-registered** after the plugin loads (`src/index.ts:377` `ctx.skill.transform` + `src/index.ts:1758` `guidanceHeader` via `session.hook('context')`). `AGENTS.md` is not the plugin registration mechanism; it is project instruction context. The plugin package does not copy it into consumer repositories.
