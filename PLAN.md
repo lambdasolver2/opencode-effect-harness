@@ -3,6 +3,7 @@
 Modular per-language verification packages + consolidated core for OpenCode v2.
 
 Architecture: `docs/spec/01-architecture.md`
+Subagent-only rewrite plan: `docs/spec/08-subagent-only-rewrite-2026-09-05.md`
 Normative implementation audit (append-only): `docs/spec/05-implementation-adversarial-audit-2026-08-23.md`
 Benchmark store spec (REM-4 benchmark mode, DB-first): `docs/spec/06-benchmark-store-spec.md`
 

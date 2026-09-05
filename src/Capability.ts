@@ -28,6 +28,23 @@ export interface RegistrationResult {
 	readonly reason?: string | undefined;
 }
 
+/**
+ * Tool-usage protocol appended to EVERY registered skill body at
+ * registration time (asset files stay untouched, fingerprints intact).
+ * This is what teaches the model exactly when — and how often — to call
+ * each harness tool. Loaded skill content enters the conversation, so the
+ * model reads this right after the domain guidance.
+ */
+export const HARNESS_TOOL_PROTOCOL = [
+	'## Harness tools — when and how often',
+	'',
+	'- `effect_harness_verify` {touchedFiles}: call ONCE per response that wrote/edited/patched Effect/TypeScript code (batch all touched files into that one call, not one call per file), and ALWAYS once more before claiming done, pushing, or opening a PR.',
+	'- `effect_harness_critic` {summary >= 10 chars, focus}: call ONCE per finished feature, plan, or architecture decision — never per edit, never in a loop.',
+	'- `harness_skill_stats`: only when you are unsure which effect-* skills are already loaded. Rarely needed.',
+	'- `harness_toggle`: only on explicit user request. Never call autonomously.',
+	'- `effect_harness_compound`: only on explicit user benchmark request. Never auto-run.'
+].join('\n');
+
 export interface PreparationResult {
 	readonly infos: ReadonlyArray<PreparedSkillInfo>;
 	/** Candidates rejected by the pinned host schema. */
@@ -132,7 +149,7 @@ export const applyToDraft = (
 			name: info.name,
 			location: info.location,
 			description: info.description,
-			content: info.content
+			content: `${info.content}\n\n${HARNESS_TOOL_PROTOCOL}`
 		})
 	);
 	return { attempted: true, registered: infos.length };

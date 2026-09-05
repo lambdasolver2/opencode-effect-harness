@@ -391,7 +391,7 @@ export default Plugin.define({
 				tools.add({
 					name: 'effect_harness_verify',
 					description:
-						'Deterministic checks + pattern findings + skill evidence (+ optional semantic review). Persists a JSON report under .effect-harness/reports.',
+						'Call after every edit/write/patch to Effect/TypeScript code and before claiming done. Runs deterministic typecheck + tests + Effect pattern scan + skill evidence and persists a JSON report under .effect-harness/reports.',
 					input: {
 						type: 'object',
 						properties: {
@@ -497,7 +497,7 @@ export default Plugin.define({
 				tools.add({
 					name: 'effect_harness_critic',
 					description:
-						'Independent read-only audit of builder reasoning. Decodes structured verdicts; returns explicit `unavailable` when the transcript cannot be observed.',
+						'Call after finishing a feature, plan, or architecture decision to audit reasoning for flaws, hallucinations, and spec drift. Read-only; returns a verdict plus findings, or explicit unavailable when the transcript cannot be observed.',
 					input: {
 						type: 'object',
 						properties: {
@@ -746,7 +746,7 @@ let stageFailed: string | undefined;
 
 				tools.add({
 					name: 'harness_skill_stats',
-					description: 'Show loaded effect-* skills for this session.',
+					description: 'Call only when you are unsure which effect-* skills are already loaded for this session. Shows loaded effect-* skills for this session.',
 					input: { type: 'object', properties: {}, additionalProperties: false },
 					output: { type: 'string' },
 					execute: (_raw: unknown, execCtx: { readonly sessionID: string }) =>
@@ -771,7 +771,7 @@ let stageFailed: string | undefined;
 
 				tools.add({
 					name: 'harness_toggle',
-					description: 'Toggle harness mode (per-project, persisted; telemetry keeps running).',
+					description: 'Call only on explicit user request to enable/disable harness enforcement. Toggle harness mode (per-project, persisted; telemetry keeps running). Never call autonomously.',
 					input: {
 						type: 'object',
 						properties: { enabled: { type: 'boolean' } },
@@ -807,8 +807,8 @@ let stageFailed: string | undefined;
 				tools.add({
 					name: 'effect_harness_compound',
 					description:
-						'Benchmark store operations (spec 06): task.create/get/list, profile.add/list, ' +
-						'benchmark.start/status/leading/history/trial. mine-evolve is not wired (REM-4).',
+						'Call only on explicit user request to run benchmarks. Benchmark store operations (spec 06): task.create/get/list, profile.add/list, ' +
+						'benchmark.start/status/leading/history/trial. mine-evolve is not wired (REM-4). Never auto-run.',
 					input: {
 						type: 'object',
 						properties: {

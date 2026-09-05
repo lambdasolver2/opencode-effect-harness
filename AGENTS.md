@@ -15,6 +15,20 @@ bunx vitest run             # 3. full test suite — MUST pass
 
 If any gate (1-4) fails, fix before continuing. Never skip or ignore failures. The per-write pattern advisory `src/index.ts:1419` is **advisory only** and does not replace gate 4.
 
+## Selective test execution (fast loop)
+
+The full suite is dominated by `src/pattern/Scan.test.ts` (~73s whole-repo self-scan). During iteration run only affected tests — gate 3 above still requires the FULL suite before claiming done/push/PR:
+
+```sh
+bunx vitest related <changed-files...>  # tests importing the touched files, e.g. src/index.ts src/Capability.ts
+bunx vitest run --changed               # git-based: tests affected by uncommitted changes vs HEAD
+bunx vitest run <path>                  # single target, e.g. src/plugin/Contract.test.ts (~1s)
+bunx vitest run -t "<test name>"        # filter by test name
+bunx vitest run --exclude src/pattern/Scan.test.ts  # fast lane: everything except the whole-repo scan
+```
+
+Rule: selective runs for every intermediate edit; `bunx vitest run` (full, incl. `Scan.test.ts`) once the change is final.
+
 ## Pattern catalog self-check
 
 The repo ships its own Effect-v4 anti-pattern detectors in
