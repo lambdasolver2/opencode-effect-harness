@@ -12,8 +12,8 @@
  *    `generate` operation, which runs no tools and writes no session history.
  */
 import { Effect, Option, Schema } from 'effect';
-import { Model } from '@opencode-ai/schema/model';
-import { Provider } from '@opencode-ai/schema/provider';
+import { Model } from '@opencode/schema/model';
+import { Provider } from '@opencode/schema/provider';
 
 import { ModelProfile } from 'opencode-compound-kit/Task.ts';
 

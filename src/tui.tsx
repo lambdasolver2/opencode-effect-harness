@@ -1,5 +1,5 @@
 /** @jsxImportSource @opentui/solid */
-import { Plugin } from "@opencode-ai/plugin/tui";
+import { Plugin } from "@opencode/plugin/tui";
 
 /**
  * TUI companion for opencode-effect-harness.
@@ -11,7 +11,7 @@ import { Plugin } from "@opencode-ai/plugin/tui";
  */
 export default Plugin.define({
   id: "opencode.effect-harness",
-  setup(context) {
+  setup(context: Plugin.Context) {
     function AppExtensions() {
       context.keymap.layer(() => ({
         mode: "global",

@@ -265,10 +265,10 @@ export const createModule = (
 					new CheckerSpec({
 						id: 'ts-typecheck',
 						kind: 'typecheck',
-						label: 'tsc --noEmit',
+						label: 'tsgo --noEmit',
 						command: new CommandSpec({
 							executable: 'bunx',
-							args: ['tsc', '--noEmit'],
+							args: ['tsgo', '--noEmit'],
 							cwd: context.projectRoot,
 							timeoutMs: 120_000,
 							maxOutputBytes: 512_000

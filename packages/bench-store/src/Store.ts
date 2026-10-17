@@ -21,8 +21,8 @@
 import { Clock, Effect, FileSystem, Layer, Match, Option, Path, Schema } from 'effect';
 
 import { SqliteClient, SqliteMigrator } from '@effect/sql-sqlite-node';
-import { SqlClient, SqlError } from 'effect/unstable/sql';
-import { Reactivity } from 'effect/unstable/reactivity';
+import { SqlClient, SqlError } from 'effect/sql';
+import { Reactivity } from 'effect/reactivity';
 
 import { fnv1aHex } from 'opencode-harness-shared/Hash.ts';
 import { ModelProfile, Task, TaskError, TaskSpec } from 'opencode-compound-kit/Task.ts';
@@ -191,7 +191,7 @@ const buildGraph = (filename: DbFilename): Layer.Layer<SqlClient.SqlClient, SqlE
  *  A File database without a platform layer is a COMPILE error. */
 export function layer(filename: { readonly _tag: 'Memory' }): Layer.Layer<
 	TaskStore.Tag,
-	TaskError | import('effect/unstable/sql/SqlError').SqlError | import('effect/unstable/sql/Migrator').MigrationError,
+	TaskError | import('effect/sql/SqlError').SqlError | import('effect/sql/Migrator').MigrationError,
 	never
 >;
 export function layer(
@@ -199,7 +199,7 @@ export function layer(
 	platform: PlatformLayer
 ): Layer.Layer<
 	TaskStore.Tag,
-	TaskError | import('effect/unstable/sql/SqlError').SqlError | import('effect/unstable/sql/Migrator').MigrationError,
+	TaskError | import('effect/sql/SqlError').SqlError | import('effect/sql/Migrator').MigrationError,
 	never
 >;
 export function layer(
@@ -207,7 +207,7 @@ export function layer(
 	platform?: PlatformLayer
 ): Layer.Layer<
 	TaskStore.Tag,
-	TaskError | import('effect/unstable/sql/SqlError').SqlError | import('effect/unstable/sql/Migrator').MigrationError,
+	TaskError | import('effect/sql/SqlError').SqlError | import('effect/sql/Migrator').MigrationError,
 	never
 > {
 	// Strict order: mkdir (File only) runs BEFORE the driver opens the file —
@@ -285,7 +285,7 @@ export function layer(
 	);
 	return withMigrations as Layer.Layer<
 		TaskStore.Tag,
-		TaskError | import('effect/unstable/sql/SqlError').SqlError | import('effect/unstable/sql/Migrator').MigrationError,
+		TaskError | import('effect/sql/SqlError').SqlError | import('effect/sql/Migrator').MigrationError,
 		never
 	>;
 }

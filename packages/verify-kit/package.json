@@ -9,8 +9,8 @@
     "./*": "./src/*"
   },
   "dependencies": {
-    "@effect/platform-node": "4.0.0-rc.110",
-    "effect": "4.0.0-rc.110",
+    "@effect/platform-node": "4.0.5",
+    "effect": "4.0.5",
     "opencode-harness-kit": "workspace:*",
     "opencode-harness-shared": "workspace:*"
   }

@@ -9,10 +9,10 @@
     "./*": "./src/*"
   },
   "dependencies": {
-    "effect": "4.0.0-rc.110"
+    "effect": "4.0.5"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
-    "@effect/platform-node": "4.0.0-rc.110"
+    "@effect/platform-node": "4.0.5"
   }
 }

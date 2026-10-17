@@ -14,10 +14,10 @@
  *  - gate/header honor BOTH static config AND persisted per-project mode
  */
 import { Clock, Effect, FileSystem, Layer, Option, Path, Ref, Result, Schema } from 'effect';
-import { FetchHttpClient } from 'effect/unstable/http';
-import { OtlpLogger, OtlpSerialization, OtlpTracer } from 'effect/unstable/observability';
-import { Plugin } from '@opencode-ai/plugin/effect';
-import { Tool } from '@opencode-ai/schema/tool';
+import { FetchHttpClient } from 'effect/http';
+import { OtlpLogger, OtlpSerialization, OtlpTracer } from 'effect/observability';
+import { Plugin } from '@opencode/plugin/effect';
+import { Tool } from '@opencode/schema/tool';
 import * as NodeFileSystem from '@effect/platform-node/NodeFileSystem';
 import * as NodePath from '@effect/platform-node/NodePath';
 
@@ -78,8 +78,8 @@ import {
 	type BenchmarkToolDeps,
 	benchmarkStoreLayer
 } from './benchmark/Tool.ts';
-import { Model } from '@opencode-ai/schema/model';
-import { Provider } from '@opencode-ai/schema/provider';
+import { Model } from '@opencode/schema/model';
+import { Provider } from '@opencode/schema/provider';
 import { TaskError } from 'opencode-compound-kit/Task.ts';
 import { TaskStore } from 'opencode-compound-kit/task/Store.ts';
 import { fnv1aHex } from 'opencode-harness-shared/Hash.ts';
@@ -391,7 +391,7 @@ export default Plugin.define({
 				tools.add({
 					name: 'effect_harness_verify',
 					description:
-						'Call after every edit/write/patch to Effect/TypeScript code and before claiming done. Runs deterministic typecheck + tests + Effect pattern scan + skill evidence and persists a JSON report under .effect-harness/reports.',
+						'Only call after this response actually wrote, edited, or patched Effect/TypeScript files via write/edit/multiedit/apply_patch/patch, or right before claiming done/pushing/opening a PR for such changes. Do NOT call on question-only, discussion-only, or planning-only turns. Do NOT call merely because the words "effect", "adversary", "critic", or "verify" appear in chat — keyword mention alone is never a trigger. Runs deterministic typecheck + tests + Effect pattern scan + skill evidence and persists a JSON report under .effect-harness/reports.',
 					input: {
 						type: 'object',
 						properties: {
@@ -497,7 +497,7 @@ export default Plugin.define({
 				tools.add({
 					name: 'effect_harness_critic',
 					description:
-						'Call after finishing a feature, plan, or architecture decision to audit reasoning for flaws, hallucinations, and spec drift. Read-only; returns a verdict plus findings, or explicit unavailable when the transcript cannot be observed.',
+						'Only call after actually finishing a feature, plan item, or architecture decision in this session and you can summarize it in >=10 chars, or on explicit user request for an adversary/critic review. Do NOT call merely because the words "adversary", "adversarial", "effect", "critic", or "review" appear in chat — keyword mention alone is never a trigger. Do NOT call per edit or in a loop. Read-only; returns a verdict plus findings, or explicit unavailable when the transcript cannot be observed.',
 					input: {
 						type: 'object',
 						properties: {
@@ -862,7 +862,10 @@ let stageFailed: string | undefined;
 								);
 							}
 
-							const catalogModelList = ctx.catalog.model.list as unknown as (
+							const maybeCatalog = (ctx as unknown as { catalog?: { model?: { list?: unknown } } }).catalog;
+							const catalogModelList = (typeof maybeCatalog?.model?.list === 'function'
+								? maybeCatalog.model.list
+								: () => Effect.succeed({ data: [] })) as unknown as (
 								i: object
 							) => Effect.Effect<{ readonly data: ReadonlyArray<{
 								readonly id: string;

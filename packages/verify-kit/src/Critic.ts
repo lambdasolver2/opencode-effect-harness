@@ -187,7 +187,7 @@ export const decodeWorkerOutput = (
 					return ref;
 				}
 			);
-			return { verdict, findings, checkedReferences };
+			return { verdict: verdict as CriticWorkerOutput['verdict'], findings, checkedReferences };
 		},
 		catch: (cause) => new CriticDecodeError({ reason: String(cause) })
 	});

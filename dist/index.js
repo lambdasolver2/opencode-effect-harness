@@ -920,10 +920,10 @@ var TSC_DIAGNOSTIC_RE, DEFAULT_ASSETS_ROOT, EXPECTED_COUNTS, unitRowOfKind = (ki
       new CheckerSpec({
         id: "ts-typecheck",
         kind: "typecheck",
-        label: "tsc --noEmit",
+        label: "tsgo --noEmit",
         command: new CommandSpec({
           executable: "bunx",
-          args: ["tsc", "--noEmit"],
+          args: ["tsgo", "--noEmit"],
           cwd: context.projectRoot,
           timeoutMs: 120000,
           maxOutputBytes: 512000
@@ -1110,10 +1110,10 @@ var init_src3 = __esm(() => {
 
 // src/index.ts
 import { Clock as Clock7, Effect as Effect34, FileSystem as FileSystem12, Layer as Layer16, Option as Option22, Path as Path10, Ref as Ref7, Schema as Schema34 } from "effect";
-import { FetchHttpClient } from "effect/unstable/http";
-import { OtlpLogger, OtlpSerialization, OtlpTracer } from "effect/unstable/observability";
-import { Plugin } from "@opencode-ai/plugin/effect";
-import { Tool } from "@opencode-ai/schema/tool";
+import { FetchHttpClient } from "effect/http";
+import { OtlpLogger, OtlpSerialization, OtlpTracer } from "effect/observability";
+import { Plugin } from "@opencode/plugin/effect";
+import { Tool } from "@opencode/schema/tool";
 import * as NodeFileSystem from "@effect/platform-node/NodeFileSystem";
 import * as NodePath from "@effect/platform-node/NodePath";
 
@@ -1323,11 +1323,12 @@ var expandHome = (value, homeDirectory, path) => Option2.match(homeDirectory, {
   onSome: (home) => value === "~" ? home : value.startsWith("~/") ? path.join(home, value.slice(2)) : value
 });
 var resolveHomeDirectory = () => Effect.gen(function* () {
-  const home = yield* Config.option(Config.string("HOME"));
+  const home = yield* Config.option(Config.String("HOME"));
   if (Option2.isSome(home)) {
     return home;
   }
-  return yield* Config.option(Config.string("USERPROFILE"));
+  const profile = yield* Config.option(Config.String("USERPROFILE"));
+  return profile;
 }).pipe(Effect.catchTag("ConfigError", () => Effect.succeed(Option2.none())));
 var normalizePath = ({
   cwd,
@@ -3008,13 +3009,25 @@ var AgentPolicy;
 
 // src/Capability.ts
 import { Effect as Effect25, Schema as Schema25 } from "effect";
-import { Skill as SkillSchema } from "@opencode-ai/schema/skill";
+import { Skill as SkillSchema } from "@opencode/schema/skill";
+var HARNESS_TOOL_PROTOCOL = [
+  "## Harness tools \u2014 when and how often",
+  "",
+  "Keyword mention alone never triggers a tool \u2014 mentioning `effect`, `adversary`/`adversarial`, `critic`, or `verify` in chat loads knowledge only, it does NOT authorize a call.",
+  "",
+  "- `effect_harness_verify` {touchedFiles}: only after this response actually wrote/edited/patched Effect/TypeScript code (batch all touched files into that one call, not one call per file), and once more before claiming done, pushing, or opening a PR for such changes. Do NOT call on question-only, discussion-only, or planning-only turns with no file writes.",
+  "- `effect_harness_critic` {summary >= 10 chars, focus}: only after actually finishing a feature, plan item, or architecture decision in this session, or on explicit user request for an adversary/critic review \u2014 never per edit, never in a loop, never on keyword mention alone.",
+  "- `harness_skill_stats`: only when you are unsure which effect-* skills are already loaded. Rarely needed.",
+  "- `harness_toggle`: only on explicit user request. Never call autonomously.",
+  "- `effect_harness_compound`: only on explicit user benchmark request. Never auto-run."
+].join(`
+`);
 var FRONTMATTER_BLOCK = /^---\n([\s\S]*?)\n---/;
 var DESCRIPTION_LINE = /(^|\n)description:\s*([^\n]+)/;
 var buildCandidate = (entry, content) => ({
   id: entry.name,
   name: entry.name,
-  location: entry.skillFilePath,
+  path: entry.skillFilePath,
   description: content.match(FRONTMATTER_BLOCK)?.[1]?.match(DESCRIPTION_LINE)?.[2]?.trim() ?? `Effect v4 skill: ${entry.name}`,
   content
 });
@@ -3039,7 +3052,7 @@ var prepareAll = (entries, loadContent) => Effect25.forEach(entries, (entry) => 
       {
         id: info.id,
         name: info.name,
-        location: info.location,
+        path: info.path,
         description: candidate.description,
         content,
         kernelName: entry.name
@@ -3060,9 +3073,11 @@ var applyToDraft = (draft, infos) => {
   infos.forEach((info) => add({
     id: info.id,
     name: info.name,
-    location: info.location,
+    path: info.path,
     description: info.description,
-    content: info.content
+    content: `${info.content}
+
+${HARNESS_TOOL_PROTOCOL}`
   }));
   return { attempted: true, registered: infos.length };
 };
@@ -3872,8 +3887,8 @@ __export(exports_Store, {
 });
 import { Clock as Clock5, Effect as Effect30, FileSystem as FileSystem8, Layer as Layer14, Match as Match2, Option as Option18, Path as Path7, Schema as Schema32 } from "effect";
 import { SqliteClient, SqliteMigrator } from "@effect/sql-sqlite-node";
-import { SqlClient, SqlError } from "effect/unstable/sql";
-import { Reactivity } from "effect/unstable/reactivity";
+import { SqlClient, SqlError } from "effect/sql";
+import { Reactivity } from "effect/reactivity";
 var MIGRATIONS = {
   "0001_benchmark_store": Effect30.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
@@ -4809,8 +4824,8 @@ var BenchmarkTool;
 })(BenchmarkTool ||= {});
 
 // src/index.ts
-import { Model as Model2 } from "@opencode-ai/schema/model";
-import { Provider } from "@opencode-ai/schema/provider";
+import { Model as Model2 } from "@opencode/schema/model";
+import { Provider } from "@opencode/schema/provider";
 var platform = Layer16.mergeAll(NodeFileSystem.layer, NodePath.layer);
 var DESTRUCTIVE_SHELL_RE = /\b(?::\(\)\s*\{\s*:\|:&\s*\};:|mkfs(?:\.\w+)?\b|dd\s+if=|git\s+reset\s+--hard\b|git\s+clean\s+-[a-zA-Z]*[fd]|chmod\s+-R\s+777\b|(?:rm|mv)\s+-[a-zA-Z]+\s+\.\.?(?:\/|$)|\brm\s+(?:-{1,2}[a-zA-Z-]+\s+)+\/(?:\s|$))/i;
 var MUTATING_TOOLS = [
@@ -4986,7 +5001,7 @@ var src_default = Plugin.define({
     yield* ctx.tool.transform((tools) => {
       tools.add({
         name: "effect_harness_verify",
-        description: "Deterministic checks + pattern findings + skill evidence (+ optional semantic review). Persists a JSON report under .effect-harness/reports.",
+        description: 'Only call after this response actually wrote, edited, or patched Effect/TypeScript files via write/edit/multiedit/apply_patch/patch, or right before claiming done/pushing/opening a PR for such changes. Do NOT call on question-only, discussion-only, or planning-only turns. Do NOT call merely because the words "effect", "adversary", "critic", or "verify" appear in chat \u2014 keyword mention alone is never a trigger. Runs deterministic typecheck + tests + Effect pattern scan + skill evidence and persists a JSON report under .effect-harness/reports.',
         input: {
           type: "object",
           properties: {
@@ -4994,6 +5009,7 @@ var src_default = Plugin.define({
           },
           additionalProperties: false
         },
+        output: { type: "string" },
         execute: (rawInput, execCtx) => Effect34.gen(function* () {
           const location = yield* sessions.resolve(execCtx.sessionID).pipe(Effect34.orElseSucceed(() => {
             return;
@@ -5045,17 +5061,18 @@ var src_default = Plugin.define({
             sessionID: execCtx.sessionID
           });
           const passed = report.checks.filter((c) => c.verdict === "passed").length;
+          const body = `verify ${report.overall}: ${String(passed)}/${String(report.checks.length)} checks passed
+report: ${reportPath}`;
           return {
-            output: undefined,
-            content: `verify ${report.overall}: ${String(passed)}/${String(report.checks.length)} checks passed
-report: ${reportPath}`,
+            output: body,
+            content: body,
             metadata: { overall: report.overall, reportPath }
           };
         })
       });
       tools.add({
         name: "effect_harness_critic",
-        description: "Independent read-only audit of builder reasoning. Decodes structured verdicts; returns explicit `unavailable` when the transcript cannot be observed.",
+        description: 'Only call after actually finishing a feature, plan item, or architecture decision in this session and you can summarize it in >=10 chars, or on explicit user request for an adversary/critic review. Do NOT call merely because the words "adversary", "adversarial", "effect", "critic", or "review" appear in chat \u2014 keyword mention alone is never a trigger. Do NOT call per edit or in a loop. Read-only; returns a verdict plus findings, or explicit unavailable when the transcript cannot be observed.',
         input: {
           type: "object",
           properties: {
@@ -5068,6 +5085,7 @@ report: ${reportPath}`,
           required: ["summary"],
           additionalProperties: false
         },
+        output: { type: "string" },
         execute: (rawInput, execCtx) => Effect34.gen(function* () {
           const parsed = typeof rawInput === "object" && rawInput !== null ? rawInput : {};
           const summary = typeof parsed.summary === "string" ? parsed.summary : "";
@@ -5128,14 +5146,15 @@ report: ${reportPath}`,
               reason: `${stageFailed}-failed`,
               childSessionID: childId
             });
+            const body2 = `critic: ${stageFailed} stage failed \u2014 recorded as UNAVAILABLE, never counted as passed.`;
             return {
-              output: undefined,
+              output: body2,
               metadata: {
                 status: "unavailable",
                 reason: `${stageFailed}-failed`,
                 workerSessionID: childId
               },
-              content: `critic: ${stageFailed} stage failed \u2014 recorded as UNAVAILABLE, never counted as passed.`
+              content: body2
             };
           }
           const transcript = traceSink.lastAssistantText(childId);
@@ -5145,10 +5164,11 @@ report: ${reportPath}`,
               reason: "traceUnavailable",
               childSessionID: childId
             });
+            const body2 = "critic: child finished but its transcript is not observable in the restricted plugin context. Recorded as UNAVAILABLE \u2014 never counted as passed.";
             return {
-              output: undefined,
+              output: body2,
               metadata: { status: "unavailable", reason: "traceUnavailable", workerSessionID: childId },
-              content: "critic: child finished but its transcript is not observable in the restricted plugin context. Recorded as UNAVAILABLE \u2014 never counted as passed."
+              content: body2
             };
           }
           const decoded = yield* Effect34.option(decodeWorkerOutput(transcript));
@@ -5197,8 +5217,16 @@ report: ${reportPath}`,
               ...independenceProvable ? [] : ["note: requireIndependentModel is on, but builder/critic models cannot be compared in-plugin \u2014 independence UNPROVEN"]
             ].join(`
 `);
+            const body2 = header + (sections.length > 0 ? `
+
+${sections.join(`
+
+`)}
+
+references opened: ${String(worker.checkedReferences.length)}` : "") + `
+report: ${criticReportPath}`;
             return {
-              output: undefined,
+              output: body2,
               metadata: {
                 status: "completed",
                 decoded: true,
@@ -5206,14 +5234,7 @@ report: ${reportPath}`,
                 findings: findings.length,
                 workerSessionID: childId
               },
-              content: header + (sections.length > 0 ? `
-
-${sections.join(`
-
-`)}
-
-references opened: ${String(worker.checkedReferences.length)}` : "") + `
-report: ${criticReportPath}`
+              content: body2
             };
           }
           yield* appendCriticEvent(stream2, "review.completed", {
@@ -5221,19 +5242,21 @@ report: ${criticReportPath}`
             decoded: false,
             preview: transcript.slice(0, 2000)
           });
-          return {
-            output: undefined,
-            metadata: { status: "completed", decoded: false, workerSessionID: childId },
-            content: `critic: worker output did not match the required JSON contract (raw transcript below). Treat as UNVERIFIED.
+          const body = `critic: worker output did not match the required JSON contract (raw transcript below). Treat as UNVERIFIED.
 
-` + transcript.slice(0, 4000)
+` + transcript.slice(0, 4000);
+          return {
+            output: body,
+            metadata: { status: "completed", decoded: false, workerSessionID: childId },
+            content: body
           };
         })
       });
       tools.add({
         name: "harness_skill_stats",
-        description: "Show loaded effect-* skills for this session.",
+        description: "Call only when you are unsure which effect-* skills are already loaded for this session. Shows loaded effect-* skills for this session.",
         input: { type: "object", properties: {}, additionalProperties: false },
+        output: { type: "string" },
         execute: (_raw, execCtx) => Effect34.gen(function* () {
           const location = yield* sessions.resolve(execCtx.sessionID).pipe(Effect34.orElseSucceed(() => {
             return;
@@ -5242,20 +5265,22 @@ report: ${criticReportPath}`
             projectKey: location.projectKey,
             sessionID: execCtx.sessionID
           });
+          const body = `loaded effect-* skills (${String(names.length)}): ${names.join(", ") || "(none)"}`;
           return {
-            output: undefined,
-            content: `loaded effect-* skills (${String(names.length)}): ${names.join(", ") || "(none)"}`
+            output: body,
+            content: body
           };
         })
       });
       tools.add({
         name: "harness_toggle",
-        description: "Toggle harness mode (per-project, persisted; telemetry keeps running).",
+        description: "Call only on explicit user request to enable/disable harness enforcement. Toggle harness mode (per-project, persisted; telemetry keeps running). Never call autonomously.",
         input: {
           type: "object",
           properties: { enabled: { type: "boolean" } },
           additionalProperties: false
         },
+        output: { type: "string" },
         execute: (rawInput, execCtx) => Effect34.gen(function* () {
           const location = yield* sessions.resolve(execCtx.sessionID).pipe(Effect34.orElseSucceed(() => {
             return;
@@ -5267,15 +5292,16 @@ report: ${criticReportPath}`
           const current = yield* mode.enabled(location.projectKey);
           const desired = parsed.enabled ?? !current;
           const saved = yield* mode.set({ projectKey: location.projectKey, enabled: desired }).pipe(Effect34.mapError((e) => new Tool.Error({ message: `mode persistence failed: ${e.reason}` })));
+          const body = `harness mode ${saved ? "enabled" : "disabled"}`;
           return {
-            output: undefined,
-            content: `harness mode ${saved ? "enabled" : "disabled"}`
+            output: body,
+            content: body
           };
         })
       });
       tools.add({
         name: "effect_harness_compound",
-        description: "Benchmark store operations (spec 06): task.create/get/list, profile.add/list, benchmark.start/status/leading/history/trial. mine-evolve is not wired (REM-4).",
+        description: "Call only on explicit user request to run benchmarks. Benchmark store operations (spec 06): task.create/get/list, profile.add/list, benchmark.start/status/leading/history/trial. mine-evolve is not wired (REM-4). Never auto-run.",
         input: {
           type: "object",
           properties: {
@@ -5330,7 +5356,8 @@ report: ${criticReportPath}`
           if (location === undefined) {
             return yield* Effect34.fail(new Tool.Error({ message: "compound: cannot resolve session location" }));
           }
-          const catalogModelList = ctx.catalog.model.list;
+          const maybeCatalog = ctx.catalog;
+          const catalogModelList = typeof maybeCatalog?.model?.list === "function" ? maybeCatalog.model.list : () => Effect34.succeed({ data: [] });
           const sessionCreate = ctx.session.create;
           const sessionGenerate = ctx.session.generate;
           const sessionInterrupt = ctx.session.interrupt;

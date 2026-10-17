@@ -10,9 +10,9 @@
     "./*": "./src/*"
   },
   "dependencies": {
-    "@effect/platform-node": "4.0.0-rc.110",
-    "@effect/sql-sqlite-node": "4.0.0-rc.110",
-    "effect": "4.0.0-rc.110",
+    "@effect/platform-node": "4.0.5",
+    "@effect/sql-sqlite-node": "4.0.5",
+    "effect": "4.0.5",
     "opencode-compound-kit": "workspace:*",
     "opencode-harness-shared": "workspace:*"
   }

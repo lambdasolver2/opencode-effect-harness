@@ -24,9 +24,9 @@ import { Runner } from '../benchmark/Runner.ts';
 import { Executor, ExecutorError } from '../session/Executor.ts';
 import { ClientExecutor } from '../session/Client.ts';
 import { ModelProfile } from 'opencode-compound-kit/Task.ts';
-import { OpenCode } from '@opencode-ai/client/effect';
-import { discover, headers } from '@opencode-ai/client/effect/service';
-import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/unstable/http';
+import { OpenCode } from '@opencode/client/effect';
+import { discover, headers } from '@opencode/client/effect/service';
+import { FetchHttpClient, HttpClient, HttpClientRequest } from 'effect/http';
 import { SqliteStore } from 'opencode-bench-store';
 
 const args = process.argv.slice(2);

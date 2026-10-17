@@ -2,22 +2,21 @@
 
 ## Mandatory validation gates
 
-After EVERY change (even minor), run these **in order** from the repo root — no change is done until all four are green:
+After EVERY change (even minor), run these **in order** from the repo root — no change is done until all three are green:
 
 ```sh
-bunx tsgo --noEmit          # 1. Effect-aware typecheck (Go compiler) — MUST pass
-bunx tsc --noEmit           # 2. fallback typecheck — MUST pass
-bunx vitest run             # 3. full test suite — MUST pass
-# 4. effect-verified: call effect_harness_verify — MUST be overall:passed
+bun run typecheck           # 1. single typecheck (tsgo --noEmit, Effect-aware Go compiler; falls back to tsc only if tsgo is unavailable) — MUST pass
+bunx vitest run             # 2. full test suite — MUST pass
+# 3. effect-verified: call effect_harness_verify — MUST be overall:passed
 ```
 
-4 is `effect_harness_verify` (`src/index.ts:389` → `Orchestrator.verify` `packages/verify-kit/src/Orchestrator.ts:86`): deterministic checkers + pattern scan (`findPatternMatches` on touched files) + `skillEvidence` + `overall` `packages/verify-kit/src/Report.ts:110`, persisted to `.effect-harness/reports/*-verify.json` `src/index.ts:1689`. Trigger it manually after 1-3 are green — `verify.trigger` is `manual` (`src/Options.ts:145`), so no auto-run. Omit `touchedFiles` to verify the session ledger; on `overall:failed|error` fix and re-call (ledger retained `src/index.ts:1614`). Do not claim done/push/PR without a `verify overall:passed` report path.
+3 is `effect_harness_verify` (`src/index.ts:389` → `Orchestrator.verify` `packages/verify-kit/src/Orchestrator.ts:86`): deterministic checkers + pattern scan (`findPatternMatches` on touched files) + `skillEvidence` + `overall` `packages/verify-kit/src/Report.ts:110`, persisted to `.effect-harness/reports/*-verify.json` `src/index.ts:1689`. Trigger it manually after 1-2 are green — `verify.trigger` is `manual` (`src/Options.ts:145`), so no auto-run. Omit `touchedFiles` to verify the session ledger; on `overall:failed|error` fix and re-call (ledger retained `src/index.ts:1614`). Do not claim done/push/PR without a `verify overall:passed` report path.
 
-If any gate (1-4) fails, fix before continuing. Never skip or ignore failures. The per-write pattern advisory `src/index.ts:1419` is **advisory only** and does not replace gate 4.
+If any gate (1-3) fails, fix before continuing. Never skip or ignore failures. The per-write pattern advisory `src/index.ts:1419` is **advisory only** and does not replace gate 3.
 
 ## Selective test execution (fast loop)
 
-The full suite is dominated by `src/pattern/Scan.test.ts` (~73s whole-repo self-scan). During iteration run only affected tests — gate 3 above still requires the FULL suite before claiming done/push/PR:
+The full suite is dominated by `src/pattern/Scan.test.ts` (~73s whole-repo self-scan). During iteration run only affected tests — gate 2 above still requires the FULL suite before claiming done/push/PR:
 
 ```sh
 bunx vitest related <changed-files...>  # tests importing the touched files, e.g. src/index.ts src/Capability.ts
@@ -98,7 +97,7 @@ Runs the full pipeline `packages/verify-kit/src/Orchestrator.ts:86`: applicable 
 Omit `touchedFiles` to verify the session's change ledger (`ChangeLedger` `src/index.ts:428` + `src/change/Ledger.ts`). Containment-checked — paths escaping the project root fail closed (`src/index.ts:415`).
 
 **When to call:**
-- After **every** validation gate pass (`tsgo`/`tsc`/`vitest` green) and before claiming a task is done.
+- After **every** validation gate pass (`typecheck`/`vitest` green) and before claiming a task is done.
 - After completing a feature, fix, or refactor that touches `src/` or `packages/`.
 - Before opening a PR or pushing — attach the `report:` path from the tool output.
 - On `overall:failed|error` — fix, then re-call (failed runs retain the ledger for retry `src/index.ts:1614`).

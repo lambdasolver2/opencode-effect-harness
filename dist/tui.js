@@ -20,7 +20,7 @@ var __require = import.meta.require;
 import { createTextNode as _$createTextNode } from "@opentui/solid";
 import { insertNode as _$insertNode } from "@opentui/solid";
 import { createElement as _$createElement } from "@opentui/solid";
-import { Plugin } from "@opencode-ai/plugin/tui";
+import { Plugin } from "@opencode/plugin/tui";
 var tui_default = Plugin.define({
   id: "opencode.effect-harness",
   setup(context) {

@@ -1,17 +1,17 @@
 /**
  * Capability — native skill registration behind an explicit capability probe
  * (spec A2 / AUDIT-042). Candidate skill payloads are validated against the
- * PINNED host schema (`@opencode-ai/schema/skill`) so branded ids/names are
+ * PINNED host schema (`@opencode/schema/skill`) so branded ids/names are
  * produced by the SDK's own decoder instead of `as never` casts. Invalid or
  * unsupported registrations are COUNTED AND REPORTED — never silent.
  */
 import { Effect, Schema } from 'effect';
-import { Skill as SkillSchema } from '@opencode-ai/schema/skill';
+import { Skill as SkillSchema } from '@opencode/schema/skill';
 
 export interface PreparedSkillInfo {
 	readonly id: unknown;
 	readonly name: unknown;
-	readonly location: unknown;
+	readonly path: unknown;
 	readonly description: string;
 	readonly content: string;
 	readonly kernelName: string;
@@ -38,8 +38,10 @@ export interface RegistrationResult {
 export const HARNESS_TOOL_PROTOCOL = [
 	'## Harness tools — when and how often',
 	'',
-	'- `effect_harness_verify` {touchedFiles}: call ONCE per response that wrote/edited/patched Effect/TypeScript code (batch all touched files into that one call, not one call per file), and ALWAYS once more before claiming done, pushing, or opening a PR.',
-	'- `effect_harness_critic` {summary >= 10 chars, focus}: call ONCE per finished feature, plan, or architecture decision — never per edit, never in a loop.',
+	'Keyword mention alone never triggers a tool — mentioning `effect`, `adversary`/`adversarial`, `critic`, or `verify` in chat loads knowledge only, it does NOT authorize a call.',
+	'',
+	'- `effect_harness_verify` {touchedFiles}: only after this response actually wrote/edited/patched Effect/TypeScript code (batch all touched files into that one call, not one call per file), and once more before claiming done, pushing, or opening a PR for such changes. Do NOT call on question-only, discussion-only, or planning-only turns with no file writes.',
+	'- `effect_harness_critic` {summary >= 10 chars, focus}: only after actually finishing a feature, plan item, or architecture decision in this session, or on explicit user request for an adversary/critic review — never per edit, never in a loop, never on keyword mention alone.',
 	'- `harness_skill_stats`: only when you are unsure which effect-* skills are already loaded. Rarely needed.',
 	'- `harness_toggle`: only on explicit user request. Never call autonomously.',
 	'- `effect_harness_compound`: only on explicit user benchmark request. Never auto-run.'
@@ -57,7 +59,7 @@ const DESCRIPTION_LINE = /(^|\n)description:\s*([^\n]+)/;
 interface CandidateInfo {
 	readonly id: string;
 	readonly name: string;
-	readonly location: string;
+	readonly path: string;
 	readonly description: string;
 	readonly content: string;
 }
@@ -68,7 +70,7 @@ const buildCandidate = (
 ): CandidateInfo => ({
 	id: entry.name,
 	name: entry.name,
-	location: entry.skillFilePath,
+	path: entry.skillFilePath,
 	description:
 		content.match(FRONTMATTER_BLOCK)?.[1]?.match(DESCRIPTION_LINE)?.[2]?.trim() ??
 		`Effect v4 skill: ${entry.name}`,
@@ -114,7 +116,7 @@ export const prepareAll = (
 					{
 						id: info.id,
 						name: info.name,
-						location: info.location,
+						path: info.path,
 						description: candidate.description,
 						content,
 						kernelName: entry.name
@@ -147,7 +149,7 @@ export const applyToDraft = (
 		add({
 			id: info.id,
 			name: info.name,
-			location: info.location,
+			path: info.path,
 			description: info.description,
 			content: `${info.content}\n\n${HARNESS_TOOL_PROTOCOL}`
 		})

@@ -4,11 +4,11 @@
  */
 import { Effect, Layer } from 'effect'
 import * as NodeFileSystem from '@effect/platform-node/NodeFileSystem'
-import { FetchHttpClient } from 'effect/unstable/http'
-import { OpenCode } from '@opencode-ai/client/effect'
-import { discover, headers } from '@opencode-ai/client/effect/service'
+import { FetchHttpClient } from 'effect/http'
+import { OpenCode } from '@opencode/client/effect'
+import { discover, headers } from '@opencode/client/effect/service'
 
-import type { Historical } from 'opencode-compound-kit/Source.ts'
+import type { Historical, HistoricalPage } from 'opencode-compound-kit/Source.ts'
 import { SourceError, Summary } from 'opencode-compound-kit/Source.ts'
 
 const platformLayer = Layer.mergeAll(NodeFileSystem.layer)
@@ -26,7 +26,7 @@ export const make = (options: { directory?: string } = {}): Historical.Service =
       const endpoint = yield* Effect.provide(discover(), platformLayer).pipe(Effect.orElseSucceed(() => undefined))
       if (!endpoint) return { summaries: [] as Summary[] }
 
-      const authHeaders = (headers as any)(endpoint)
+      const authHeaders = (headers as unknown as (e: unknown) => Record<string, string> | undefined)(endpoint)
       const client = yield* OpenCode.make({
         baseUrl: endpoint.url,
         ...(authHeaders !== undefined ? { headers: authHeaders } : {})
@@ -35,7 +35,7 @@ export const make = (options: { directory?: string } = {}): Historical.Service =
       const paginate = (
         cursor: string | undefined,
         acc: ReadonlyArray<Summary>
-      ): Effect.Effect<ReadonlyArray<Summary>, SourceError> =>
+      ): Effect.Effect<ReadonlyArray<Summary>, SourceError, never> =>
         client.session.list({
           ...(options.directory !== undefined ? { directory: options.directory as never } : {}),
           ...(cursor !== undefined ? { cursor: cursor as never } : {})
@@ -49,18 +49,18 @@ export const make = (options: { directory?: string } = {}): Historical.Service =
             }
             return Effect.succeed(all)
           })
-        )
+        ) as Effect.Effect<ReadonlyArray<Summary>, SourceError, never>
 
       const summaries = yield* paginate(undefined, [])
       return { summaries }
-    }),
+    }) as Effect.Effect<HistoricalPage, SourceError, never>,
 
   exportSanitized: (sessionID: string) =>
     Effect.gen(function* () {
       const endpoint = yield* Effect.provide(discover(), platformLayer).pipe(Effect.orElseSucceed(() => undefined))
-      if (!endpoint) return { info: new Summary({ sessionID, updatedAt: '' }), messages: [] }
+      if (!endpoint) return { info: new Summary({ sessionID, updatedAt: '' }), messages: [] as ReadonlyArray<unknown> }
 
-      const authHeaders = (headers as any)(endpoint)
+      const authHeaders = (headers as unknown as (e: unknown) => Record<string, string> | undefined)(endpoint)
       const client = yield* OpenCode.make({
         baseUrl: endpoint.url,
         ...(authHeaders !== undefined ? { headers: authHeaders } : {})
@@ -72,6 +72,6 @@ export const make = (options: { directory?: string } = {}): Historical.Service =
       }).pipe(
         Effect.mapError((e): SourceError => new SourceError({ reason: String(e) }))
       )
-      return { info: toSummary(out.info), messages: out.messages }
-    })
+      return { info: toSummary(out.info), messages: out.messages as ReadonlyArray<unknown> }
+    }) as Effect.Effect<{ info: Summary; messages: ReadonlyArray<unknown> }, SourceError, never>
 })

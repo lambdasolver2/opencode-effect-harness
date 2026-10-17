@@ -56,7 +56,7 @@ export class ClaimKernel extends Context.Service<ClaimKernel, {
 }>()("claim/ClaimKernel") {
   static readonly layer = Layer.effect(ClaimKernel, Effect.gen(function*() {
     const store = yield* ClaimStore
-    const ttl = yield* Config.duration("CLAIM_TTL").pipe(Config.withDefault(Duration.minutes(5)))
+    const ttl = yield* Config.Duration("CLAIM_TTL").pipe(Config.withDefault(Duration.minutes(5)))
     const makeId = Effect.flatMap(Random.nextInt, (n) => Schema.decodeUnknownEffect(ClaimId)(`c-${n}`)).pipe(Effect.orDie)
     const acquire = Effect.fn("ClaimKernel.acquire")(function*(cmd: AcquireCommand) {
       const now = yield* DateTime.now; const exp = DateTime.addDuration(now, ttl); const nid = yield* makeId

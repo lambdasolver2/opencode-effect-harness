@@ -20,11 +20,12 @@ const expandHome = (
 
 const resolveHomeDirectory = (): Effect.Effect<Option.Option<string>> =>
 	Effect.gen(function*() {
-		const home = yield* Config.option(Config.string('HOME'));
+		const home: Option.Option<string> = yield* Config.option(Config.String('HOME'));
 		if (Option.isSome(home)) {
 			return home;
 		}
-		return yield* Config.option(Config.string('USERPROFILE'));
+		const profile: Option.Option<string> = yield* Config.option(Config.String('USERPROFILE'));
+		return profile;
 	}).pipe(
 		Effect.catchTag('ConfigError', () => Effect.succeed(Option.none()))
 	);

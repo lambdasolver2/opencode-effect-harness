@@ -10,10 +10,10 @@ const layerForTest = () => SqliteStore.layer({ _tag: 'Memory' })
 
 const withStore = <A, E>(
 	effect: Effect.Effect<A, E, TaskStore.Tag>
-): Effect.Effect<A, E | TaskError | import('effect/unstable/sql/SqlError').SqlError, never> =>
+): Effect.Effect<A, E | TaskError | import('effect/sql/SqlError').SqlError, never> =>
 	Effect.provide(effect, layerForTest()) as Effect.Effect<
 		A,
-		E | TaskError | import('effect/unstable/sql/SqlError').SqlError,
+		E | TaskError | import('effect/sql/SqlError').SqlError,
 		never
 	>
 

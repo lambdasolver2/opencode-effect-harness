@@ -25,12 +25,11 @@ Benchmark store spec (REM-4 benchmark mode, DB-first): `docs/spec/06-benchmark-s
 
 ```sh
 bun install
-bunx tsgo --noEmit     # Effect-aware typecheck — must pass
-bunx tsc --noEmit      # fallback typecheck — must pass
+bun run typecheck          # single typecheck (tsgo --noEmit, Effect-aware; falls back to tsc only if tsgo is unavailable) — must pass
 bunx vitest run        # full suite incl. whole-repo 47-detector self-scan
 ```
 
-Last recorded at `2cc6817`: both typechecks clean; vitest 20 files / 53 tests
+Last recorded at `2cc6817`: typecheck clean; vitest 20 files / 53 tests
 green, including `SelfPatternScan.test.ts` (baseline shrink-only enforcement)
 and `Catalog.test.ts` (47-pattern inventory integrity). Test count grows as
 coverage grows; the gates above are the source of truth, not this number.
