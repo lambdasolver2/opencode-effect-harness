@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+### Minor Changes
+
+- f21f0f3: Fix opencode2 server plugin load failure (`err_dc9cbe24`). Migrate from `effect/unstable/*` to host-provided stable `effect/http`, `effect/observability`, `effect/sql`, `effect/reactivity`, upgrade to `effect@4.0.5` with `@opencode/*@2.0.32` plugin APIs, and require `opencode >= 2.0.32`.
+
 ## 0.2.2
 
 ### Patch Changes
